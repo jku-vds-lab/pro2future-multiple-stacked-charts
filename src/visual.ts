@@ -49,11 +49,13 @@ import {LineDataPoint, LineSettings, LineViewModel, lineVisualTransform} from '.
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 import { getAxisTextFillColor } from "./objectEnumerationUtility";
 import {createTooltipServiceWrapper, ITooltipServiceWrapper} from "powerbi-visuals-utils-tooltiputils";
+import { X } from "vega-lite/build/src/channel";
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 export class Visual implements IVisual {
     private host: IVisualHost;
     private element: HTMLElement;
     private svg: Selection<any>;
+    private settings: any;
     private tooltipServiceWrapper: ITooltipServiceWrapper;
 
     private xAxis: Selection<SVGElement>;
@@ -64,15 +66,13 @@ export class Visual implements IVisual {
     private barSettings: BarSettings;
     private barViewModel: BarViewModel;
     private bar: any;
-    private settings: BarSettings;
-
 
     private lineContainer: Selection<SVGElement>;
     private lineDataPoints: LineDataPoint[];
     private lineSettings: LineSettings;
     private lineViewModel: LineViewModel;
     private line: any;
-    private generalSettings: LineSettings;
+
 
     static Config = {
         xScalePadding: 0.1,
@@ -111,11 +111,12 @@ export class Visual implements IVisual {
             this.lineViewModel = lineVisualTransform(options, this.host);
             this.settings = this.lineSettings = this.lineViewModel.settings;
             this.lineDataPoints = this.lineViewModel.dataPoints;
-            this.drawLineChart(options);
 
-            // This should be uncommented to make the tooltips work
-            // const mergedLines = this.drawLineChart(options);
-            // this.tooltipServiceWrapper.addTooltip(mergedLines, (datapoint: LineDataPoint) => this.getTooltipData(datapoint), (datapoint: LineDataPoint) => datapoint.identity);
+             const dots = this.drawLineChart(options);
+
+             this.tooltipServiceWrapper.addTooltip(dots,
+             (datapoint: LineDataPoint) => {console.log('Here1');  return this.getTooltipData(datapoint)},
+             (datapoint: LineDataPoint) => {console.log('Here2: ', datapoint.identity);  return datapoint.identity});
 
             // this.barViewModel = visualTransform(options, this.host);
             // this.settings = this.barSettings = this.barViewModel.settings;
@@ -128,9 +129,9 @@ export class Visual implements IVisual {
         }
     }
 
-    // This function should return the lines or the datapoints to hover over the line
+    // TODO This function should return the lines or the datapoints to hover over the line
 
-    private drawLineChart(options: VisualUpdateOptions): void {
+    private drawLineChart(options: VisualUpdateOptions): any {
 
         let width = options.viewport.width;
         let height = options.viewport.height;
@@ -140,9 +141,7 @@ export class Visual implements IVisual {
         if (this.settings.enableAxis.show) {
             let margins = Visual.Config.margins;
             height -= margins.bottom;
-            }
-
-        console.log('Datapoints: ', this.lineViewModel.dataPoints);
+        }
 
         let xScale = scaleBand()
         .domain(this.lineViewModel.dataPoints.map(d => d.category))
@@ -171,8 +170,7 @@ export class Visual implements IVisual {
                 "#000000" // can be defaultSettings.enableAxis.fill
         ));
 
-
-        this.svg.append('path')
+        this.lineContainer.append('path')
             .datum(this.lineDataPoints)
             .attr("d", d3.line<LineDataPoint>()
             .x(d => xScale(d.category))
@@ -180,6 +178,23 @@ export class Visual implements IVisual {
             .attr("fill", "none")
             .attr("stroke", "steelblue")
             .attr("stroke-width", 1.5);
+
+        debugger;
+
+        const dots = this.svg.selectAll('dots').data(this.lineDataPoints)
+                    .enter()
+                    .append("circle")
+                    .attr("fill", "red")
+                    .attr("stroke", "none")
+                    .attr("cx", (d => xScale(d.category)))
+                    .attr("cy", (d => yScale(<number>d.value)))
+                    .attr("r", 3);
+
+
+
+
+       return dots;
+
     }
 
     private drawBarChart(options: VisualUpdateOptions): any {
@@ -238,13 +253,13 @@ export class Visual implements IVisual {
         return mergedBars;
     }
 
-    //only shows the categories and values nothing from the tooltip field
+    //TODO only shows the categories and values nothing from the tooltip field
     private getTooltipData(value: any): VisualTooltipDataItem[] {
         console.log('Tooltip value: ', value);
         return [{
             displayName: value.category,
             value: value.value.toString(),
-            color: value.color
+            color: value.color ?? "#000000"
         }];
     }
 
@@ -253,28 +268,29 @@ export class Visual implements IVisual {
      * objects and properties you want to expose to the users in the property pane.
      *
      */
+    // TODO: this should be able to handle the object enumeration for all the plots
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
 
         let objectName = options.objectName;
         let objectEnumeration: VisualObjectInstance[] = [];
 
-        // this should be able to handle the object enumeration for all the plots
+
 
         // if(!this.barSettings || !this.barSettings.enableAxis || !this.barDataPoints) {
         //     return objectEnumeration;
         // }
 
-        // if(!this.lineSettings || !this.lineSettings.enableAxis || !this.lineDataPoints) {
-        //     return objectEnumeration;
-        // }
+        if(!this.settings || !this.settings.enableAxis || !this.lineDataPoints) {
+            return objectEnumeration;
+        }
 
         switch (objectName) {
             case 'enableAxis':
                 objectEnumeration.push({
                     objectName: objectName,
                     properties: {
-                        show: this.barSettings.enableAxis.show,
-                        fill: this.barSettings.enableAxis.fill,
+                        show: this.settings.enableAxis.show,
+                        fill: this.settings.enableAxis.fill,
                     },
                     selector: null
                 });
