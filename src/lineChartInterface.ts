@@ -48,7 +48,7 @@ export interface Legend {
  * @param {IVisualHost} host            - Contains references to the host which contains services
  */
 
-export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): LineViewModel {
+export function lineVisualTransform(options: VisualUpdateOptions, host: IVisualHost): LineViewModel {
     let dataViews = options.dataViews;
     let viewModel: LineViewModel = {
         dataPoints: [],
