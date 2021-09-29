@@ -75,8 +75,7 @@ export class Visual implements IVisual {
     private lineSettings: LineSettings;
     private lineViewModel: LineViewModel;
     private line: any;
-    private xAxisLine: Selection<SVGElement>;
-    private yAxisLine: Selection<SVGElement>;
+
 
 
     static Config = {
@@ -99,10 +98,8 @@ export class Visual implements IVisual {
         this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, this.element);
 
         this.svg = d3Select(this.element).append('svg');
-        this.lineChart = this.svg.classed('lineChart', true);
-        this.lineContainer = this.svg.append('g').classed('lineContainer', true);
-        this.xAxisLine = this.svg.append('g').classed('xAxisLine', true);
-        this.yAxisLine = this.svg.append('g').classed('yAxisLine', true);
+
+
 
         this.barChart = this.svg.classed('barChart', true);
         this.barContainer = this.svg.append('g').classed('barContainer', true);
@@ -141,7 +138,13 @@ export class Visual implements IVisual {
         let width = options.viewport.width - 200;
         let height = options.viewport.height - 300;
 
+        const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
+
+        this.lineChart = this.svg.classed('lineChart', true);
         this.lineChart.attr("width", width).attr("height", height);
+
+        let xAxis = this.lineChart.append('g').classed('xAxisLine', true);
+        let yAxis = this.lineChart.append('g').classed('yAxisLine', true);
 
         if (this.settings.enableAxis.show) {
             let margins = Visual.Config.margins;
@@ -149,33 +152,31 @@ export class Visual implements IVisual {
         }
 
         let xScale = scaleBand()
-        .domain(this.lineViewModel.dataPoints.map(d => d.category))
-        .rangeRound([0, width])
-        .padding(0.2);
+                    .domain(this.lineViewModel.dataPoints.map(d => d.category))
+                    .rangeRound([0, width])
+                    .padding(0.2);
 
-        const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
+        let xAxisValue = axisBottom(xScale);
 
-        let xAxis = axisBottom(xScale);
-
-        this.xAxisLine.attr('transform', 'translate(0, ' + height + ')')
-            .call(xAxis)
+        xAxis.attr('transform', 'translate(0, ' + height + ')')
+            .call(xAxisValue)
             .attr("color", getAxisTextFillColor(
-                colorObjects,
-                this.host.colorPalette,
-                "#000000" // can be defaultSettings.enableAxis.fill
-            ));
-
-        let yScale = scaleLinear().domain([0, this.lineViewModel.dataMax]).range([height, 0]);
-        let yAxis = axisRight(yScale);
-
-        this.yAxisLine
-            .call(yAxis).attr("color", getAxisTextFillColor(
                 colorObjects,
                 this.host.colorPalette,
                 "#000000" // can be defaultSettings.enableAxis.fill
         ));
 
-        this.lineContainer.append('path')
+        let yScale = scaleLinear().domain([0, this.lineViewModel.dataMax]).range([height, 0]);
+        let yAxisValue = axisRight(yScale);
+
+        yAxis.call(yAxisValue)
+            .attr("color", getAxisTextFillColor(
+                colorObjects,
+                this.host.colorPalette,
+                "#000000" // can be defaultSettings.enableAxis.fill
+        ));
+
+        this.lineChart.append('path')
             .datum(this.lineDataPoints)
             .attr("d", d3.line<LineDataPoint>()
             .x(d => xScale(d.category))
@@ -183,8 +184,6 @@ export class Visual implements IVisual {
             .attr("fill", "none")
             .attr("stroke", "steelblue")
             .attr("stroke-width", 1.5);
-
-        debugger;
 
         const dots = this.lineChart.selectAll('dots').data(this.lineDataPoints)
                     .enter()
