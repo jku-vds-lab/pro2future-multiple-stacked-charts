@@ -58,20 +58,25 @@ export class Visual implements IVisual {
     private settings: any;
     private tooltipServiceWrapper: ITooltipServiceWrapper;
 
-    private xAxis: Selection<SVGElement>;
-    private yAxis: Selection<SVGElement>;
+    private xAxisBar: Selection<SVGElement>;
+    private yAxisBar: Selection<SVGElement>;
 
     private barContainer: Selection<SVGElement>;
     private barDataPoints: BarDataPoint[];
     private barSettings: BarSettings;
     private barViewModel: BarViewModel;
     private bar: any;
+    private barChart: Selection<any>;
 
+
+    private lineChart: Selection<any>;
     private lineContainer: Selection<SVGElement>;
     private lineDataPoints: LineDataPoint[];
     private lineSettings: LineSettings;
     private lineViewModel: LineViewModel;
     private line: any;
+    private xAxisLine: Selection<SVGElement>;
+    private yAxisLine: Selection<SVGElement>;
 
 
     static Config = {
@@ -93,15 +98,16 @@ export class Visual implements IVisual {
 
         this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, this.element);
 
-        // this.svg = d3Select(this.element).append('svg').classed('barChart', true);
-        // this.barContainer = this.svg.append('g').classed('barContainer', true);
-        // this.xAxis = this.svg.append('g').classed('xAxis', true);
-        // this.yAxis = this.svg.append('g').classed('yAxis', true);
-
-        this.svg = d3Select(this.element).append('svg').classed('lineChart', true);
+        this.svg = d3Select(this.element).append('svg');
+        this.lineChart = this.svg.classed('lineChart', true);
         this.lineContainer = this.svg.append('g').classed('lineContainer', true);
-        this.xAxis = this.svg.append('g').classed('xAxis', true);
-        this.yAxis = this.svg.append('g').classed('yAxis', true);
+        this.xAxisLine = this.svg.append('g').classed('xAxisLine', true);
+        this.yAxisLine = this.svg.append('g').classed('yAxisLine', true);
+
+        this.barChart = this.svg.classed('barChart', true);
+        this.barContainer = this.svg.append('g').classed('barContainer', true);
+        this.xAxisBar = this.svg.append('g').classed('xAxisBar', true);
+        this.yAxisBar = this.svg.append('g').classed('yAxisBar', true);
     }
 
     public update(options: VisualUpdateOptions) {
@@ -109,20 +115,19 @@ export class Visual implements IVisual {
         try {
 
             this.lineViewModel = lineVisualTransform(options, this.host);
-            this.settings = this.lineSettings = this.lineViewModel.settings;
+            this.barViewModel = visualTransform(options, this.host);
+
+            this.settings = this.lineSettings = this.barSettings = this.lineViewModel.settings = this.barViewModel.settings;
             this.lineDataPoints = this.lineViewModel.dataPoints;
 
-             const dots = this.drawLineChart(options);
+            const dots = this.drawLineChart(options);
 
-             this.tooltipServiceWrapper.addTooltip(dots,
-             (datapoint: LineDataPoint) => {console.log('Here1');  return this.getTooltipData(datapoint)},
-             (datapoint: LineDataPoint) => {console.log('Here2: ', datapoint.identity);  return datapoint.identity});
+            this.tooltipServiceWrapper.addTooltip(dots, (datapoint: LineDataPoint) => this.getTooltipData(datapoint),(datapoint: LineDataPoint) => datapoint.identity);
 
-            // this.barViewModel = visualTransform(options, this.host);
-            // this.settings = this.barSettings = this.barViewModel.settings;
-            // this.barDataPoints = this.barViewModel.dataPoints;
-            // const mergedBars = this.drawBarChart(options);
-            // this.tooltipServiceWrapper.addTooltip(mergedBars, (datapoint: BarDataPoint) => this.getTooltipData(datapoint), (datapoint: BarDataPoint) => datapoint.identity);
+
+            this.barDataPoints = this.barViewModel.dataPoints;
+            const mergedBars = this.drawBarChart(options);
+            this.tooltipServiceWrapper.addTooltip(mergedBars, (datapoint: BarDataPoint) => this.getTooltipData(datapoint), (datapoint: BarDataPoint) => datapoint.identity);
 
     } catch(error) {
         console.log(error());
@@ -133,10 +138,10 @@ export class Visual implements IVisual {
 
     private drawLineChart(options: VisualUpdateOptions): any {
 
-        let width = options.viewport.width;
-        let height = options.viewport.height;
+        let width = options.viewport.width - 200;
+        let height = options.viewport.height - 300;
 
-        this.svg.attr("width", width).attr("height", height);
+        this.lineChart.attr("width", width).attr("height", height);
 
         if (this.settings.enableAxis.show) {
             let margins = Visual.Config.margins;
@@ -152,7 +157,7 @@ export class Visual implements IVisual {
 
         let xAxis = axisBottom(xScale);
 
-        this.xAxis.attr('transform', 'translate(0, ' + height + ')')
+        this.xAxisLine.attr('transform', 'translate(0, ' + height + ')')
             .call(xAxis)
             .attr("color", getAxisTextFillColor(
                 colorObjects,
@@ -163,7 +168,7 @@ export class Visual implements IVisual {
         let yScale = scaleLinear().domain([0, this.lineViewModel.dataMax]).range([height, 0]);
         let yAxis = axisRight(yScale);
 
-        this.yAxis
+        this.yAxisLine
             .call(yAxis).attr("color", getAxisTextFillColor(
                 colorObjects,
                 this.host.colorPalette,
@@ -181,7 +186,7 @@ export class Visual implements IVisual {
 
         debugger;
 
-        const dots = this.svg.selectAll('dots').data(this.lineDataPoints)
+        const dots = this.lineChart.selectAll('dots').data(this.lineDataPoints)
                     .enter()
                     .append("circle")
                     .attr("fill", "red")
@@ -190,19 +195,15 @@ export class Visual implements IVisual {
                     .attr("cy", (d => yScale(<number>d.value)))
                     .attr("r", 3);
 
-
-
-
        return dots;
-
     }
 
     private drawBarChart(options: VisualUpdateOptions): any {
 
-        let width = options.viewport.width;
-        let height = options.viewport.height;
+        let width = options.viewport.width - 200;
+        let height = options.viewport.height - 300;
 
-        this.svg.attr("width", width).attr("height", height);
+        this.barChart.attr("width", width).attr("height", height);
 
         if (this.settings.enableAxis.show) {
             let margins = Visual.Config.margins;
@@ -218,7 +219,7 @@ export class Visual implements IVisual {
 
         let xAxis = axisBottom(xScale);
 
-        this.xAxis.attr('transform', 'translate(0, ' + height + ')')
+        this.xAxisBar.attr('transform', 'translate(0, ' + height + ')')
             .call(xAxis)
             .attr("color", getAxisTextFillColor(
                 colorObjects,
@@ -229,7 +230,7 @@ export class Visual implements IVisual {
         let yScale = scaleLinear().domain([0, this.barViewModel.dataMax]).range([height, 0]);
         let yAxis = axisLeft(yScale);
 
-        this.yAxis
+        this.yAxisBar
             .call(yAxis).attr("color", getAxisTextFillColor(
                 colorObjects,
                 this.host.colorPalette,
