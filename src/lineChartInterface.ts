@@ -12,15 +12,11 @@ export interface LineViewModel {
     dataPoints: LineDataPoint[];
     dataMax: number;
     settings: LineSettings;
-    hasHighlights?: boolean;
 }
 
 export interface LineDataPoint extends SelectableDataPoint { //selection can be added here on demand
     value: PrimitiveValue;
     category: string;
-    color?: string;
-    highlight?: boolean;
-    opacity?: number
 }
 
 export interface LineSettings {
@@ -94,9 +90,6 @@ export function lineVisualTransform(options: VisualUpdateOptions, host: IVisualH
 
     while(i < maxLengthAttributes) {
 
-        // you can also set the color of the attributes;
-        const color: string = getColumnnColorByIndex(category, i, colorPalette);
-
         const selectionId: ISelectionId = host.createSelectionIdBuilder()
         .withCategory(category, i)
         .createSelectionId();
@@ -104,7 +97,6 @@ export function lineVisualTransform(options: VisualUpdateOptions, host: IVisualH
         let dataPoint: LineDataPoint = {
             value: dataValue.values[i],
             category: `${category.values[i]}`,
-            color: color,
             identity: selectionId,
             selected: false };
 
