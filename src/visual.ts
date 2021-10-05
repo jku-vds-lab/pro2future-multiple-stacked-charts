@@ -121,11 +121,11 @@ export class Visual implements IVisual {
 
         const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
         const lineDataPoints = this.lineViewModel.dataPoints;
-        const lineChart: Selection<any> = this.visualContainer.append('svg').classed('lineChart-' + visualNumber, true);
+        const lineChart: Selection<any> = this.visualContainer.append('svg').classed('lineChart-' + visualNumber, true).attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + Visual.Config.margins.left + "," + Visual.Config.margins.top + ")");
         const xAxis = lineChart.append('g').classed('xAxisLine', true);
         const yAxis = lineChart.append('g').classed('yAxisLine', true);
 
-        lineChart.attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + Visual.Config.margins.left + "," + Visual.Config.margins.top + ")");
+
 
         if (this.settings.enableAxis.show) {
             let margins = Visual.Config.margins;
@@ -201,11 +201,11 @@ export class Visual implements IVisual {
 
         const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
         const barDataPoints = this.barViewModel.dataPoints;
-        const barChart = this.visualContainer.append('svg').classed('barChart', true);
+        const barChart = this.visualContainer.append('svg').classed('barChart', true).attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + Visual.Config.margins.left + "," + Visual.Config.margins.top + ")");;
         const xAxis = barChart.append('g').classed('xAxisBar', true);
         const yAxis = barChart.append('g').classed('yAxisBar', true);
 
-        barChart.attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + Visual.Config.margins.left + "," + Visual.Config.margins.top + ")");;
+
 
         if (this.settings.enableAxis.show) {
             let margins = Visual.Config.margins;
