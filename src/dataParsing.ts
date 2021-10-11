@@ -9,23 +9,24 @@ export interface GeneralSettings {
     };
 }
 
-export interface DataPoints {
+export interface GeneralViewModel {
     xValues: number[];
     yValues: number[];
-    xMinLocal: number;
-    xMaxLocal: number;
-    yMinLocal: number;
-    yMaxLocal: number;
+    xMin: number;
+    xMax: number;
+    yMin: number;
+    yMax: number;
     settings: GeneralSettings;
 }
 
 // return data points of plots asked on demand
 
-export function visualTransform(options: VisualUpdateOptions, type: string = 'line'): DataPoints[] {
+export function visualTransform(options: VisualUpdateOptions, type: string = 'line'): GeneralViewModel[] {
     let dataViews = options.dataViews;
 
     try {
-        let datapoints: DataPoints[] = [];
+        debugger;
+        let viewModels: GeneralViewModel[] = [];
         let xDataPoints: number[] = [];
         let yDataPoints: number[] = [];
 
@@ -54,24 +55,21 @@ export function visualTransform(options: VisualUpdateOptions, type: string = 'li
 
         if (categorical.categories) {
             for (let category of categorical.categories) {
-                xDataPoints = [];
-                yDataPoints = [];
                 if (Object.keys(category.source.roles)[0] == 'x_plot_' + plotNr) {
                     xDataPoints = <number[]>category.values;
-                    Math.min(...xDataPoints);
                 }
                 if (Object.keys(category.source.roles)[0] == 'y_plot_' + plotNr) {
                     yDataPoints = <number[]>category.values;
                 }
 
-                if (xDataPoints.length && yDataPoints.length) {
-                    datapoints.push({
+                if (xDataPoints.length > 0 && yDataPoints.length > 0) {
+                    viewModels.push({
                         xValues: xDataPoints,
                         yValues: yDataPoints,
-                        xMinLocal: Math.min(...xDataPoints),
-                        xMaxLocal: Math.max(...xDataPoints),
-                        yMinLocal: Math.min(...yDataPoints),
-                        yMaxLocal: Math.max(...yDataPoints),
+                        xMin: Math.min(...xDataPoints),
+                        xMax: Math.max(...xDataPoints),
+                        yMin: Math.min(...yDataPoints),
+                        yMax: Math.max(...yDataPoints),
                         settings: {
                             plotType: {
                                 plot: plotNr,
@@ -79,30 +77,31 @@ export function visualTransform(options: VisualUpdateOptions, type: string = 'li
                             },
                         },
                     });
+
+                    // Reset data points to empty for saving other plots
+                    xDataPoints = [];
+                    yDataPoints = [];
                 }
             }
         }
 
         if (categorical.values) {
             for (let value of categorical.values) {
-                xDataPoints = [];
-                yDataPoints = [];
                 if (Object.keys(value.source.roles)[0] == 'x_plot_' + plotNr) {
                     xDataPoints = <number[]>value.values;
-                    Math.min(...xDataPoints);
                 }
                 if (Object.keys(value.source.roles)[0] == 'y_plot_' + plotNr) {
                     yDataPoints = <number[]>value.values;
                 }
 
                 if (xDataPoints.length && yDataPoints.length) {
-                    datapoints.push({
+                    viewModels.push({
                         xValues: xDataPoints,
                         yValues: yDataPoints,
-                        xMinLocal: Math.min(...xDataPoints),
-                        xMaxLocal: Math.max(...xDataPoints),
-                        yMinLocal: Math.min(...yDataPoints),
-                        yMaxLocal: Math.max(...yDataPoints),
+                        xMin: Math.min(...xDataPoints),
+                        xMax: Math.max(...xDataPoints),
+                        yMin: Math.min(...yDataPoints),
+                        yMax: Math.max(...yDataPoints),
                         settings: {
                             plotType: {
                                 plot: plotNr,
@@ -110,11 +109,15 @@ export function visualTransform(options: VisualUpdateOptions, type: string = 'li
                             },
                         },
                     });
+
+                    // Reset data points to empty for saving other plots
+                    xDataPoints = [];
+                    yDataPoints = [];
                 }
             }
         }
 
-        return datapoints;
+        return viewModels;
     } catch (error) {
         console.log('Error in main visual transform: ', error());
     }

@@ -49,7 +49,7 @@ export interface Legend {
  * @param {IVisualHost} host            - Contains references to the host which contains services
  */
 
-export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): BarViewModel {
+export function barVisualTransform(options: VisualUpdateOptions, host: IVisualHost): BarViewModel {
     let dataViews = options.dataViews;
     let viewModel: BarViewModel = {
         dataPoints: [],
