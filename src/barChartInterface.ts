@@ -7,20 +7,22 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
-import { getValue, getAxisTextFillColor, getColumnnColorByIndex } from "./objectEnumerationUtility";
+import { getValue, getAxisTextFillColor, getColumnnColorByIndex } from './objectEnumerationUtility';
 export interface BarViewModel {
+    plotNr?: number; // this should contain the plot number to know which order the line chart should be at
     dataPoints: BarDataPoint[];
     dataMax: number;
     settings: BarSettings;
     hasHighlights?: boolean;
 }
 
-export interface BarDataPoint extends SelectableDataPoint { //selection can be added here on demand
+export interface BarDataPoint extends SelectableDataPoint {
+    //selection can be added here on demand
     value: PrimitiveValue;
     category: string;
     color?: string;
     highlight?: boolean;
-    opacity?: number
+    opacity?: number;
 }
 
 export interface BarSettings {
@@ -37,7 +39,6 @@ export interface Legend {
     dy?: string;
 }
 
-
 /**
  * Function that converts queried data into a viewmodel that will be used by the visual.
  *
@@ -53,15 +54,17 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let viewModel: BarViewModel = {
         dataPoints: [],
         dataMax: 0,
-        settings: <BarSettings>{}
+        settings: <BarSettings>{},
     };
 
-    if(!dataViews
-       || !dataViews[0]
-       || !dataViews[0].categorical
-       || !dataViews[0].categorical.categories
-       || !dataViews[0].categorical.categories[0].source
-       || !dataViews[0].categorical.values) {
+    if (
+        !dataViews ||
+        !dataViews[0] ||
+        !dataViews[0].categorical ||
+        !dataViews[0].categorical.categories ||
+        !dataViews[0].categorical.categories[0].source ||
+        !dataViews[0].categorical.values
+    ) {
         return viewModel;
     }
     let categorical = dataViews[0].categorical;
@@ -77,36 +80,34 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let defaultSettings: BarSettings = {
         enableAxis: {
             show: true,
-            fill: "#000000",
-        }
+            fill: '#000000',
+        },
     };
 
     let lineSettings: BarSettings = {
         enableAxis: {
             show: getValue<boolean>(objects, 'enableAxis', 'show', defaultSettings.enableAxis.show),
-            fill: getAxisTextFillColor(objects, colorPalette, defaultSettings.enableAxis.fill)
-        }
+            fill: getAxisTextFillColor(objects, colorPalette, defaultSettings.enableAxis.fill),
+        },
     };
 
     const maxLengthAttributes = Math.max(category.values.length, dataValue.values.length);
 
     let i = 0;
 
-    while(i < maxLengthAttributes) {
-
+    while (i < maxLengthAttributes) {
         // you can also set the color of the attributes;
         const color: string = getColumnnColorByIndex(category, i, colorPalette);
 
-        const selectionId: ISelectionId = host.createSelectionIdBuilder()
-        .withCategory(category, i)
-        .createSelectionId();
+        const selectionId: ISelectionId = host.createSelectionIdBuilder().withCategory(category, i).createSelectionId();
 
         let dataPoint: BarDataPoint = {
             value: dataValue.values[i],
             category: `${category.values[i]}`,
             color: color,
             identity: selectionId,
-            selected: false };
+            selected: false,
+        };
 
         barDataPoints.push(dataPoint);
 
@@ -118,8 +119,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     return {
         dataPoints: barDataPoints,
         dataMax: dataMax,
-        settings: lineSettings
+        settings: lineSettings,
     };
 }
-
-

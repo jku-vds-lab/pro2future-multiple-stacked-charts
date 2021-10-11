@@ -1,14 +1,34 @@
 {
     "dataRoles": [
         {
-            "displayName": "Category Data",
-            "name": "category",
-            "kind": "Grouping"
+            "displayName": "x_Axis Plot 1",
+            "name": "x_plot_1",
+            "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Measure Data",
-            "name": "measure",
-            "kind": "Measure"
+            "displayName": "Y_Axis Plot 1",
+            "name": "y_plot_1",
+            "kind": "GroupingOrMeasure"
+        },
+        {
+            "displayName": "x_Axis Plot 2",
+            "name": "x_plot_2",
+            "kind": "GroupingOrMeasure"
+        },
+        {
+            "displayName": "y_Axis Plot 2",
+            "name": "y_plot_2",
+            "kind": "GroupingOrMeasure"
+        },
+        {
+            "displayName": "x_Axis Plot 3",
+            "name": "x_plot_3",
+            "kind": "GroupingOrMeasure"
+        },
+        {
+            "displayName": "y_Axis Plot 3",
+            "name": "y_plot_3",
+            "kind": "GroupingOrMeasure"
         },
         {
             "displayName": "Tooltips",
@@ -30,15 +50,35 @@
             ],
             "categorical": {
                 "categories": {
-                    "for": {
-                        "in": "category"
-                    }
-                },
-                "values": {
                     "select": [
                         {
-                            "bind": {
-                                "to": "measure"
+                            "for": {
+                                "in": "x_plot_1"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "y_plot_1"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "x_plot_2"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "y_plot_2"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "x_plot_3"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "y_plot_3"
                             }
                         }
                     ]
@@ -47,6 +87,23 @@
         }
     ],
     "objects": {
+        "plotType": {
+            "displayName": "Select Plot Type",
+            "properties": {
+                "plot": {
+                    "displayName": "Choose Plot Number",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "type": {
+                    "displayName": "Choose Type",
+                    "type": {
+                        "text": true
+                    }
+                }
+            }
+        },
         "enableAxis": {
             "displayName": "Enable Axis",
             "properties": {
