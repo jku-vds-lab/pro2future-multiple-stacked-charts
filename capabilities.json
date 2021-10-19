@@ -6,7 +6,7 @@
             "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Y_Axis Plot 1",
+            "displayName": "y_Axis Plot 1",
             "name": "y_plot_1",
             "kind": "GroupingOrMeasure"
         },

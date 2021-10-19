@@ -19,13 +19,13 @@ export interface GeneralViewModel {
     settings: GeneralSettings;
 }
 
-// return data points of plots asked on demand
+// TODO #1: return data points of plots asked on demand
+// TODO #2: capabilities file should handle the list of plot type and line
 
 export function visualTransform(options: VisualUpdateOptions, type: string = 'line'): GeneralViewModel[] {
     let dataViews = options.dataViews;
 
     try {
-        debugger;
         let viewModels: GeneralViewModel[] = [];
         let xDataPoints: number[] = [];
         let yDataPoints: number[] = [];
@@ -52,17 +52,23 @@ export function visualTransform(options: VisualUpdateOptions, type: string = 'li
 
         let categorical = dataViews[0].categorical;
         let plotNr: number = settings.plotType.plot;
+        let xPlotNr: number = settings.plotType.plot;
+        let yPlotNr: number = settings.plotType.plot;
+
+        debugger;
 
         if (categorical.categories) {
             for (let category of categorical.categories) {
-                if (Object.keys(category.source.roles)[0] == 'x_plot_' + plotNr) {
+                if (Object.keys(category.source.roles)[0] == 'x_plot_' + xPlotNr) {
                     xDataPoints = <number[]>category.values;
+                    xPlotNr = xPlotNr + 1;
                 }
-                if (Object.keys(category.source.roles)[0] == 'y_plot_' + plotNr) {
+                if (Object.keys(category.source.roles)[0] == 'y_plot_' + yPlotNr) {
                     yDataPoints = <number[]>category.values;
+                    yPlotNr = yPlotNr + 1;
                 }
 
-                if (xDataPoints.length > 0 && yDataPoints.length > 0) {
+                if (xDataPoints.length > 0 && yDataPoints.length > 0 && xPlotNr == yPlotNr) {
                     viewModels.push({
                         xValues: xDataPoints,
                         yValues: yDataPoints,
@@ -81,6 +87,7 @@ export function visualTransform(options: VisualUpdateOptions, type: string = 'li
                     // Reset data points to empty for saving other plots
                     xDataPoints = [];
                     yDataPoints = [];
+                    plotNr = plotNr + 1; // TODO To be removed when proper parsing is implemented
                 }
             }
         }
@@ -113,6 +120,7 @@ export function visualTransform(options: VisualUpdateOptions, type: string = 'li
                     // Reset data points to empty for saving other plots
                     xDataPoints = [];
                     yDataPoints = [];
+                    plotNr = plotNr + 1; // TODO To be removed when proper parsing is implemented
                 }
             }
         }

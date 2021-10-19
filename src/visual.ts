@@ -62,6 +62,7 @@ export class Visual implements IVisual {
     private barSettings: BarSettings; // required for object enumeration
     private barDataPoints: BarDataPoint[]; // required for object enumeration
 
+    private oldLineViewModels: LineViewModel[];
     private lineViewModels: LineViewModel[];
     private lineSettings: LineSettings; // required for object enumeration
     private lineDataPoints: LineDataPoint[]; // required for object enumeration
@@ -85,30 +86,39 @@ export class Visual implements IVisual {
         this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, this.element);
 
         this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
+        this.oldLineViewModels = [];
     }
 
     public update(options: VisualUpdateOptions) {
         try {
-            this.lineViewModels = lineVisualTransform(options, this.host);
-            this.lineDataPoints = this.lineViewModels[0].dataPoints;
-
-            this.settings = this.lineSettings = this.lineViewModels[0].settings;
-
             this.visualContainer.selectAll('*').remove();
 
-            const dots_1 = this.drawLineChart(options, 1, 'Param 1', 'y1');
-            const dots_2 = this.drawLineChart(options, 2, 'Param 2', 'y2');
+            this.lineViewModels = lineVisualTransform(options, this.host);
+            let linesDots: d3.Selection<SVGCircleElement, LineDataPoint, any, any>[] = [];
 
-            this.tooltipServiceWrapper.addTooltip(
-                dots_1,
-                (datapoint: LineDataPoint) => this.getTooltipData(datapoint),
-                (datapoint: LineDataPoint) => datapoint.identity
-            );
-            this.tooltipServiceWrapper.addTooltip(
-                dots_2,
-                (datapoint: LineDataPoint) => this.getTooltipData(datapoint),
-                (datapoint: LineDataPoint) => datapoint.identity
-            );
+            this.lineViewModels.forEach((lineViewModel: LineViewModel, index: number) => {
+                // if (this.oldLineViewModels) {
+                //     if (lineViewModel == this.oldLineViewModels[index]) {
+                //         console.log('Same chart as before: ', lineViewModel);
+                //         return;
+                //     }
+                // }
+
+                // d3.selectAll('lineChart-' + lineViewModel.plotNr).remove();
+                this.settings = this.lineSettings = lineViewModel.settings;
+                linesDots.push(this.drawLineChart(options, lineViewModel, lineViewModel.plotNr, 'Param 1', 'y1'));
+            });
+
+            // Add Tooltips
+            for (let lineDots of linesDots) {
+                this.tooltipServiceWrapper.addTooltip(
+                    lineDots,
+                    (datapoint: LineDataPoint) => this.getTooltipData(datapoint),
+                    (datapoint: LineDataPoint) => datapoint.identity
+                );
+            }
+
+            this.oldLineViewModels = this.lineViewModels;
 
             // this.barViewModel = barVisualTransform(options, this.host);
             // this.barDataPoints = this.barViewModel.dataPoints;
@@ -122,17 +132,16 @@ export class Visual implements IVisual {
 
     private drawLineChart(
         options: VisualUpdateOptions,
-        visualNumber: number = 1,
+        lineViewModel: LineViewModel,
+        visualNumber: number,
         xLabel?: string,
         yLabel?: string
-    ): any {
-        debugger;
-
+    ): d3.Selection<SVGCircleElement, LineDataPoint, any, any> {
         let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
         let height = 100;
 
         const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
-        const lineDataPoints = this.lineViewModels[0].dataPoints;
+        const lineDataPoints = lineViewModel.dataPoints;
         const lineChart: Selection<any> = this.visualContainer
             .append('svg')
             .classed('lineChart-' + visualNumber, true)
@@ -140,6 +149,7 @@ export class Visual implements IVisual {
             .attr('height', height)
             .append('g')
             .attr('transform', 'translate(' + Visual.Config.margins.left + ',' + Visual.Config.margins.top + ')');
+
         const xAxis = lineChart.append('g').classed('xAxisLine', true);
         const yAxis = lineChart.append('g').classed('yAxisLine', true);
 
@@ -151,10 +161,7 @@ export class Visual implements IVisual {
         let margins = Visual.Config.margins;
         height -= margins.bottom;
 
-        const xScale = scaleLinear()
-            .domain([0, this.lineViewModels[0].xDataMax])
-            .range([0, width])
-            .rangeRound([0, width]);
+        const xScale = scaleLinear().domain([0, lineViewModel.xDataMax]).range([0, width]);
 
         const xAxisValue = axisBottom(xScale);
 
@@ -178,7 +185,7 @@ export class Visual implements IVisual {
             .attr('y', height + 20)
             .text(xLabel);
 
-        const yScale = scaleLinear().domain([0, this.lineViewModels[0].yDataMax]).range([height, 0]);
+        const yScale = scaleLinear().domain([0, lineViewModel.yDataMax]).range([height, 0]);
         const yAxisValue = axisLeft(yScale);
 
         yAxis.call(yAxisValue).attr(
@@ -300,7 +307,6 @@ export class Visual implements IVisual {
 
     //TODO only shows the categories and values nothing from the tooltip field
     private getTooltipData(value: any): VisualTooltipDataItem[] {
-        console.log('Tooltip value: ', value);
         return [
             {
                 displayName: value.xValue.toString(),
@@ -325,8 +331,6 @@ export class Visual implements IVisual {
         let objectEnumeration: VisualObjectInstance[] = [];
 
         try {
-            debugger;
-
             // if(!this.barSettings || !this.barSettings.enableAxis || !this.barDataPoints) {
             //     return objectEnumeration;
             // }

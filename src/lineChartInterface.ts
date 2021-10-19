@@ -9,6 +9,8 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import { getValue, getAxisTextFillColor, getColumnnColorByIndex } from './objectEnumerationUtility';
 import { GeneralSettings, visualTransform } from './dataParsing';
+
+// TODO: Add field for x and y titles
 export interface LineViewModel {
     plotNr?: number; // this should contain the plot number to know which order the line chart should be at
     dataPoints: LineDataPoint[];
@@ -65,8 +67,6 @@ export function lineVisualTransform(options: VisualUpdateOptions, host: IVisualH
 
         let lineViewModels: LineViewModel[] = [];
 
-        let lineDataPoints: LineDataPoint[] = [];
-
         let colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
         let objects = dataViews[0].metadata.objects;
 
@@ -81,9 +81,9 @@ export function lineVisualTransform(options: VisualUpdateOptions, host: IVisualH
             },
         };
 
-        debugger;
-
         for (let model of generalViewModels) {
+            let lineDataPoints: LineDataPoint[] = [];
+
             let lineSettings: LineSettings = {
                 enableAxis: {
                     show: getValue<boolean>(objects, 'enableAxis', 'show', defaultSettings.enableAxis.show),
@@ -125,7 +125,6 @@ export function lineVisualTransform(options: VisualUpdateOptions, host: IVisualH
                 settings: lineSettings,
             });
         }
-
         return lineViewModels;
     } catch (error) {
         console.log('Error in lineVisualTransform: ', error());
