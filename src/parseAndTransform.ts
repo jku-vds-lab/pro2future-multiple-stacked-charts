@@ -8,6 +8,7 @@ import { ViewModel, DataPoint, FormatSettings, PlotSettings } from './chartInter
 
 // TODO #12: Add the param length from the metadata objects
 // TODO #13: Add advanced interface for adding plot type and number
+// TODO #n: Allow user to change bars colors
 
 /**
  * Function that converts queried data into a viewmodel that will be used by the visual.

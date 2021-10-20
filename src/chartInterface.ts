@@ -5,6 +5,7 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 
 // TODO #10: Add field for x and y labels
 // TODO #11: Make the bar chart transparent
+// TODO #n: Add point selection (for future)
 
 export interface ViewModel {
     formatSettings: FormatSettings;
@@ -22,8 +23,6 @@ export interface ViewModel {
 }
 
 export interface DataPoint extends SelectableDataPoint {
-    //selection can be added here on demand
-
     xValue: PrimitiveValue;
     yValue: PrimitiveValue;
     color?: string;
