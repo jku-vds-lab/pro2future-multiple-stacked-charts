@@ -47,7 +47,8 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, visualTransform } from './chartInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings } from './chartInterface';
+import { visualTransform } from './parseAndTransform';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 export class Visual implements IVisual {
@@ -80,6 +81,16 @@ export class Visual implements IVisual {
 
         this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
     }
+
+    // TODO #1: Specify bars data type
+    // TODO #2: Change viewmodels loop
+    // TODO #3: Add x and y labels
+    // TODO #4: Refactor code for line and bar chart
+    // TODO #5: Add code for scatterplot
+    // TODO #6: Use same axis for displaying values
+    // TODO #7: Align the values
+    // TODO #8: Add vertical ruler
+    // TODO #9: Add zooming option with a specified bin
 
     public update(options: VisualUpdateOptions) {
         try {
