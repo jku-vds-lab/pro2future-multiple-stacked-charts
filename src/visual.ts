@@ -58,6 +58,8 @@ export class Visual implements IVisual {
     private tooltipServiceWrapper: ITooltipServiceWrapper;
     private formatSettings: FormatSettings;
     private plotSettings: PlotSettings;
+    private testXscale: any;
+    private testDataPoints: any;
 
     private viewModels: ViewModel[];
 
@@ -98,22 +100,28 @@ export class Visual implements IVisual {
 
             this.viewModels = visualTransform(options, this.host);
 
-            debugger;
-
             let linesDots: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
+            let lineCharts: any[] = [];
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>; // TODO #1
 
             for (let viewModel of this.viewModels) {
                 this.formatSettings = viewModel.formatSettings;
                 this.plotSettings = viewModel.plotSettings;
                 if (viewModel.plotSettings.plotType.type == 'line') {
-                    linesDots.push(this.drawLineChart(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1'));
+                    let lines = this.drawLineChart(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1');
+                    lineCharts.push(lines.chart);
+                    linesDots.push(lines.points);
                 }
 
                 if (viewModel.plotSettings.plotType.type == 'bar') {
                     bars = this.drawBarChart(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1');
                 }
             }
+
+            for (let lineChart of lineCharts) {
+                this.drawVerticalRuler(lineChart);
+            }
+
             // Add Tooltips
             for (let lineDots of linesDots) {
                 this.tooltipServiceWrapper.addTooltip(
@@ -123,11 +131,11 @@ export class Visual implements IVisual {
                 );
             }
 
-            this.tooltipServiceWrapper.addTooltip(
-                bars,
-                (datapoint: DataPoint) => this.getTooltipData(datapoint),
-                (datapoint: DataPoint) => datapoint.identity
-            );
+            // this.tooltipServiceWrapper.addTooltip(
+            //     bars,
+            //     (datapoint: DataPoint) => this.getTooltipData(datapoint),
+            //     (datapoint: DataPoint) => datapoint.identity
+            // );
         } catch (error) {
             console.log(error());
         }
@@ -212,14 +220,10 @@ export class Visual implements IVisual {
         };
     }
 
-    private drawLineChart(
-        options: VisualUpdateOptions,
-        viewModel: ViewModel,
-        visualNumber: number,
-        xLabel?: string,
-        yLabel?: string
-    ): d3.Selection<SVGCircleElement, DataPoint, any, any> {
+    private drawLineChart(options: VisualUpdateOptions, viewModel: ViewModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+        // d3.Selection<SVGCircleElement, DataPoint, any, any> // fix return type
         try {
+            let result = {};
             const chartInfo = this.getChartElement(options, viewModel, xLabel, yLabel);
             const lineChart = chartInfo.chart;
             const xScale = chartInfo.xScale;
@@ -251,7 +255,8 @@ export class Visual implements IVisual {
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', 3);
 
-            return dots;
+            result = { chart: lineChart, points: dots };
+            return result;
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
         }
@@ -287,7 +292,25 @@ export class Visual implements IVisual {
         return mergedBars;
     }
 
-    private drawVerticalRuler() {}
+    private drawVerticalRuler(chart: any) {
+        try {
+            let verticalLine = chart.append('line').attr('stroke', 'steelblue').attr('class', 'verticalLine').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 200);
+
+            chart
+                .on('mousemove', (event) => {
+                    d3.select('.verticalLine').attr('transform', () => {
+                        return 'translate(' + event.clientX + ',0)';
+                    });
+                })
+                .on('mouseover', (event) => {
+                    d3.select('.verticalLine').attr('transform', () => {
+                        return 'translate(' + event.clientX + ',0)';
+                    });
+                });
+        } catch (error) {
+            console.log('Issue with ruler:', error);
+        }
+    }
 
     //TODO only shows the categories and values nothing from the tooltip field
     private getTooltipData(value: any): VisualTooltipDataItem[] {

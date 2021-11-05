@@ -82,9 +82,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         let type = 'line';
         while (i < paramLength) {
-            if (i == 2) {
-                type = 'bar';
-            }
+            // if (i == 2) {
+            //     type = 'bar';
+            // }
             plotSettings = {
                 plotType: {
                     plot: i,
@@ -99,10 +99,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         while (i < paramLength) {
             if (categorical.categories) {
                 for (let category of categorical.categories) {
-                    if (Object.keys(category.source.roles)[0] == 'x_plot_' + i) {
+                    if (Object.keys(category.source.roles).includes('x_plot_' + i)) {
                         xDataPoints = <number[]>category.values;
                     }
-                    if (Object.keys(category.source.roles)[0] == 'y_plot_' + i) {
+                    if (Object.keys(category.source.roles).includes('y_plot_' + i)) {
                         yDataPoints = <number[]>category.values;
                     }
                 }
@@ -110,10 +110,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
             if (categorical.values) {
                 for (let value of categorical.values) {
-                    if (Object.keys(value.source.roles)[0] == 'x_plot_' + i) {
+                    if (Object.keys(value.source.roles).includes('x_plot_' + i)) {
                         xDataPoints = <number[]>value.values;
                     }
-                    if (Object.keys(value.source.roles)[0] == 'y_plot_' + i) {
+                    if (Object.keys(value.source.roles).includes('y_plot_' + i)) {
                         yDataPoints = <number[]>value.values;
                     }
                 }
@@ -127,10 +127,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 while (ptNr < maxLengthAttributes) {
                     const color: string = '#0f0f0f'; //getColumnnColorByIndex(xDataPoints, i, colorPalette); // TODO Add colors only if required
 
-                    const selectionId: ISelectionId = host
-                        .createSelectionIdBuilder()
-                        .withMeasure(xDataPoints[ptNr].toString())
-                        .createSelectionId();
+                    const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[ptNr].toString()).createSelectionId();
 
                     let dataPoint: DataPoint = {
                         xValue: xDataPoints[ptNr],
