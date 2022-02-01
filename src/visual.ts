@@ -108,8 +108,8 @@ export class Visual implements IVisual {
                 this.formatSettings = viewModel.formatSettings;
                 this.plotSettings = viewModel.plotSettings;
                 if (viewModel.plotSettings.plotType.type == 'line') {
-                    let lines = this.drawLineChart(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1');
-                    lineCharts.push(lines.chart);
+                    let lines = this.drawDots(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1');
+                    lineCharts.push(lines);
                     linesDots.push(lines.points);
                 }
 
@@ -118,8 +118,10 @@ export class Visual implements IVisual {
                 }
             }
 
+            // assuming only one viewmodel exists
+
             for (let lineChart of lineCharts) {
-                this.drawVerticalRuler(lineChart);
+                this.drawVerticalRuler(lineChart.chart, this.viewModels[0].dataPoints, lineChart.xAxis, lineChart.xScale, lineChart.yScale);
             }
 
             // Add Tooltips
@@ -217,6 +219,7 @@ export class Visual implements IVisual {
             chart: chart,
             xScale: xScale,
             yScale: yScale,
+            xAxis: xAxis,
         };
     }
 
@@ -228,6 +231,7 @@ export class Visual implements IVisual {
             const lineChart = chartInfo.chart;
             const xScale = chartInfo.xScale;
             const yScale = chartInfo.yScale;
+            const xAxis = chartInfo.xAxis;
             const dataPoints = viewModel.dataPoints;
 
             lineChart
@@ -255,7 +259,73 @@ export class Visual implements IVisual {
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', 3);
 
-            result = { chart: lineChart, points: dots };
+            // vertical ruler
+            // lineChart.append('line').attr('stroke', 'steelblue').attr('class', 'verticalLine').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 200);
+            // let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
+            // let focus = lineChart.append('circle').style('fill', 'none').attr('stroke', 'black').attr('r', 8.5).style('opacity', 0);
+
+            // let mouseover = function () {
+            //     focus.style('opacity', 1);
+            // };
+
+            // let mousemove = function (event) {
+            //     debugger;
+            //     console.log('mousemoved');
+            //     let x0 = xAxis.invert(event.clientX);
+            //     let i = bisect(dataPoints, x0, 1);
+            //     let selectedData = dataPoints[i];
+            //     focus.attr('cx', xScale(selectedData.xValue)).attr('cy', yScale(selectedData.yValue));
+            // };
+
+            // let mouseout = function () {
+            //     focus.style('opacity', 0);
+            // };
+
+            // lineChart.append('rect').style('fill', 'none').style('pointer-events', 'all').on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
+
+            result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
+            return result;
+        } catch (error) {
+            console.log('Error in Draw Line Chart: ', error);
+        }
+    }
+
+    private drawDots(options: VisualUpdateOptions, viewModel: ViewModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+        try {
+            let result = {};
+            const chartInfo = this.getChartElement(options, viewModel, xLabel, yLabel);
+            const lineChart = chartInfo.chart;
+            const xScale = chartInfo.xScale;
+            const yScale = chartInfo.yScale;
+            const xAxis = chartInfo.xAxis;
+            const dataPoints = viewModel.dataPoints;
+
+            // lineChart
+            //     .append('path')
+            //     .datum(dataPoints)
+            //     .attr(
+            //         'd',
+            //         d3
+            //             .line<DataPoint>()
+            //             .x((d) => xScale(<number>d.xValue))
+            //             .y((d) => yScale(<number>d.yValue))
+            //     )
+            //     .attr('fill', 'none')
+            //     .attr('stroke', 'steelblue')
+            //     .attr('stroke-width', 1.5);
+
+            const dots = lineChart
+                .selectAll('dots')
+                .data(dataPoints)
+                .enter()
+                .append('circle')
+                .attr('fill', 'red')
+                .attr('stroke', 'none')
+                .attr('cx', (d) => xScale(<number>d.xValue))
+                .attr('cy', (d) => yScale(<number>d.yValue))
+                .attr('r', 3);
+
+            result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             return result;
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
@@ -292,21 +362,49 @@ export class Visual implements IVisual {
         return mergedBars;
     }
 
-    private drawVerticalRuler(chart: any) {
+    private drawVerticalRuler(chart: any, dataPoints: DataPoint[], xAxis: any, xScale: any, yScale: any) {
         try {
-            let verticalLine = chart.append('line').attr('stroke', 'steelblue').attr('class', 'verticalLine').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 200);
+            // let verticalLine = chart.append('line').attr('stroke', 'steelblue').attr('class', 'verticalLine').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 200);
 
-            chart
-                .on('mousemove', (event) => {
-                    d3.select('.verticalLine').attr('transform', () => {
-                        return 'translate(' + event.clientX + ',0)';
-                    });
-                })
-                .on('mouseover', (event) => {
-                    d3.select('.verticalLine').attr('transform', () => {
-                        return 'translate(' + event.clientX + ',0)';
-                    });
-                });
+            // chart
+            //     .on('mousemove', (event) => {
+            //         d3.select('.verticalLine').attr('transform', () => {
+            //             return 'translate(' + event.clientX + ',0)';
+            //         });
+            //     })
+            //     .on('mouseover', (event) => {
+            //         d3.select('.verticalLine').attr('transform', () => {
+            //             return 'translate(' + event.clientX + ',0)';
+            //         });
+            //     });
+
+            // debugger;
+
+            console.log('Datapoints', dataPoints);
+            let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
+            let focus = chart.append('circle').style('fill', 'none').attr('stroke', 'black').attr('r', 8.5).style('opacity', 0);
+
+            let mouseover = function () {
+                focus.style('opacity', 1);
+            };
+
+            let mousemove = function (event) {
+                let x0 = Math.floor(xScale.invert(event.clientX)); // returns the invert of the value?
+                console.log('x0 ', x0);
+                let i = bisect(dataPoints, x0);
+                console.log('Index ', i, ' DataPoint at index ', dataPoints[i - 1]);
+
+                let selectedData = dataPoints[i];
+                focus.attr('cx', xScale(selectedData.xValue)).attr('cy', yScale(selectedData.yValue));
+            };
+
+            let mouseout = function () {
+                focus.style('opacity', 0);
+            };
+
+            chart.on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
+
+            // chart.append('rect').style('fill', 'none').style('pointer-events', 'all').on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
         } catch (error) {
             console.log('Issue with ruler:', error);
         }

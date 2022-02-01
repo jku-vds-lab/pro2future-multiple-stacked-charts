@@ -141,9 +141,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 }
 
                 dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
-                    if (a.xValue < b.xValue) {
+                    if (a.xValue > b.xValue) {
                         return 1;
-                    } else if (a.xValue > b.xValue) {
+                    } else if (a.xValue < b.xValue) {
                         return -1;
                     } else {
                         return 0;
