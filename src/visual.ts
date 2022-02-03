@@ -47,7 +47,8 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, visualTransform } from './chartInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings } from './chartInterface';
+import { visualTransform } from './parseAndTransform';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 export class Visual implements IVisual {
@@ -57,6 +58,8 @@ export class Visual implements IVisual {
     private tooltipServiceWrapper: ITooltipServiceWrapper;
     private formatSettings: FormatSettings;
     private plotSettings: PlotSettings;
+    private testXscale: any;
+    private testDataPoints: any;
 
     private viewModels: ViewModel[];
 
@@ -81,30 +84,43 @@ export class Visual implements IVisual {
         this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
     }
 
+
+    // TODO #3: Add x and y labels
+    // TODO #5: Add code for scatterplot
+    // TODO #6: Use same axis for displaying values
+    // TODO #7: Align the values
+    // TODO #8: Add vertical ruler
+    // TODO #9: Add zooming option with a specified bin
+
     public update(options: VisualUpdateOptions) {
         try {
             this.visualContainer.selectAll('*').remove();
 
             this.viewModels = visualTransform(options, this.host);
 
-            debugger;
-
             let linesDots: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
-            let bars;
+            let lineCharts: any[] = [];
+            let bars: d3.Selection<SVGRectElement, DataPoint, any, any>; // TODO #1
 
-            this.viewModels.forEach((viewModel: ViewModel, index: number) => {
+            for (let viewModel of this.viewModels) {
                 this.formatSettings = viewModel.formatSettings;
                 this.plotSettings = viewModel.plotSettings;
                 if (viewModel.plotSettings.plotType.type == 'line') {
-                    linesDots.push(
-                        this.drawLineChart(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1')
-                    );
+                    let lines = this.drawDots(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1');
+                    lineCharts.push(lines);
+                    linesDots.push(lines.points);
                 }
 
                 if (viewModel.plotSettings.plotType.type == 'bar') {
                     bars = this.drawBarChart(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1');
                 }
-            });
+            }
+
+            // assuming only one viewmodel exists
+
+            for (let lineChart of lineCharts) {
+                this.drawVerticalRuler(lineChart.chart, this.viewModels[0].dataPoints, lineChart.xAxis, lineChart.xScale, lineChart.yScale);
+            }
 
             // Add Tooltips
             for (let lineDots of linesDots) {
@@ -115,76 +131,50 @@ export class Visual implements IVisual {
                 );
             }
 
-            this.tooltipServiceWrapper.addTooltip(
-                bars,
-                (datapoint: DataPoint) => this.getTooltipData(datapoint),
-                (datapoint: DataPoint) => datapoint.identity
-            );
+            // this.tooltipServiceWrapper.addTooltip(
+            //     bars,
+            //     (datapoint: DataPoint) => this.getTooltipData(datapoint),
+            //     (datapoint: DataPoint) => datapoint.identity
+            // );
         } catch (error) {
             console.log(error());
         }
     }
 
-    private drawLineChart(
-        options: VisualUpdateOptions,
-        viewModel: ViewModel,
-        visualNumber: number,
-        xLabel?: string,
-        yLabel?: string
-    ): d3.Selection<SVGCircleElement, DataPoint, any, any> {
-        try {
-            let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
-            let height = 100;
+    private getChartElement(options: VisualUpdateOptions, viewModel: ViewModel, xLabel?: string, yLabel?: string): any {
+        let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
+        let height = 100;
 
-            const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
-            const dataPoints = viewModel.dataPoints;
-            const lineChart: Selection<any> = this.visualContainer
-                .append('svg')
-                .classed('lineChart-' + visualNumber, true)
-                .attr('width', width)
-                .attr('height', height)
-                .append('g')
-                .attr('transform', 'translate(' + Visual.Config.margins.left + ',' + Visual.Config.margins.top + ')');
+        const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
+        const plotType = viewModel.plotSettings.plotType.type;
+        const plotNr = viewModel.plotSettings.plotType.plot;
+        const chart: Selection<any> = this.visualContainer
+            .append('svg')
+            .classed(plotType + plotNr, true)
+            .attr('width', width)
+            .attr('height', height)
+            .append('g')
+            .attr('transform', 'translate(' + Visual.Config.margins.left + ',' + Visual.Config.margins.top + ')');
 
-            const xAxis = lineChart.append('g').classed('xAxisLine', true);
-            const yAxis = lineChart.append('g').classed('yAxisLine', true);
+        const xAxis = chart.append('g').classed('xAxis', true);
+        const yAxis = chart.append('g').classed('yAxis', true);
 
-            if (viewModel.formatSettings.enableAxis.show) {
-                let margins = Visual.Config.margins;
-                height -= margins.bottom;
-            }
-
+        if (viewModel.formatSettings.enableAxis.show) {
             let margins = Visual.Config.margins;
             height -= margins.bottom;
+        }
 
-            const xScale = scaleLinear().domain([0, viewModel.xRange.max]).range([0, width]);
+        let margins = Visual.Config.margins;
+        height -= margins.bottom;
 
-            const xAxisValue = axisBottom(xScale);
+        const xScale = scaleLinear().domain([0, viewModel.xRange.max]).range([0, width]);
 
-            xAxis
-                .attr('transform', 'translate(0, ' + height + ')')
-                .call(xAxisValue)
-                .attr(
-                    'color',
-                    getAxisTextFillColor(
-                        colorObjects,
-                        this.host.colorPalette,
-                        '#000000' // can be defaultSettings.enableAxis.fill
-                    )
-                );
+        const xAxisValue = axisBottom(xScale);
 
-            const xAxisLabel = lineChart
-                .append('text')
-                .attr('class', 'xLabel')
-                .attr('text-anchor', 'end')
-                .attr('x', width / 2)
-                .attr('y', height + 20)
-                .text(xLabel);
-
-            const yScale = scaleLinear().domain([0, viewModel.yRange.max]).range([height, 0]);
-            const yAxisValue = axisLeft(yScale);
-
-            yAxis.call(yAxisValue).attr(
+        xAxis
+            .attr('transform', 'translate(0, ' + height + ')')
+            .call(xAxisValue)
+            .attr(
                 'color',
                 getAxisTextFillColor(
                     colorObjects,
@@ -193,15 +183,54 @@ export class Visual implements IVisual {
                 )
             );
 
-            const yAxisLabel = lineChart
-                .append('text')
-                .attr('class', 'yLabel')
-                .attr('text-anchor', 'middle')
-                .attr('y', 0 - Visual.Config.margins.left + 30)
-                .attr('x', 0 - height / 2)
-                .attr('dy', '1em')
-                .attr('transform', 'rotate(-90)')
-                .text(yLabel);
+        const xAxisLabel = chart
+            .append('text')
+            .attr('class', 'xLabel')
+            .attr('text-anchor', 'end')
+            .attr('x', width / 2)
+            .attr('y', height + 20)
+            .text(xLabel);
+
+        const yScale = scaleLinear().domain([0, viewModel.yRange.max]).range([height, 0]);
+        const yAxisValue = axisLeft(yScale);
+
+        yAxis.call(yAxisValue).attr(
+            'color',
+            getAxisTextFillColor(
+                colorObjects,
+                this.host.colorPalette,
+                '#000000' // can be defaultSettings.enableAxis.fill
+            )
+        );
+
+        const yAxisLabel = chart
+            .append('text')
+            .attr('class', 'yLabel')
+            .attr('text-anchor', 'middle')
+            .attr('y', 0 - Visual.Config.margins.left + 30)
+            .attr('x', 0 - height / 2)
+            .attr('dy', '1em')
+            .attr('transform', 'rotate(-90)')
+            .text(yLabel);
+
+        return {
+            chart: chart,
+            xScale: xScale,
+            yScale: yScale,
+            xAxis: xAxis,
+        };
+    }
+
+    private drawLineChart(options: VisualUpdateOptions, viewModel: ViewModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+        // d3.Selection<SVGCircleElement, DataPoint, any, any> // fix return type
+        try {
+            let result = {};
+            const chartInfo = this.getChartElement(options, viewModel, xLabel, yLabel);
+            const lineChart = chartInfo.chart;
+            const xScale = chartInfo.xScale;
+            const yScale = chartInfo.yScale;
+            const xAxis = chartInfo.xAxis;
+            const dataPoints = viewModel.dataPoints;
 
             lineChart
                 .append('path')
@@ -228,7 +257,74 @@ export class Visual implements IVisual {
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', 3);
 
-            return dots;
+            // vertical ruler
+            // lineChart.append('line').attr('stroke', 'steelblue').attr('class', 'verticalLine').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 200);
+            // let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
+            // let focus = lineChart.append('circle').style('fill', 'none').attr('stroke', 'black').attr('r', 8.5).style('opacity', 0);
+
+            // let mouseover = function () {
+            //     focus.style('opacity', 1);
+            // };
+
+            // let mousemove = function (event) {
+            //     debugger;
+            //     console.log('mousemoved');
+            //     let x0 = xAxis.invert(event.clientX);
+            //     let i = bisect(dataPoints, x0, 1);
+            //     let selectedData = dataPoints[i];
+            //     focus.attr('cx', xScale(selectedData.xValue)).attr('cy', yScale(selectedData.yValue));
+            // };
+
+            // let mouseout = function () {
+            //     focus.style('opacity', 0);
+            // };
+
+            // lineChart.append('rect').style('fill', 'none').style('pointer-events', 'all').on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
+
+            result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
+            return result;
+        } catch (error) {
+            console.log('Error in Draw Line Chart: ', error);
+        }
+    }
+
+    private drawDots(options: VisualUpdateOptions, viewModel: ViewModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+        try {
+            let result = {};
+            const chartInfo = this.getChartElement(options, viewModel, xLabel, yLabel);
+            const lineChart = chartInfo.chart;
+            const xScale = chartInfo.xScale;
+            const yScale = chartInfo.yScale;
+            const xAxis = chartInfo.xAxis;
+            const dataPoints = viewModel.dataPoints;
+
+            // lineChart
+            //     .append('path')
+            //     .datum(dataPoints)
+            //     .attr(
+            //         'd',
+            //         d3
+            //             .line<DataPoint>()
+            //             .x((d) => xScale(<number>d.xValue))
+            //             .y((d) => yScale(<number>d.yValue))
+            //     )
+            //     .attr('fill', 'none')
+            //     .attr('stroke', 'steelblue')
+            //     .attr('stroke-width', 1.5);
+
+            const dots = lineChart
+                .selectAll('dots')
+                .data(dataPoints)
+                .enter()
+                .append('circle')
+                .attr('fill', 'red')
+                .attr('stroke', 'none')
+                .attr('cx', (d) => xScale(<number>d.xValue))
+                .attr('cy', (d) => yScale(<number>d.yValue))
+                .attr('r', 3);
+
+            result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
+            return result;
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
         }
@@ -240,48 +336,16 @@ export class Visual implements IVisual {
         visualNumber: number,
         xLabel?: string,
         yLabel?: string
-    ): any {
+    ): d3.Selection<SVGRectElement, DataPoint, any, any> {
         let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
         let height = 100;
-        const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
+        const chartInfo = this.getChartElement(options, viewModel, xLabel, yLabel);
+        const barChart = chartInfo.chart;
+        const xScale = chartInfo.xScale;
+        const yScale = chartInfo.yScale;
         const dataPoints = viewModel.dataPoints;
-        const barChart = this.visualContainer
-            .append('svg')
-            .classed('barChart', true)
-            .attr('width', width)
-            .attr('height', height)
-            .append('g')
-            .attr('transform', 'translate(' + Visual.Config.margins.left + ',' + Visual.Config.margins.top + ')');
-        const xAxis = barChart.append('g').classed('xAxisBar', true);
-        const yAxis = barChart.append('g').classed('yAxisBar', true);
-        if (viewModel.formatSettings.enableAxis.show) {
-            let margins = Visual.Config.margins;
-            height -= margins.bottom;
-        }
-        const xScale = scaleLinear().domain([0, viewModel.xRange.max]).range([0, width]);
-        let xAxisValue = axisBottom(xScale);
-        xAxis
-            .attr('transform', 'translate(0, ' + height + ')')
-            .call(xAxisValue)
-            .attr(
-                'color',
-                getAxisTextFillColor(
-                    colorObjects,
-                    this.host.colorPalette,
-                    '#000000' // can be defaultSettings.enableAxis.fill
-                )
-            );
-        let yScale = scaleLinear().domain([0, viewModel.yRange.max]).range([height, 0]);
-        let yAxisValue = axisLeft(yScale);
-        yAxis.call(yAxisValue).attr(
-            'color',
-            getAxisTextFillColor(
-                colorObjects,
-                this.host.colorPalette,
-                '#000000' // can be defaultSettings.enableAxis.fill
-            )
-        );
         const bar = barChart.selectAll('.bar').data(dataPoints);
+
         const mergedBars = bar
             .enter()
             .append('rect')
@@ -296,7 +360,53 @@ export class Visual implements IVisual {
         return mergedBars;
     }
 
-    private drawVerticalRuler() {}
+    private drawVerticalRuler(chart: any, dataPoints: DataPoint[], xAxis: any, xScale: any, yScale: any) {
+        try {
+            // let verticalLine = chart.append('line').attr('stroke', 'steelblue').attr('class', 'verticalLine').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 200);
+
+            // chart
+            //     .on('mousemove', (event) => {
+            //         d3.select('.verticalLine').attr('transform', () => {
+            //             return 'translate(' + event.clientX + ',0)';
+            //         });
+            //     })
+            //     .on('mouseover', (event) => {
+            //         d3.select('.verticalLine').attr('transform', () => {
+            //             return 'translate(' + event.clientX + ',0)';
+            //         });
+            //     });
+
+            // debugger;
+
+            console.log('Datapoints', dataPoints);
+            let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
+            let focus = chart.append('circle').style('fill', 'none').attr('stroke', 'black').attr('r', 8.5).style('opacity', 0);
+
+            let mouseover = function () {
+                focus.style('opacity', 1);
+            };
+
+            let mousemove = function (event) {
+                let x0 = Math.floor(xScale.invert(event.clientX)); // returns the invert of the value?
+                console.log('x0 ', x0);
+                let i = bisect(dataPoints, x0);
+                console.log('Index ', i, ' DataPoint at index ', dataPoints[i - 1]);
+
+                let selectedData = dataPoints[i];
+                focus.attr('cx', xScale(selectedData.xValue)).attr('cy', yScale(selectedData.yValue));
+            };
+
+            let mouseout = function () {
+                focus.style('opacity', 0);
+            };
+
+            chart.on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
+
+            // chart.append('rect').style('fill', 'none').style('pointer-events', 'all').on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
+        } catch (error) {
+            console.log('Issue with ruler:', error);
+        }
+    }
 
     //TODO only shows the categories and values nothing from the tooltip field
     private getTooltipData(value: any): VisualTooltipDataItem[] {
@@ -310,9 +420,7 @@ export class Visual implements IVisual {
     }
 
     // TODO: this should be able to handle the object enumeration for all the plots
-    public enumerateObjectInstances(
-        options: EnumerateVisualObjectInstancesOptions
-    ): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
+    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         let objectName = options.objectName;
         let objectEnumeration: VisualObjectInstance[] = [];
 
