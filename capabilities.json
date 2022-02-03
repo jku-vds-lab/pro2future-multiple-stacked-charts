@@ -3,12 +3,28 @@
         {
             "displayName": "x_Axis Plot 1",
             "name": "x_plot_1",
-            "kind": "GroupingOrMeasure"
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
         },
         {
             "displayName": "y_Axis Plot 1",
             "name": "y_plot_1",
-            "kind": "GroupingOrMeasure"
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
         },
         {
             "displayName": "x_Axis Plot 2",
@@ -40,11 +56,17 @@
         {
             "conditions": [
                 {
-                    "category": {
+                    "x_plot_1":{
                         "max": 1
                     },
+                    "y_plot_1":{
+                        "max":2
+                    },
+                    "category": {
+                        "max": 3
+                    },
                     "measure": {
-                        "max": 1
+                        "max": 3
                     }
                 }
             ],
