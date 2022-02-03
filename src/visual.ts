@@ -84,10 +84,8 @@ export class Visual implements IVisual {
         this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
     }
 
-    // TODO #1: Specify bars data type: DONE
-    // TODO #2: Change viewmodels loop: DONE
+
     // TODO #3: Add x and y labels
-    // TODO #4: Refactor code for line and bar chart: DONE
     // TODO #5: Add code for scatterplot
     // TODO #6: Use same axis for displaying values
     // TODO #7: Align the values
