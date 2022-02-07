@@ -1,8 +1,8 @@
 {
     "dataRoles": [
         {
-            "displayName": "x_Axis Plot 1",
-            "name": "x_plot_1",
+            "displayName": "Axis",
+            "name": "x_axis",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
@@ -14,8 +14,8 @@
             ]
         },
         {
-            "displayName": "y_Axis Plot 1",
-            "name": "y_plot_1",
+            "displayName": "Values",
+            "name": "y_axis",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
@@ -56,11 +56,11 @@
         {
             "conditions": [
                 {
-                    "x_plot_1":{
+                    "x_axis":{
                         "max": 1
                     },
-                    "y_plot_1":{
-                        "max":2
+                    "y_axis":{
+                        "max":3
                     },
                     "category": {
                         "max": 3
@@ -75,12 +75,12 @@
                     "select": [
                         {
                             "for": {
-                                "in": "x_plot_1"
+                                "in": "x_axis"
                             }
                         },
                         {
                             "for": {
-                                "in": "y_plot_1"
+                                "in": "y_axis"
                             }
                         },
                         {

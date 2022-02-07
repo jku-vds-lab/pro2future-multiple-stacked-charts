@@ -47,7 +47,7 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings } from './chartInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel } from './chartInterface';
 import { visualTransform } from './parseAndTransform';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -61,7 +61,7 @@ export class Visual implements IVisual {
     private testXscale: any;
     private testDataPoints: any;
 
-    private viewModels: ViewModel[];
+    private viewModel: ViewModel;
 
     static Config = {
         xScalePadding: 0.1,
@@ -96,30 +96,30 @@ export class Visual implements IVisual {
         try {
             this.visualContainer.selectAll('*').remove();
 
-            this.viewModels = visualTransform(options, this.host);
+            this.viewModel = visualTransform(options, this.host);
 
             let linesDots: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
             let lineCharts: any[] = [];
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>; // TODO #1
 
-            for (let viewModel of this.viewModels) {
-                this.formatSettings = viewModel.formatSettings;
-                this.plotSettings = viewModel.plotSettings;
-                if (viewModel.plotSettings.plotType.type == 'line') {
-                    let lines = this.drawDots(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1');
+            for (let plotModel of this.viewModel.plotModels) {
+                this.formatSettings = plotModel.formatSettings;
+                this.plotSettings = plotModel.plotSettings;
+                if (plotModel.plotSettings.plotType.type == 'line') {
+                    let lines = this.drawDots(options, plotModel, plotModel.plotSettings.plotType.plot, 'Param 1', 'y1');
                     lineCharts.push(lines);
                     linesDots.push(lines.points);
                 }
 
-                if (viewModel.plotSettings.plotType.type == 'bar') {
-                    bars = this.drawBarChart(options, viewModel, viewModel.plotSettings.plotType.plot, 'Param 1', 'y1');
+                if (plotModel.plotSettings.plotType.type == 'bar') {
+                    bars = this.drawBarChart(options, plotModel, plotModel.plotSettings.plotType.plot, 'Param 1', 'y1');
                 }
             }
 
             // assuming only one viewmodel exists
 
             for (let lineChart of lineCharts) {
-                this.drawVerticalRuler(lineChart.chart, this.viewModels[0].dataPoints, lineChart.xAxis, lineChart.xScale, lineChart.yScale);
+                this.drawVerticalRuler(lineChart.chart, this.viewModel[0].dataPoints, lineChart.xAxis, lineChart.xScale, lineChart.yScale);
             }
 
             // Add Tooltips
@@ -141,13 +141,13 @@ export class Visual implements IVisual {
         }
     }
 
-    private getChartElement(options: VisualUpdateOptions, viewModel: ViewModel, xLabel?: string, yLabel?: string): any {
+    private getChartElement(options: VisualUpdateOptions, plotModel: PlotModel, xLabel?: string, yLabel?: string): any {
         let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
         let height = 100;
 
         const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
-        const plotType = viewModel.plotSettings.plotType.type;
-        const plotNr = viewModel.plotSettings.plotType.plot;
+        const plotType = plotModel.plotSettings.plotType.type;
+        const plotNr = plotModel.plotSettings.plotType.plot;
         const chart: Selection<any> = this.visualContainer
             .append('svg')
             .classed(plotType + plotNr, true)
@@ -159,7 +159,7 @@ export class Visual implements IVisual {
         const xAxis = chart.append('g').classed('xAxis', true);
         const yAxis = chart.append('g').classed('yAxis', true);
 
-        if (viewModel.formatSettings.enableAxis.show) {
+        if (plotModel.formatSettings.enableAxis.show) {
             let margins = Visual.Config.margins;
             height -= margins.bottom;
         }
@@ -167,7 +167,7 @@ export class Visual implements IVisual {
         let margins = Visual.Config.margins;
         height -= margins.bottom;
 
-        const xScale = scaleLinear().domain([0, viewModel.xRange.max]).range([0, width]);
+        const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, width]);
 
         const xAxisValue = axisBottom(xScale);
 
@@ -191,7 +191,7 @@ export class Visual implements IVisual {
             .attr('y', height + 20)
             .text(xLabel);
 
-        const yScale = scaleLinear().domain([0, viewModel.yRange.max]).range([height, 0]);
+        const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([height, 0]);
         const yAxisValue = axisLeft(yScale);
 
         yAxis.call(yAxisValue).attr(
@@ -221,7 +221,7 @@ export class Visual implements IVisual {
         };
     }
 
-    private drawLineChart(options: VisualUpdateOptions, viewModel: ViewModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+    private drawLineChart(options: VisualUpdateOptions, viewModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
         // d3.Selection<SVGCircleElement, DataPoint, any, any> // fix return type
         try {
             let result = {};
@@ -288,15 +288,15 @@ export class Visual implements IVisual {
         }
     }
 
-    private drawDots(options: VisualUpdateOptions, viewModel: ViewModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+    private drawDots(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
         try {
             let result = {};
-            const chartInfo = this.getChartElement(options, viewModel, xLabel, yLabel);
+            const chartInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
             const lineChart = chartInfo.chart;
             const xScale = chartInfo.xScale;
             const yScale = chartInfo.yScale;
             const xAxis = chartInfo.xAxis;
-            const dataPoints = viewModel.dataPoints;
+            const dataPoints = plotModel.dataPoints;
 
             // lineChart
             //     .append('path')
@@ -332,18 +332,18 @@ export class Visual implements IVisual {
 
     private drawBarChart(
         options: VisualUpdateOptions,
-        viewModel: ViewModel,
+        plotModel: PlotModel,
         visualNumber: number,
         xLabel?: string,
         yLabel?: string
     ): d3.Selection<SVGRectElement, DataPoint, any, any> {
         let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
         let height = 100;
-        const chartInfo = this.getChartElement(options, viewModel, xLabel, yLabel);
+        const chartInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
         const barChart = chartInfo.chart;
         const xScale = chartInfo.xScale;
         const yScale = chartInfo.yScale;
-        const dataPoints = viewModel.dataPoints;
+        const dataPoints = plotModel.dataPoints;
         const bar = barChart.selectAll('.bar').data(dataPoints);
 
         const mergedBars = bar

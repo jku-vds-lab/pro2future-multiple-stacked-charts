@@ -8,6 +8,11 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 // TODO #n: Add point selection (for future)
 
 export interface ViewModel {
+    plotModels: PlotModel[];
+}
+
+export interface PlotModel{
+    plotId: number;
     formatSettings: FormatSettings;
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
@@ -49,4 +54,14 @@ export interface Legend {
     transform?: string;
     dx?: string;
     dy?: string;
+}
+
+export interface XAxisData{
+    values: number[];
+    name?: string;
+}
+
+export interface YAxisData{
+    values: number[];
+    name?: string;
 }
