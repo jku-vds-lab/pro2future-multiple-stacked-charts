@@ -32,39 +32,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
 
-        // let viewModel: ViewModel = {
-        //     formatSettings: {
-        //         enableAxis: {
-        //             show: false,
-        //             fill: '#000000',
-        //         },
-        //     },
-        //     plotSettings: {
-        //         plotType: {
-        //             plot: 0,
-        //             type: 'line',
-        //         },
-        //     },
-        //     dataPoints: [],
-        //     xRange: {
-        //         min: 0,
-        //         max: 0,
-        //     },
-        //     yRange: {
-        //         min: 0,
-        //         max: 0,
-        //     },
-        // };
-
         let objects = dataViews[0].metadata.objects;
         let categorical = dataViews[0].categorical;
 
-        debugger;
-        let y_categories = categorical.categories.filter(cat => { return cat.source.roles.y_axis }).length;
-        let y_values = categorical.values.filter(val => { return val.source.roles.y_axis }).length;
+        //count numbers of x-axis and y-axis
+        let y_categories = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.y_axis }).length;
+        let y_values = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.y_axis }).length;
         let y_lenght = y_categories + y_values;
-        let x_categories = categorical.categories.filter(cat => { return cat.source.roles.x_axis }).length;
-        let x_values = categorical.values.filter(val => { return val.source.roles.x_axis }).length;
+        let x_categories = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.x_axis }).length;
+        let x_values = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.x_axis }).length;
         let x_lenght = x_categories + x_values;
         let shared_x_axis = x_lenght == 1
         if (!shared_x_axis && x_lenght != y_lenght) {
@@ -84,73 +60,57 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         let colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
 
-
-        // let allPlotSettings: PlotSettings[] = [];
-
-
-        // let i = 1;
-
-
-
-
-        for (let category of categorical.categories) {
-            if (category.source.roles.x_axis) {
-                let x_id = category.source['rolesIndex']['x_axis'][0]
-                let xAxis: XAxisData = {
-                    name: category.source.displayName,
-                    values: <number[]>category.values
+        //aquire all categorical values
+        if (categorical.categories !== undefined) {
+            for (let category of categorical.categories) {
+                if (category.source.roles.x_axis) {
+                    let x_id = category.source['rolesIndex']['x_axis'][0]
+                    let xAxis: XAxisData = {
+                        name: category.source.displayName,
+                        values: <number[]>category.values
+                    }
+                    xData[x_id] = xAxis;
+                } else if (category.source.roles.y_axis) {
+                    let y_id = category.source['rolesIndex']['y_axis'][0]
+                    let yAxis: YAxisData = {
+                        name: category.source.displayName,
+                        values: <number[]>category.values
+                    }
+                    yData[y_id] = yAxis;
                 }
-                xData[x_id] = xAxis;
+            }
+        }
+        //aquire all measure values
+        if (categorical.values !== undefined) {
+            for (let value of categorical.values) {
+                if (value.source.roles.x_axis) {
+                    let x_id = value.source['rolesIndex']['x_axis'][0]
+                    let xAxis: XAxisData = {
+                        name: value.source.displayName,
+                        values: <number[]>value.values
+                    }
+                    xData[x_id] = xAxis;
 
-            } else if (category.source.roles.y_axis) {
-                let y_id = category.source['rolesIndex']['y_axis'][0]
-                let yAxis: YAxisData = {
-                    name: category.source.displayName,
-                    values: <number[]>category.values
+                } else if (value.source.roles.y_axis) {
+                    let y_id = value.source['rolesIndex']['y_axis'][0]
+                    let yAxis: YAxisData = {
+                        name: value.source.displayName,
+                        values: <number[]>value.values
+                    }
+                    yData[y_id] = yAxis;
                 }
-                yData[y_id] = yAxis;
             }
         }
 
-        for (let value of categorical.values) {
-            if (value.source.roles.x_axis) {
-                let x_id = value.source['rolesIndex']['x_axis'][0]
-                let xAxis: XAxisData = {
-                    name: value.source.displayName,
-                    values: <number[]>value.values
-                }
-                xData[x_id] = xAxis;
-
-            } else if (value.source.roles.y_axis) {
-                let y_id = value.source['rolesIndex']['y_axis'][0]
-                let yAxis: YAxisData = {
-                    name: value.source.displayName,
-                    values: <number[]>value.values
-                }
-                yData[y_id] = yAxis;
-            }
-        }
-
-
-        // while (i < paramLength) {
-        //     // if (i == 2) {
-        //     //     type = 'bar';
-        //     // }
-        //     plotSettings = {
-        //         plotType: {
-        //             plot: i,
-        //             type: type,
-        //         },
-        //     };
-        //     allPlotSettings.push(plotSettings);
-        //     i = i + 1;
-        // }
+        //create Plotmodels 
         for (let pltNr = 0; pltNr < y_lenght; pltNr++) {
+            //get x- and y-data for plotnumber
             xDataPoints = shared_x_axis ? xData[0].values : xData[pltNr].values;
             yDataPoints = yData[pltNr].values;
             const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
             dataPoints = [];
 
+            //create datapoints
             for (let ptNr = 0; ptNr < maxLengthAttributes; ptNr++) {
                 const color: string = '#0f0f0f'; //getColumnnColorByIndex(xDataPoints, i, colorPalette); // TODO Add colors only if required
 
@@ -203,93 +163,20 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
             };
-            let plotSettings: PlotSettings = {
-                plotType: {
-                    plot: getValue<number>(objects, 'plotType', 'plot', plotModel.plotSettings.plotType.plot),
-                    type: getValue<string>(objects, 'plotType', 'type', plotModel.plotSettings.plotType.type),
-                },
-            };
+            
 
+            
             viewModel.plotModels[pltNr] = plotModel;
         }
-        // i = 1;
-
-        // while (i < paramLength) {
-        //     if (categorical.categories) {
-        //         for (let category of categorical.categories) {
-        //             if (Object.keys(category.source.roles).includes('x_plot_' + i)) {
-        //                 xDataPoints = <number[]>category.values;
-        //             }
-        //             if (Object.keys(category.source.roles).includes('y_plot_' + i)) {
-        //                 yDataPoints = <number[]>category.values;
-        //             }
-        //         }
-        //     }
-
-        //     if (categorical.values) {
-        //         for (let value of categorical.values) {
-        //             if (Object.keys(value.source.roles).includes('x_plot_' + i)) {
-        //                 xDataPoints = <number[]>value.values;
-        //             }
-        //             if (Object.keys(value.source.roles).includes('y_plot_' + i)) {
-        //                 yDataPoints = <number[]>value.values;
-        //             }
-        //         }
-        //     }
-
-        //     if (xDataPoints.length && yDataPoints.length) {
-        //         const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
-        //         let ptNr = 0;
-        //         dataPoints = [];
-
-        //         while (ptNr < maxLengthAttributes) {
-        //             const color: string = '#0f0f0f'; //getColumnnColorByIndex(xDataPoints, i, colorPalette); // TODO Add colors only if required
-
-        //             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[ptNr].toString()).createSelectionId();
-
-        //             let dataPoint: DataPoint = {
-        //                 xValue: xDataPoints[ptNr],
-        //                 yValue: yDataPoints[ptNr],
-        //                 identity: selectionId,
-        //                 selected: false,
-        //                 color: color,
-        //             };
-        //             dataPoints.push(dataPoint);
-        //             ptNr = ptNr + 1;
-        //         }
-
-        //         dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
-        //             if (a.xValue > b.xValue) {
-        //                 return 1;
-        //             } else if (a.xValue < b.xValue) {
-        //                 return -1;
-        //             } else {
-        //                 return 0;
-        //             }
-        //         });
-
-        //         plotSettings = allPlotSettings.find((setting) => setting.plotType.plot == i);
-
-        //         viewModel = {
-        //             formatSettings,
-        //             plotSettings,
-        //             dataPoints,
-        //             xRange: {
-        //                 min: Math.min(...xDataPoints),
-        //                 max: Math.max(...xDataPoints),
-        //             },
-        //             yRange: {
-        //                 min: Math.min(...yDataPoints),
-        //                 max: Math.max(...yDataPoints),
-        //             },
-        //         };
-        //         viewModels.push(viewModel);
-        //     }
-
-        //     xDataPoints = [];
-        //     yDataPoints = [];
-        //     i = i + 1;
-        // }
+       
+        let plotSettings: PlotSettings = {
+            plotType: {
+                plot: getValue<number>(objects, 'plotType', 'plot', 0),
+                type: getValue<string>(objects, 'plotType', 'type', 'line'),
+            },
+        };
+        
+        console.log(plotSettings.plotType.plot,plotSettings.plotType.type);
 
         return viewModel;
     } catch (error) {

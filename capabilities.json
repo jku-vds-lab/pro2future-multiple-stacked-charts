@@ -27,26 +27,6 @@
             ]
         },
         {
-            "displayName": "x_Axis Plot 2",
-            "name": "x_plot_2",
-            "kind": "GroupingOrMeasure"
-        },
-        {
-            "displayName": "y_Axis Plot 2",
-            "name": "y_plot_2",
-            "kind": "GroupingOrMeasure"
-        },
-        {
-            "displayName": "x_Axis Plot 3",
-            "name": "x_plot_3",
-            "kind": "GroupingOrMeasure"
-        },
-        {
-            "displayName": "y_Axis Plot 3",
-            "name": "y_plot_3",
-            "kind": "GroupingOrMeasure"
-        },
-        {
             "displayName": "Tooltips",
             "name": "Tooltips",
             "kind": "Measure"
@@ -56,11 +36,11 @@
         {
             "conditions": [
                 {
-                    "x_axis":{
-                        "max": 1
+                    "x_axis": {
+                        "max": 3
                     },
-                    "y_axis":{
-                        "max":3
+                    "y_axis": {
+                        "max": 3
                     },
                     "category": {
                         "max": 3
@@ -81,26 +61,6 @@
                         {
                             "for": {
                                 "in": "y_axis"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "x_plot_2"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "y_plot_2"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "x_plot_3"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "y_plot_3"
                             }
                         }
                     ]
