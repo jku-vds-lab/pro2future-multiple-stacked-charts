@@ -148,8 +148,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 formatSettings: formatSettings,
                 plotSettings: {
                     plotType: {
-                        plot: pltNr,
-                        type: type,
+                        plot: getValue<number>(objects, 'plotType', 'plot', pltNr),
+                        type: getValue<string>(objects, 'plotType', 'type', 'line'),
                     },
                 }, xRange: {
                     min: Math.min(...xDataPoints),
@@ -168,15 +168,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             
             viewModel.plotModels[pltNr] = plotModel;
         }
-       
-        let plotSettings: PlotSettings = {
-            plotType: {
-                plot: getValue<number>(objects, 'plotType', 'plot', 0),
-                type: getValue<string>(objects, 'plotType', 'type', 'line'),
-            },
-        };
-        
-        console.log(plotSettings.plotType.plot,plotSettings.plotType.type);
 
         return viewModel;
     } catch (error) {
