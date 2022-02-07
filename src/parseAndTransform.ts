@@ -38,20 +38,20 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         //count numbers of x-axis and y-axis
         let y_categories = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.y_axis }).length;
         let y_values = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.y_axis }).length;
-        let y_lenght = y_categories + y_values;
+        let y_length = y_categories + y_values;
         let x_categories = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.x_axis }).length;
         let x_values = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.x_axis }).length;
-        let x_lenght = x_categories + x_values;
-        let shared_x_axis = x_lenght == 1
-        if (!shared_x_axis && x_lenght != y_lenght) {
+        let x_length = x_categories + x_values;
+        let shared_x_axis = x_length == 1
+        if (!shared_x_axis && x_length != y_length) {
             return null;
         }
 
-        let xData = new Array<XAxisData>(x_lenght);
-        let yData = new Array<YAxisData>(y_lenght);
+        let xData = new Array<XAxisData>(x_length);
+        let yData = new Array<YAxisData>(y_length);
 
         let viewModel: ViewModel = <ViewModel>{
-            plotModels: new Array<PlotModel>(y_lenght)
+            plotModels: new Array<PlotModel>(y_length)
         };
 
         let xDataPoints: number[] = [];
@@ -103,7 +103,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         }
 
         //create Plotmodels 
-        for (let pltNr = 0; pltNr < y_lenght; pltNr++) {
+        for (let pltNr = 0; pltNr < y_length; pltNr++) {
             //get x- and y-data for plotnumber
             xDataPoints = shared_x_axis ? xData[0].values : xData[pltNr].values;
             yDataPoints = yData[pltNr].values;
