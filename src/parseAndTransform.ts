@@ -144,22 +144,24 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             });
             let formatSettings: FormatSettings = {
                 enableAxis: {
-                    //enable: getValue<boolean>(columnObjects,'enableAxis','enable',true),//false,
-                    enabled: getValue<boolean>(columnObjects, 'enableAxis', 'enabled', true),//false,
-                    // fill: getValue<string>(columnObjects,'enableAxis','fill','#000000')//'#000000',
+                    enabled: getValue<boolean>(columnObjects, 'enableAxis', 'enabled', true)
                 },
             };
 
-            console.log("color",getValue<string>(columnObjects, 'plotType', 'fill.solid.color', '#000000'))
             let plotModel: PlotModel = {
                 plotId: pltNr,
                 formatSettings: formatSettings,
                 xName: xAxis.name,
                 yName: yAxis.name,
+                // testSettings: {
+                //     test: {
+                //         testType: getValue<string>(columnObjects, 'test', 'testType', 'dashed')
+                //     }
+                // },
                 plotSettings: {
                     plotSettings: {
-                        fill: getPlotFillColor(columnObjects,host.colorPalette,'#000000'),//getValue<string>(columnObjects, 'plotType', 'fill.solid.color', '#000000'),
-                        plotType: getValue<string>(columnObjects, 'plotType', 'type', 'line')
+                        fill: getPlotFillColor(columnObjects, host.colorPalette, '#000000'),
+                        plotType: getValue<string>(columnObjects, 'plotSettings', 'plotType', 'line')
                     },
                 }, xRange: {
                     min: Math.min(...xDataPoints),

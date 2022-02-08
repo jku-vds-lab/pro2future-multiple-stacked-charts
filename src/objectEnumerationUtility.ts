@@ -84,7 +84,7 @@ export function getAxisTextFillColor(objects: DataViewObjects,
       }
       return getValue<Fill>(
         objects,
-          "plotType",
+          "plotSettings",
           "fill",
           {
               solid: {

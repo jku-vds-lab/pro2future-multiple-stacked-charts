@@ -11,6 +11,8 @@ export interface ViewModel {
     plotModels: PlotModel[];
 }
 
+
+
 export interface PlotModel{
     plotId: number;
     xName: string;

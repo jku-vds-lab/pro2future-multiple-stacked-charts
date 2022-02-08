@@ -69,13 +69,26 @@
         }
     ],
     "objects": {
-        "plotType": {
+        "plotSettings": {
             "displayName": "Plot Settings",
             "properties": {
-                "type": {
+                "plotType": {
                     "displayName": "Choose Type",
                     "type": {
-                        "text": true
+                        "enumeration": [
+                            {
+                                "displayName": "Line Plot",
+                                "value": "line"
+                            },
+                            {
+                                "displayName": "Scatter Plot",
+                                "value": "scatter"
+                            },
+                            {
+                                "displayName": "Bar Plot",
+                                "value": "bar"
+                            }
+                        ]
                     }
                 },
                 "fill": {

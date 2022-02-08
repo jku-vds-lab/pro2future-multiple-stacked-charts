@@ -49,7 +49,7 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor, getPlotFillColor, getValue } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel } from './chartInterface';
+import { ViewModel, DataPoint, PlotModel } from './chartInterface';
 import { visualTransform } from './parseAndTransform';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -58,13 +58,9 @@ export class Visual implements IVisual {
     private element: HTMLElement;
     private visualContainer: d3.Selection<HTMLDivElement, any, HTMLDivElement, any>;
     private tooltipServiceWrapper: ITooltipServiceWrapper;
-    private formatSettings: FormatSettings;
-    private plotSettings: PlotSettings;
+
     private dataview: DataView;
-    private options: VisualUpdateOptions;
-    private plotSettingsStore: PlotSettings[];
-    private testXscale: any;
-    private testDataPoints: any;
+
 
     private viewModel: ViewModel;
 
@@ -83,7 +79,6 @@ export class Visual implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.element = options.element;
-        this.plotSettingsStore = [];
         this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, this.element);
 
         this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
@@ -109,15 +104,18 @@ export class Visual implements IVisual {
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>; // TODO #1
 
             for (let plotModel of this.viewModel.plotModels) {
-                this.formatSettings = plotModel.formatSettings;
-                this.plotSettings = plotModel.plotSettings;
                 if (plotModel.plotSettings.plotSettings.plotType == 'line') {
+                    let lines =this.drawLineChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName)
+                    lineCharts.push(lines);
+                    linesDots.push(lines.points);
+                }
+                else if (plotModel.plotSettings.plotSettings.plotType == 'scatter') {
                     let lines = this.drawDots(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                     lineCharts.push(lines);
                     linesDots.push(lines.points);
                 }
 
-                if (plotModel.plotSettings.plotSettings.plotType == 'bar') {
+                else if (plotModel.plotSettings.plotSettings.plotType == 'bar') {
                     bars = this.drawBarChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
@@ -317,7 +315,6 @@ export class Visual implements IVisual {
             //     .attr('fill', 'none')
             //     .attr('stroke', 'steelblue')
             //     .attr('stroke-width', 1.5);
-            console.log("plotcolor",plotModel.plotSettings.plotSettings.fill);
             const dots = lineChart
                 .selectAll('dots')
                 .data(dataPoints)
@@ -432,30 +429,22 @@ export class Visual implements IVisual {
 
         try {
             let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
-            // if(!this.barSettings || !this.barSettings.enableAxis || !this.barDataPoints) {
-            //     return objectEnumeration;
-            // }
-
-            // if(!this.settings || !this.settings.enableAxis || !this.lineDataPoints) {
-            //     return objectEnumeration;
-            // }
-            //category.source['rolesIndex']['x_axis'][0]
             let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
-                case 'plotType':
+                case 'plotSettings':
                     objectEnumeration = new Array<VisualObjectInstance>(yCount);
                     for (let i = 0; i < metadataColumns.length; i++) {
                         let column: DataViewMetadataColumn = metadataColumns[i];
                         if (column.roles.y_axis) {
                             let columnObjects = column.objects;
                             let yIndex: number = column['rolesIndex']['y_axis'][0];
-                            debugger;
+
                             objectEnumeration[yIndex] = {
                                 objectName: objectName,
                                 displayName: column.displayName,
                                 properties: {
-                                    type: getValue<string>(columnObjects, 'plotType', 'type', 'line'),
-                                    fill: getPlotFillColor(columnObjects,this.host.colorPalette,'#000000')//getValue<string>(columnObjects, 'plotType', 'fill.solid.color', '#000000')
+                                    plotType: getValue<string>(columnObjects, 'plotSettings', 'plotType', 'line'),
+                                    fill: getPlotFillColor(columnObjects, this.host.colorPalette, '#000000')
                                 },
                                 selector: { metadata: column.queryName },
                             };
@@ -474,9 +463,7 @@ export class Visual implements IVisual {
                                 objectName: objectName,
                                 displayName: column.displayName,
                                 properties: {
-                                    enabled: getValue<boolean>(columnObjects, 'enableAxis', 'enabled', true),//false,
-                                    // show2: getValue<boolean>(columnObjects, 'enableAxis', 'show2', true),//false,
-                                    // fill: getValue<string>(columnObjects, 'enableAxis', 'fill', '#000000')
+                                    enabled: getValue<boolean>(columnObjects, 'enableAxis', 'enabled', true)
                                 },
                                 selector: { metadata: column.queryName },
                             };
@@ -484,6 +471,17 @@ export class Visual implements IVisual {
                     }
                     break;
 
+                // case 'test':
+                //     objectEnumeration.push({
+                //         objectName: objectName,
+
+                //                 properties: {
+                //                     testType: getValue<string>(this.dataview.metadata.objects, 'test', 'testType', 'dashed')
+                //                     // show2: getValue<boolean>(columnObjects, 'enableAxis', 'show2', true),//false,
+                //                     // fill: getValue<string>(columnObjects, 'enableAxis', 'fill', '#000000')
+                //                 },
+                //                 selector: null,
+                //     });
                 case 'colorSelector':
                     // for (let barDataPoint of this.barDataPoints) {
                     //     objectEnumeration.push({
