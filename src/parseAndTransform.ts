@@ -5,6 +5,7 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex } from './objectEnumerationUtility';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData } from './chartInterface';
+import { Color } from 'd3';
 
 // TODO #12: Add the param length from the metadata objects
 // TODO #13: Add advanced interface for adding plot type and number
@@ -107,8 +108,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         //create Plotmodels 
         for (let pltNr = 0; pltNr < y_length; pltNr++) {
             //get x- and y-data for plotnumber
-            xDataPoints = shared_x_axis ? xData[0].values : xData[pltNr].values;
-            yDataPoints = yData[pltNr].values;
+            let xAxis:XAxisData = shared_x_axis ? xData[0] : xData[pltNr];
+            let yAxis:YAxisData = yData[pltNr]
+            xDataPoints = xAxis.values
+            yDataPoints = yAxis.values;
             const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
             dataPoints = [];
 
@@ -128,6 +131,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 dataPoints.push(dataPoint);
             }
 
+            let columnObjects = dataViews[0].metadata.columns[yData[pltNr].columnId].objects
+
             dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
                 if (a.xValue > b.xValue) {
                     return 1;
@@ -137,28 +142,20 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     return 0;
                 }
             });
-
             let formatSettings: FormatSettings = {
                 enableAxis: {
-                    show: false,
-                    fill: '#000000',
+                    //enable: getValue<boolean>(columnObjects,'enableAxis','enable',true),//false,
+                    enabled: getValue<boolean>(columnObjects,'enableAxis','enabled',true),//false,
+                    // fill: getValue<string>(columnObjects,'enableAxis','fill','#000000')//'#000000',
                 },
             };
 
 
-
-            // "plot": {
-            //     "displayName": "Choose Plot Number",
-            //     "type": {
-            //         "numeric": true
-            //     }
-            // },
-            let columnObjects = dataViews[0].metadata.columns[yData[pltNr].columnId].objects
-           
-            let type = 'line';
             let plotModel: PlotModel = {
                 plotId: pltNr,
                 formatSettings: formatSettings,
+                xName: xAxis.name,
+                yName: yAxis.name,
                 plotSettings: {
                     plotType: {
                         type: getValue<string>(columnObjects, 'plotType', 'type', 'line'),

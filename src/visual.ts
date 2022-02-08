@@ -112,13 +112,13 @@ export class Visual implements IVisual {
                 this.formatSettings = plotModel.formatSettings;
                 this.plotSettings = plotModel.plotSettings;
                 if (plotModel.plotSettings.plotType.type == 'line') {
-                    let lines = this.drawDots(options, plotModel, plotModel.plotId, 'Param 1', 'y1');
+                    let lines = this.drawDots(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                     lineCharts.push(lines);
                     linesDots.push(lines.points);
                 }
 
                 if (plotModel.plotSettings.plotType.type == 'bar') {
-                    bars = this.drawBarChart(options, plotModel, plotModel.plotId, 'Param 1', 'y1');
+                    bars = this.drawBarChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
 
@@ -165,7 +165,7 @@ export class Visual implements IVisual {
         const xAxis = chart.append('g').classed('xAxis', true);
         const yAxis = chart.append('g').classed('yAxis', true);
 
-        if (plotModel.formatSettings.enableAxis.show) {
+        if (plotModel.formatSettings.enableAxis.enabled) {
             let margins = Visual.Config.margins;
             height -= margins.bottom;
         }
@@ -431,6 +431,7 @@ export class Visual implements IVisual {
         let objectEnumeration: VisualObjectInstance[] = [];
 
         try {
+            let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
             // if(!this.barSettings || !this.barSettings.enableAxis || !this.barDataPoints) {
             //     return objectEnumeration;
             // }
@@ -438,39 +439,47 @@ export class Visual implements IVisual {
             // if(!this.settings || !this.settings.enableAxis || !this.lineDataPoints) {
             //     return objectEnumeration;
             // }
-
+            //category.source['rolesIndex']['x_axis'][0]
+            let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
                 case 'plotType':
-                   let metadataColumns:DataViewMetadataColumn[] = this.dataview.metadata.columns;
+                    objectEnumeration = new Array<VisualObjectInstance>(yCount);
                     for (let i = 0; i < metadataColumns.length; i++) {
-
-                        if(metadataColumns[i].roles.y_axis){
-                            var column: DataViewMetadataColumn = metadataColumns[i];
-                            let index = column['rolesIndex']['y_axis'][0]
-                            objectEnumeration.push({
+                        let column: DataViewMetadataColumn = metadataColumns[i];
+                        if (column.roles.y_axis) {
+                            let columnObjects = column.objects;
+                            let yIndex: number = column['rolesIndex']['y_axis'][0];
+                            objectEnumeration[yIndex] = {
                                 objectName: objectName,
                                 displayName: column.displayName,
                                 properties: {
-                                    type: getValue<string>(column.objects, 'plotType', 'type', 'line'),
+                                    type: getValue<string>(columnObjects, 'plotType', 'type', 'line'),
                                 },
-                                selector: {metadata: column.queryName},
-                            });
+                                selector: { metadata: column.queryName },
+                            };
                         }
-                        
-                        
                     }
-                    
-
                     break;
+
                 case 'enableAxis':
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            show: this.formatSettings.enableAxis.show,
-                            fill: this.formatSettings.enableAxis.fill,
-                        },
-                        selector: null,
-                    });
+                    objectEnumeration = new Array<VisualObjectInstance>(yCount);
+                    for (let i = 0; i < metadataColumns.length; i++) {
+                        let column: DataViewMetadataColumn = metadataColumns[i];
+                        if (column.roles.y_axis) {
+                            let columnObjects = column.objects;
+                            let yIndex: number = column['rolesIndex']['y_axis'][0];
+                            objectEnumeration[yIndex] = {
+                                objectName: objectName,
+                                displayName: column.displayName,
+                                properties: {
+                                    enabled: getValue<boolean>(columnObjects, 'enableAxis', 'enabled', true),//false,
+                                    // show2: getValue<boolean>(columnObjects, 'enableAxis', 'show2', true),//false,
+                                    // fill: getValue<string>(columnObjects, 'enableAxis', 'fill', '#000000')
+                                },
+                                selector: { metadata: column.queryName },
+                            };
+                        }
+                    }
                     break;
 
                 case 'colorSelector':

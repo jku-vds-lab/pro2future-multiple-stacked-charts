@@ -13,6 +13,8 @@ export interface ViewModel {
 
 export interface PlotModel{
     plotId: number;
+    xName: string;
+    yName: string;
     formatSettings: FormatSettings;
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
@@ -37,8 +39,7 @@ export interface DataPoint extends SelectableDataPoint {
 
 export interface FormatSettings {
     enableAxis: {
-        show: boolean;
-        fill: string;
+        enabled: boolean;
     };
 }
 
