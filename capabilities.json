@@ -72,12 +72,6 @@
         "plotType": {
             "displayName": "Select Plot Type",
             "properties": {
-                "plot": {
-                    "displayName": "Choose Plot Number",
-                    "type": {
-                        "numeric": true
-                    }
-                },
                 "type": {
                     "displayName": "Choose Type",
                     "type": {

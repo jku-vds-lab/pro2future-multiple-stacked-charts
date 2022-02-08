@@ -44,7 +44,6 @@ export interface FormatSettings {
 
 export interface PlotSettings {
     plotType: {
-        plot: number;
         type: string;
     };
 }
@@ -64,4 +63,5 @@ export interface XAxisData{
 export interface YAxisData{
     values: number[];
     name?: string;
+    columnId: number;
 }

@@ -74,7 +74,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     let y_id = category.source['rolesIndex']['y_axis'][0]
                     let yAxis: YAxisData = {
                         name: category.source.displayName,
-                        values: <number[]>category.values
+                        values: <number[]>category.values,
+                        columnId: category.source.index
                     }
                     yData[y_id] = yAxis;
                 }
@@ -95,7 +96,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     let y_id = value.source['rolesIndex']['y_axis'][0]
                     let yAxis: YAxisData = {
                         name: value.source.displayName,
-                        values: <number[]>value.values
+                        values: <number[]>value.values,
+                        columnId: value.source.index
                     }
                     yData[y_id] = yAxis;
                 }
@@ -142,14 +144,24 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     fill: '#000000',
                 },
             };
+
+
+
+            // "plot": {
+            //     "displayName": "Choose Plot Number",
+            //     "type": {
+            //         "numeric": true
+            //     }
+            // },
+            let columnObjects = dataViews[0].metadata.columns[yData[pltNr].columnId].objects
+           
             let type = 'line';
             let plotModel: PlotModel = {
                 plotId: pltNr,
                 formatSettings: formatSettings,
                 plotSettings: {
                     plotType: {
-                        plot: getValue<number>(objects, 'plotType', 'plot', pltNr),
-                        type: getValue<string>(objects, 'plotType', 'type', 'line'),
+                        type: getValue<string>(columnObjects, 'plotType', 'type', 'line'),
                     },
                 }, xRange: {
                     min: Math.min(...xDataPoints),

@@ -37,15 +37,17 @@ import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInst
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import VisualEnumerationInstanceKinds = powerbi.VisualEnumerationInstanceKinds;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+import DataView = powerbi.DataView;
 import { select as d3Select } from 'd3-selection';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft, axisRight } from 'd3-axis';
 import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
-import { getAxisTextFillColor } from './objectEnumerationUtility';
+import { getAxisTextFillColor, getValue } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel } from './chartInterface';
 import { visualTransform } from './parseAndTransform';
@@ -58,6 +60,9 @@ export class Visual implements IVisual {
     private tooltipServiceWrapper: ITooltipServiceWrapper;
     private formatSettings: FormatSettings;
     private plotSettings: PlotSettings;
+    private dataview: DataView;
+    private options: VisualUpdateOptions;
+    private plotSettingsStore: PlotSettings[];
     private testXscale: any;
     private testDataPoints: any;
 
@@ -78,7 +83,7 @@ export class Visual implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.element = options.element;
-
+        this.plotSettingsStore = [];
         this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, this.element);
 
         this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
@@ -94,6 +99,7 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         try {
+            this.dataview = options.dataViews[0];
             this.visualContainer.selectAll('*').remove();
 
             this.viewModel = visualTransform(options, this.host);
@@ -106,13 +112,13 @@ export class Visual implements IVisual {
                 this.formatSettings = plotModel.formatSettings;
                 this.plotSettings = plotModel.plotSettings;
                 if (plotModel.plotSettings.plotType.type == 'line') {
-                    let lines = this.drawDots(options, plotModel, plotModel.plotSettings.plotType.plot, 'Param 1', 'y1');
+                    let lines = this.drawDots(options, plotModel, plotModel.plotId, 'Param 1', 'y1');
                     lineCharts.push(lines);
                     linesDots.push(lines.points);
                 }
 
                 if (plotModel.plotSettings.plotType.type == 'bar') {
-                    bars = this.drawBarChart(options, plotModel, plotModel.plotSettings.plotType.plot, 'Param 1', 'y1');
+                    bars = this.drawBarChart(options, plotModel, plotModel.plotId, 'Param 1', 'y1');
                 }
             }
 
@@ -147,7 +153,7 @@ export class Visual implements IVisual {
 
         const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
         const plotType = plotModel.plotSettings.plotType.type;
-        const plotNr = plotModel.plotSettings.plotType.plot;
+        const plotNr = plotModel.plotId;
         const chart: Selection<any> = this.visualContainer
             .append('svg')
             .classed(plotType + plotNr, true)
@@ -435,14 +441,25 @@ export class Visual implements IVisual {
 
             switch (objectName) {
                 case 'plotType':
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            plot: this.plotSettings.plotType.plot,
-                            type: this.plotSettings.plotType.type,
-                        },
-                        selector: null,
-                    });
+                   let metadataColumns:DataViewMetadataColumn[] = this.dataview.metadata.columns;
+                    for (let i = 0; i < metadataColumns.length; i++) {
+
+                        if(metadataColumns[i].roles.y_axis){
+                            var column: DataViewMetadataColumn = metadataColumns[i];
+                            let index = column['rolesIndex']['y_axis'][0]
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                displayName: column.displayName,
+                                properties: {
+                                    type: getValue<string>(column.objects, 'plotType', 'type', 'line'),
+                                },
+                                selector: {metadata: column.queryName},
+                            });
+                        }
+                        
+                        
+                    }
+                    
 
                     break;
                 case 'enableAxis':
@@ -483,5 +500,20 @@ export class Visual implements IVisual {
             console.log('Error in Object Enumeration: ', error);
         }
         return objectEnumeration;
+    }
+    private persist() {
+
+        let objects: powerbi.VisualObjectInstancesToPersist = {
+            merge: [
+                <VisualObjectInstance>{
+                    objectName: "dumpObject",
+                    selector: undefined,
+                    properties: {
+                        "dumpProperty": "dump"
+                    }
+                }]
+        };
+
+        this.host.persistProperties(objects);
     }
 }
