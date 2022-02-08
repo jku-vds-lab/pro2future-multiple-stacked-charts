@@ -76,6 +76,24 @@ export function getAxisTextFillColor(objects: DataViewObjects,
     ).solid.color;
   }
 
+  export function getPlotFillColor(objects: DataViewObjects,
+    colorPalette: ISandboxExtendedColorPalette,
+    defaultColor: string): string {
+      if(colorPalette.isHighContrast) {
+        return colorPalette.foreground.value;
+      }
+      return getValue<Fill>(
+        objects,
+          "plotType",
+          "fill",
+          {
+              solid: {
+                  color: defaultColor,
+              }
+          },
+      ).solid.color;
+    }
+
   export function getColumnnColorByIndex(category: DataViewCategoryColumn, index: number, colorPalette: ISandboxExtendedColorPalette): string {
     if(colorPalette.isHighContrast) {
       return colorPalette.background.value;

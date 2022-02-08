@@ -44,8 +44,9 @@ export interface FormatSettings {
 }
 
 export interface PlotSettings {
-    plotType: {
-        type: string;
+    plotSettings: {
+        fill: string;
+        plotType: string;
     };
 }
 

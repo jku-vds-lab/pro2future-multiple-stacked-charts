@@ -47,7 +47,7 @@ import { scaleBand, scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft, axisRight } from 'd3-axis';
 import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
-import { getAxisTextFillColor, getValue } from './objectEnumerationUtility';
+import { getAxisTextFillColor, getPlotFillColor, getValue } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel } from './chartInterface';
 import { visualTransform } from './parseAndTransform';
@@ -111,13 +111,13 @@ export class Visual implements IVisual {
             for (let plotModel of this.viewModel.plotModels) {
                 this.formatSettings = plotModel.formatSettings;
                 this.plotSettings = plotModel.plotSettings;
-                if (plotModel.plotSettings.plotType.type == 'line') {
+                if (plotModel.plotSettings.plotSettings.plotType == 'line') {
                     let lines = this.drawDots(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                     lineCharts.push(lines);
                     linesDots.push(lines.points);
                 }
 
-                if (plotModel.plotSettings.plotType.type == 'bar') {
+                if (plotModel.plotSettings.plotSettings.plotType == 'bar') {
                     bars = this.drawBarChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
@@ -152,7 +152,7 @@ export class Visual implements IVisual {
         let height = 100;
 
         const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
-        const plotType = plotModel.plotSettings.plotType.type;
+        const plotType = plotModel.plotSettings.plotSettings.plotType;
         const plotNr = plotModel.plotId;
         const chart: Selection<any> = this.visualContainer
             .append('svg')
@@ -317,13 +317,13 @@ export class Visual implements IVisual {
             //     .attr('fill', 'none')
             //     .attr('stroke', 'steelblue')
             //     .attr('stroke-width', 1.5);
-
+            console.log("plotcolor",plotModel.plotSettings.plotSettings.fill);
             const dots = lineChart
                 .selectAll('dots')
                 .data(dataPoints)
                 .enter()
                 .append('circle')
-                .attr('fill', 'red')
+                .attr('fill', plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
@@ -449,11 +449,13 @@ export class Visual implements IVisual {
                         if (column.roles.y_axis) {
                             let columnObjects = column.objects;
                             let yIndex: number = column['rolesIndex']['y_axis'][0];
+                            debugger;
                             objectEnumeration[yIndex] = {
                                 objectName: objectName,
                                 displayName: column.displayName,
                                 properties: {
                                     type: getValue<string>(columnObjects, 'plotType', 'type', 'line'),
+                                    fill: getPlotFillColor(columnObjects,this.host.colorPalette,'#000000')//getValue<string>(columnObjects, 'plotType', 'fill.solid.color', '#000000')
                                 },
                                 selector: { metadata: column.queryName },
                             };

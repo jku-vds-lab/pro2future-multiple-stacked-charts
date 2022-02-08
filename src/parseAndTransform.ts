@@ -3,7 +3,7 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
-import { getValue, getColumnnColorByIndex } from './objectEnumerationUtility';
+import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor } from './objectEnumerationUtility';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData } from './chartInterface';
 import { Color } from 'd3';
 
@@ -108,8 +108,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         //create Plotmodels 
         for (let pltNr = 0; pltNr < y_length; pltNr++) {
             //get x- and y-data for plotnumber
-            let xAxis:XAxisData = shared_x_axis ? xData[0] : xData[pltNr];
-            let yAxis:YAxisData = yData[pltNr]
+            let xAxis: XAxisData = shared_x_axis ? xData[0] : xData[pltNr];
+            let yAxis: YAxisData = yData[pltNr]
             xDataPoints = xAxis.values
             yDataPoints = yAxis.values;
             const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
@@ -145,20 +145,21 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             let formatSettings: FormatSettings = {
                 enableAxis: {
                     //enable: getValue<boolean>(columnObjects,'enableAxis','enable',true),//false,
-                    enabled: getValue<boolean>(columnObjects,'enableAxis','enabled',true),//false,
+                    enabled: getValue<boolean>(columnObjects, 'enableAxis', 'enabled', true),//false,
                     // fill: getValue<string>(columnObjects,'enableAxis','fill','#000000')//'#000000',
                 },
             };
 
-
+            console.log("color",getValue<string>(columnObjects, 'plotType', 'fill.solid.color', '#000000'))
             let plotModel: PlotModel = {
                 plotId: pltNr,
                 formatSettings: formatSettings,
                 xName: xAxis.name,
                 yName: yAxis.name,
                 plotSettings: {
-                    plotType: {
-                        type: getValue<string>(columnObjects, 'plotType', 'type', 'line'),
+                    plotSettings: {
+                        fill: getPlotFillColor(columnObjects,host.colorPalette,'#000000'),//getValue<string>(columnObjects, 'plotType', 'fill.solid.color', '#000000'),
+                        plotType: getValue<string>(columnObjects, 'plotType', 'type', 'line')
                     },
                 }, xRange: {
                     min: Math.min(...xDataPoints),
@@ -172,9 +173,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
             };
-            
 
-            
+
+
             viewModel.plotModels[pltNr] = plotModel;
         }
 

@@ -70,12 +70,22 @@
     ],
     "objects": {
         "plotType": {
-            "displayName": "Select Plot Type",
+            "displayName": "Plot Settings",
             "properties": {
                 "type": {
                     "displayName": "Choose Type",
                     "type": {
                         "text": true
+                    }
+                },
+                "fill": {
+                    "displayName": "Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
                     }
                 }
             }
