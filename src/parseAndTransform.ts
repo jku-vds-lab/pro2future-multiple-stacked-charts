@@ -3,8 +3,10 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
-import { getValue, getColumnnColorByIndex } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData } from './chartInterface';
+import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor } from './objectEnumerationUtility';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType } from './plotInterface';
+import { Color } from 'd3';
+import {EnableAxisNames, PlotSettingsNames, Settings} from './constants';
 
 // TODO #12: Add the param length from the metadata objects
 // TODO #13: Add advanced interface for adding plot type and number
@@ -24,59 +26,58 @@ import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisDat
 
 export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): ViewModel {
     try {
-        let dataViews = options.dataViews;
+        const dataViews = options.dataViews;
 
         if (!dataViews || !dataViews[0] || !dataViews[0].categorical || !dataViews[0].metadata) {
             return null;
         }
 
-
-
-        let objects = dataViews[0].metadata.objects;
-        let categorical = dataViews[0].categorical;
+        //let objects = dataViews[0].metadata.objects; => maybe used for other settings
+        const categorical = dataViews[0].categorical;
+        const metadataColumns = dataViews[0].metadata.columns;
+        const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
 
         //count numbers of x-axis and y-axis
-        let y_categories = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.y_axis }).length;
-        let y_values = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.y_axis }).length;
-        let y_length = y_categories + y_values;
-        let x_categories = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.x_axis }).length;
-        let x_values = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.x_axis }).length;
-        let x_length = x_categories + x_values;
-        let shared_x_axis = x_length == 1
-        if (!shared_x_axis && x_length != y_length) {
+        const yCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.y_axis }).length;
+        const yValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.y_axis }).length;
+        const yCount = yCategoriesCount + yValuesCount;
+        const xCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.x_axis }).length;
+        const xValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.x_axis }).length;
+        const xCount = xCategoriesCount + xValuesCount;
+        const sharedXAxis = xCount == 1
+        if (!sharedXAxis && xCount != yCount) {
             return null;
         }
 
-        let xData = new Array<XAxisData>(x_length);
-        let yData = new Array<YAxisData>(y_length);
-
+        let xData = new Array<XAxisData>(xCount);
+        let yData = new Array<YAxisData>(yCount);
         let viewModel: ViewModel = <ViewModel>{
-            plotModels: new Array<PlotModel>(y_length)
+            plotModels: new Array<PlotModel>(yCount)
         };
-
         let xDataPoints: number[] = [];
         let yDataPoints: number[] = [];
         let dataPoints: DataPoint[] = [];
 
-        let colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
+        
 
         //aquire all categorical values
         if (categorical.categories !== undefined) {
             for (let category of categorical.categories) {
                 if (category.source.roles.x_axis) {
-                    let x_id = category.source['rolesIndex']['x_axis'][0]
+                    let xId = category.source['rolesIndex']['x_axis'][0]
                     let xAxis: XAxisData = {
                         name: category.source.displayName,
                         values: <number[]>category.values
                     }
-                    xData[x_id] = xAxis;
+                    xData[xId] = xAxis;
                 } else if (category.source.roles.y_axis) {
-                    let y_id = category.source['rolesIndex']['y_axis'][0]
+                    let yId = category.source['rolesIndex']['y_axis'][0]
                     let yAxis: YAxisData = {
                         name: category.source.displayName,
-                        values: <number[]>category.values
+                        values: <number[]>category.values,
+                        columnId: category.source.index
                     }
-                    yData[y_id] = yAxis;
+                    yData[yId] = yAxis;
                 }
             }
         }
@@ -84,47 +85,54 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         if (categorical.values !== undefined) {
             for (let value of categorical.values) {
                 if (value.source.roles.x_axis) {
-                    let x_id = value.source['rolesIndex']['x_axis'][0]
+                    const xId = value.source['rolesIndex']['x_axis'][0]
                     let xAxis: XAxisData = {
                         name: value.source.displayName,
                         values: <number[]>value.values
                     }
-                    xData[x_id] = xAxis;
+                    xData[xId] = xAxis;
 
                 } else if (value.source.roles.y_axis) {
-                    let y_id = value.source['rolesIndex']['y_axis'][0]
+                    const yId = value.source['rolesIndex']['y_axis'][0]
                     let yAxis: YAxisData = {
                         name: value.source.displayName,
-                        values: <number[]>value.values
+                        values: <number[]>value.values,
+                        columnId: value.source.index
                     }
-                    yData[y_id] = yAxis;
+                    yData[yId] = yAxis;
                 }
             }
         }
 
+        
         //create Plotmodels 
-        for (let pltNr = 0; pltNr < y_length; pltNr++) {
+        for (let plotNr = 0; plotNr < yCount; plotNr++) {
             //get x- and y-data for plotnumber
-            xDataPoints = shared_x_axis ? xData[0].values : xData[pltNr].values;
-            yDataPoints = yData[pltNr].values;
+            let xAxis: XAxisData = sharedXAxis ? xData[0] : xData[plotNr];
+            let yAxis: YAxisData = yData[plotNr]
+            xDataPoints = xAxis.values
+            yDataPoints = yAxis.values;
             const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
             dataPoints = [];
 
             //create datapoints
-            for (let ptNr = 0; ptNr < maxLengthAttributes; ptNr++) {
+            for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
                 const color: string = '#0f0f0f'; //getColumnnColorByIndex(xDataPoints, i, colorPalette); // TODO Add colors only if required
 
-                const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[ptNr].toString()).createSelectionId();
+                const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
 
                 let dataPoint: DataPoint = {
-                    xValue: xDataPoints[ptNr],
-                    yValue: yDataPoints[ptNr],
+                    xValue: xDataPoints[pointNr],
+                    yValue: yDataPoints[pointNr],
                     identity: selectionId,
                     selected: false,
                     color: color,
                 };
                 dataPoints.push(dataPoint);
             }
+            //get index of y-column in metadata
+            let yColumnId = yData[plotNr].columnId;
+            let yColumnObjects = metadataColumns[yColumnId].objects;
 
             dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
                 if (a.xValue > b.xValue) {
@@ -138,18 +146,19 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
             let formatSettings: FormatSettings = {
                 enableAxis: {
-                    show: false,
-                    fill: '#000000',
+                    enabled: getValue<boolean>(yColumnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
                 },
             };
-            let type = 'line';
+
             let plotModel: PlotModel = {
-                plotId: pltNr,
+                plotId: plotNr,
                 formatSettings: formatSettings,
+                xName: xAxis.name,
+                yName: yAxis.name,
                 plotSettings: {
-                    plotType: {
-                        plot: pltNr,
-                        type: type,
+                    plotSettings: {
+                        fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
+                        plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
                     },
                 }, xRange: {
                     min: Math.min(...xDataPoints),
@@ -160,23 +169,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     max: Math.max(...yDataPoints),
                 },
                 dataPoints: dataPoints
-
-
             };
-            
-
-            
-            viewModel.plotModels[pltNr] = plotModel;
+            viewModel.plotModels[plotNr] = plotModel;
         }
-       
-        let plotSettings: PlotSettings = {
-            plotType: {
-                plot: getValue<number>(objects, 'plotType', 'plot', 0),
-                type: getValue<string>(objects, 'plotType', 'type', 'line'),
-            },
-        };
-        
-        console.log(plotSettings.plotType.plot,plotSettings.plotType.type);
 
         return viewModel;
     } catch (error) {

@@ -37,18 +37,21 @@ import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInst
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import VisualEnumerationInstanceKinds = powerbi.VisualEnumerationInstanceKinds;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+import DataView = powerbi.DataView;
 import { select as d3Select } from 'd3-selection';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft, axisRight } from 'd3-axis';
 import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
-import { getAxisTextFillColor } from './objectEnumerationUtility';
+import { getAxisTextFillColor, getPlotFillColor, getValue } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel } from './chartInterface';
+import { ViewModel, DataPoint, PlotModel, PlotType } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
+import { EnableAxisNames, PlotSettingsNames, Settings } from './constants';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 export class Visual implements IVisual {
@@ -56,10 +59,9 @@ export class Visual implements IVisual {
     private element: HTMLElement;
     private visualContainer: d3.Selection<HTMLDivElement, any, HTMLDivElement, any>;
     private tooltipServiceWrapper: ITooltipServiceWrapper;
-    private formatSettings: FormatSettings;
-    private plotSettings: PlotSettings;
-    private testXscale: any;
-    private testDataPoints: any;
+
+    private dataview: DataView;
+
 
     private viewModel: ViewModel;
 
@@ -78,7 +80,6 @@ export class Visual implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.element = options.element;
-
         this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, this.element);
 
         this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
@@ -93,9 +94,11 @@ export class Visual implements IVisual {
     // TODO #9: Add zooming option with a specified bin
 
     public update(options: VisualUpdateOptions) {
+        
         try {
+            this.dataview = options.dataViews[0];
             this.visualContainer.selectAll('*').remove();
-
+            debugger;
             this.viewModel = visualTransform(options, this.host);
 
             let linesDots: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
@@ -103,16 +106,20 @@ export class Visual implements IVisual {
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>; // TODO #1
 
             for (let plotModel of this.viewModel.plotModels) {
-                this.formatSettings = plotModel.formatSettings;
-                this.plotSettings = plotModel.plotSettings;
-                if (plotModel.plotSettings.plotType.type == 'line') {
-                    let lines = this.drawDots(options, plotModel, plotModel.plotSettings.plotType.plot, 'Param 1', 'y1');
+                const plotType = plotModel.plotSettings.plotSettings.plotType;
+                if (plotType == PlotType.LinePlot) {
+                    let lines = this.drawLineChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName)
+                    lineCharts.push(lines);
+                    linesDots.push(lines.points);
+                }
+                else if (plotType == PlotType.ScatterPlot) {
+                    let lines = this.drawScatterPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                     lineCharts.push(lines);
                     linesDots.push(lines.points);
                 }
 
-                if (plotModel.plotSettings.plotType.type == 'bar') {
-                    bars = this.drawBarChart(options, plotModel, plotModel.plotSettings.plotType.plot, 'Param 1', 'y1');
+                else if (plotType == PlotType.BarPlot) {
+                    bars = this.drawBarChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
 
@@ -146,8 +153,8 @@ export class Visual implements IVisual {
         let height = 100;
 
         const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
-        const plotType = plotModel.plotSettings.plotType.type;
-        const plotNr = plotModel.plotSettings.plotType.plot;
+        const plotType = plotModel.plotSettings.plotSettings.plotType;
+        const plotNr = plotModel.plotId;
         const chart: Selection<any> = this.visualContainer
             .append('svg')
             .classed(plotType + plotNr, true)
@@ -159,7 +166,7 @@ export class Visual implements IVisual {
         const xAxis = chart.append('g').classed('xAxis', true);
         const yAxis = chart.append('g').classed('yAxis', true);
 
-        if (plotModel.formatSettings.enableAxis.show) {
+        if (plotModel.formatSettings.enableAxis.enabled) {
             let margins = Visual.Config.margins;
             height -= margins.bottom;
         }
@@ -221,16 +228,16 @@ export class Visual implements IVisual {
         };
     }
 
-    private drawLineChart(options: VisualUpdateOptions, viewModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+    private drawLineChart(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
         // d3.Selection<SVGCircleElement, DataPoint, any, any> // fix return type
         try {
             let result = {};
-            const chartInfo = this.getChartElement(options, viewModel, xLabel, yLabel);
+            const chartInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
             const lineChart = chartInfo.chart;
             const xScale = chartInfo.xScale;
             const yScale = chartInfo.yScale;
             const xAxis = chartInfo.xAxis;
-            const dataPoints = viewModel.dataPoints;
+            const dataPoints = plotModel.dataPoints;
 
             lineChart
                 .append('path')
@@ -251,7 +258,7 @@ export class Visual implements IVisual {
                 .data(dataPoints)
                 .enter()
                 .append('circle')
-                .attr('fill', 'red')
+                .attr('fill', plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
@@ -288,7 +295,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private drawDots(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+    private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
         try {
             let result = {};
             const chartInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
@@ -311,13 +318,12 @@ export class Visual implements IVisual {
             //     .attr('fill', 'none')
             //     .attr('stroke', 'steelblue')
             //     .attr('stroke-width', 1.5);
-
             const dots = lineChart
                 .selectAll('dots')
                 .data(dataPoints)
                 .enter()
                 .append('circle')
-                .attr('fill', 'red')
+                .attr('fill', plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
@@ -425,38 +431,14 @@ export class Visual implements IVisual {
         let objectEnumeration: VisualObjectInstance[] = [];
 
         try {
-            // if(!this.barSettings || !this.barSettings.enableAxis || !this.barDataPoints) {
-            //     return objectEnumeration;
-            // }
-
-            // if(!this.settings || !this.settings.enableAxis || !this.lineDataPoints) {
-            //     return objectEnumeration;
-            // }
-
+            let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
+            let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
-                case 'plotType':
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            plot: this.plotSettings.plotType.plot,
-                            type: this.plotSettings.plotType.type,
-                        },
-                        selector: null,
-                    });
-
+                case Settings.plotSettings:
+                case Settings.enableAxis:
+                    setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
-                case 'enableAxis':
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            show: this.formatSettings.enableAxis.show,
-                            fill: this.formatSettings.enableAxis.fill,
-                        },
-                        selector: null,
-                    });
-                    break;
-
-                case 'colorSelector':
+                case Settings.colorSelector:
                     // for (let barDataPoint of this.barDataPoints) {
                     //     objectEnumeration.push({
                     //         objectName: objectName,
@@ -483,5 +465,33 @@ export class Visual implements IVisual {
             console.log('Error in Object Enumeration: ', error);
         }
         return objectEnumeration;
+
+        function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[]) {
+            objectEnumeration = new Array<VisualObjectInstance>(yCount);
+            for (let column of metadataColumns) {
+                if (column.roles.y_axis) {
+                    const columnObjects = column.objects;
+                    //index that the column has in the plot (differs from index in metadata) and is used to have the same order in settings
+                    const yIndex: number = column['rolesIndex']['y_axis'][0];
+                    let properties;
+                    if (objectName === Settings.plotSettings) {
+                        properties = {
+                            plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+                            fill: getPlotFillColor(columnObjects, this.host.colorPalette, '#000000')
+                        }
+                    } else if (objectName === Settings.enableAxis) {
+                        properties = {
+                            enabled: getValue<boolean>(columnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
+                        };
+                    }
+                    objectEnumeration[yIndex] = {
+                        objectName: objectName,
+                        displayName: column.displayName,
+                        properties: properties,
+                        selector: { metadata: column.queryName },
+                    };
+                }
+            }
+        }
     }
 }

@@ -69,30 +69,26 @@
         }
     ],
     "objects": {
-        "plotType": {
-            "displayName": "Select Plot Type",
+        "plotSettings": {
+            "displayName": "Plot Settings",
             "properties": {
-                "plot": {
-                    "displayName": "Choose Plot Number",
-                    "type": {
-                        "numeric": true
-                    }
-                },
-                "type": {
+                "plotType": {
                     "displayName": "Choose Type",
                     "type": {
-                        "text": true
-                    }
-                }
-            }
-        },
-        "enableAxis": {
-            "displayName": "Enable Axis",
-            "properties": {
-                "show": {
-                    "displayName": "Enable Axis",
-                    "type": {
-                        "bool": true
+                        "enumeration": [
+                            {
+                                "displayName": "Line Plot",
+                                "value": "LinePlot"
+                            },
+                            {
+                                "displayName": "Scatter Plot",
+                                "value": "ScatterPlot"
+                            },
+                            {
+                                "displayName": "Bar Plot",
+                                "value": "BarPlot"
+                            }
+                        ]
                     }
                 },
                 "fill": {
@@ -103,6 +99,17 @@
                                 "color": true
                             }
                         }
+                    }
+                }
+            }
+        },
+        "enableAxis": {
+            "displayName": "Enable x-Axis",
+            "properties": {
+                "enabled": {
+                    "displayName": "Enable x-Axis",
+                    "type": {
+                        "bool": true
                     }
                 }
             }

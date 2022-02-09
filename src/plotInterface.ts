@@ -11,8 +11,16 @@ export interface ViewModel {
     plotModels: PlotModel[];
 }
 
+export enum PlotType{
+    BarPlot = "BarPlot",
+    ScatterPlot = "ScatterPlot",
+    LinePlot = "LinePlot"
+}
+
 export interface PlotModel{
     plotId: number;
+    xName: string;
+    yName: string;
     formatSettings: FormatSettings;
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
@@ -37,15 +45,14 @@ export interface DataPoint extends SelectableDataPoint {
 
 export interface FormatSettings {
     enableAxis: {
-        show: boolean;
-        fill: string;
+        enabled: boolean;
     };
 }
 
 export interface PlotSettings {
-    plotType: {
-        plot: number;
-        type: string;
+    plotSettings: {
+        fill: string;
+        plotType: PlotType;
     };
 }
 
@@ -64,4 +71,5 @@ export interface XAxisData{
 export interface YAxisData{
     values: number[];
     name?: string;
+    columnId: number;
 }

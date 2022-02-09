@@ -1,5 +1,6 @@
 import { color } from "d3-color";
 import powerbi from "powerbi-visuals-api";
+import { ColorSelectorNames, PlotSettingsNames, Settings } from "./constants";
 import DataViewObjects = powerbi.DataViewObjects;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import DataViewObject = powerbi.DataViewObject;
@@ -76,6 +77,24 @@ export function getAxisTextFillColor(objects: DataViewObjects,
     ).solid.color;
   }
 
+  export function getPlotFillColor(objects: DataViewObjects,
+    colorPalette: ISandboxExtendedColorPalette,
+    defaultColor: string): string {
+      if(colorPalette.isHighContrast) {
+        return colorPalette.foreground.value;
+      }
+      return getValue<Fill>(
+        objects,
+          Settings.plotSettings,
+          PlotSettingsNames.fill,
+          {
+              solid: {
+                  color: defaultColor,
+              }
+          },
+      ).solid.color;
+    }
+
   export function getColumnnColorByIndex(category: DataViewCategoryColumn, index: number, colorPalette: ISandboxExtendedColorPalette): string {
     if(colorPalette.isHighContrast) {
       return colorPalette.background.value;
@@ -89,8 +108,8 @@ export function getAxisTextFillColor(objects: DataViewObjects,
     return getCategoricalObjectValue<Fill>(
       category,
       index,
-      'colorSelector',
-      'fill',
+      Settings.colorSelector,
+      ColorSelectorNames.fill,
       defaultColor
     ).solid.color;
   }
