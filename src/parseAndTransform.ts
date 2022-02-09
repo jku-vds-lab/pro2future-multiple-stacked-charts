@@ -130,8 +130,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 };
                 dataPoints.push(dataPoint);
             }
-
-            let columnObjects = dataViews[0].metadata.columns[yData[pltNr].columnId].objects
+            let yColumnId = yData[pltNr].columnId;
+            let columnObjects = dataViews[0].metadata.columns[yColumnId].objects;
 
             dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
                 if (a.xValue > b.xValue) {

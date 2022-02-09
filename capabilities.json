@@ -104,10 +104,10 @@
             }
         },
         "enableAxis": {
-            "displayName": "Enable Axis",
+            "displayName": "Enable x-Axis",
             "properties": {
                 "enabled": {
-                    "displayName": "show x Axis",
+                    "displayName": "Enable x-Axis",
                     "type": {
                         "bool": true
                     }

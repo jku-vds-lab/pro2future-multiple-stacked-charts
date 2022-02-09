@@ -225,16 +225,16 @@ export class Visual implements IVisual {
         };
     }
 
-    private drawLineChart(options: VisualUpdateOptions, viewModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+    private drawLineChart(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
         // d3.Selection<SVGCircleElement, DataPoint, any, any> // fix return type
         try {
             let result = {};
-            const chartInfo = this.getChartElement(options, viewModel, xLabel, yLabel);
+            const chartInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
             const lineChart = chartInfo.chart;
             const xScale = chartInfo.xScale;
             const yScale = chartInfo.yScale;
             const xAxis = chartInfo.xAxis;
-            const dataPoints = viewModel.dataPoints;
+            const dataPoints = plotModel.dataPoints;
 
             lineChart
                 .append('path')
@@ -255,7 +255,7 @@ export class Visual implements IVisual {
                 .data(dataPoints)
                 .enter()
                 .append('circle')
-                .attr('fill', 'red')
+                .attr('fill', plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
@@ -437,6 +437,7 @@ export class Visual implements IVisual {
                         let column: DataViewMetadataColumn = metadataColumns[i];
                         if (column.roles.y_axis) {
                             let columnObjects = column.objects;
+                            //explain
                             let yIndex: number = column['rolesIndex']['y_axis'][0];
 
                             objectEnumeration[yIndex] = {
