@@ -94,7 +94,7 @@ export class Visual implements IVisual {
     // TODO #9: Add zooming option with a specified bin
 
     public update(options: VisualUpdateOptions) {
-        
+
         try {
             this.dataview = options.dataViews[0];
             this.visualContainer.selectAll('*').remove();
@@ -198,7 +198,8 @@ export class Visual implements IVisual {
             .text(xLabel);
 
         const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([height, 0]);
-        const yAxisValue = axisLeft(yScale);
+        //console.log(yScale.ticks(height/(plotModel.yRange.max/2)),height,plotModel.yRange.max);
+        const yAxisValue = axisLeft(yScale).ticks(height/10);
 
         yAxis.call(yAxisValue).attr(
             'color',
@@ -466,7 +467,7 @@ export class Visual implements IVisual {
         return objectEnumeration;
 
         function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[]) {
-            
+
             objectEnumeration = new Array<VisualObjectInstance>(yCount);
             for (let column of metadataColumns) {
                 if (column.roles.y_axis) {
