@@ -98,7 +98,6 @@ export class Visual implements IVisual {
         try {
             this.dataview = options.dataViews[0];
             this.visualContainer.selectAll('*').remove();
-            debugger;
             this.viewModel = visualTransform(options, this.host);
 
             let linesDots: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
@@ -427,9 +426,9 @@ export class Visual implements IVisual {
 
     // TODO: this should be able to handle the object enumeration for all the plots
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        let objectName = options.objectName;
+        const objectName = options.objectName;
+        const colorPalette = this.host.colorPalette;
         let objectEnumeration: VisualObjectInstance[] = [];
-
         try {
             let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
             let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
@@ -467,6 +466,7 @@ export class Visual implements IVisual {
         return objectEnumeration;
 
         function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[]) {
+            
             objectEnumeration = new Array<VisualObjectInstance>(yCount);
             for (let column of metadataColumns) {
                 if (column.roles.y_axis) {
@@ -477,7 +477,7 @@ export class Visual implements IVisual {
                     if (objectName === Settings.plotSettings) {
                         properties = {
                             plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                            fill: getPlotFillColor(columnObjects, this.host.colorPalette, '#000000')
+                            fill: getPlotFillColor(columnObjects, colorPalette, '#000000')
                         }
                     } else if (objectName === Settings.enableAxis) {
                         properties = {
