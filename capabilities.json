@@ -78,15 +78,15 @@
                         "enumeration": [
                             {
                                 "displayName": "Line Plot",
-                                "value": "line"
+                                "value": "LinePlot"
                             },
                             {
                                 "displayName": "Scatter Plot",
-                                "value": "scatter"
+                                "value": "ScatterPlot"
                             },
                             {
                                 "displayName": "Bar Plot",
-                                "value": "bar"
+                                "value": "BarPlot"
                             }
                         ]
                     }

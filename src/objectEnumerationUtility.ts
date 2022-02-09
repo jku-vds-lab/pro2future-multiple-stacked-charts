@@ -1,5 +1,6 @@
 import { color } from "d3-color";
 import powerbi from "powerbi-visuals-api";
+import { ColorSelectorNames, PlotSettingsNames, Settings } from "./constants";
 import DataViewObjects = powerbi.DataViewObjects;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import DataViewObject = powerbi.DataViewObject;
@@ -84,8 +85,8 @@ export function getAxisTextFillColor(objects: DataViewObjects,
       }
       return getValue<Fill>(
         objects,
-          "plotSettings",
-          "fill",
+          Settings.plotSettings,
+          PlotSettingsNames.fill,
           {
               solid: {
                   color: defaultColor,
@@ -107,8 +108,8 @@ export function getAxisTextFillColor(objects: DataViewObjects,
     return getCategoricalObjectValue<Fill>(
       category,
       index,
-      'colorSelector',
-      'fill',
+      Settings.colorSelector,
+      ColorSelectorNames.fill,
       defaultColor
     ).solid.color;
   }

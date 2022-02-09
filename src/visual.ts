@@ -49,8 +49,9 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor, getPlotFillColor, getValue } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, PlotModel } from './chartInterface';
+import { ViewModel, DataPoint, PlotModel, PlotType } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
+import { EnableAxisNames, PlotSettingsNames, Settings } from './constants';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 export class Visual implements IVisual {
@@ -93,10 +94,11 @@ export class Visual implements IVisual {
     // TODO #9: Add zooming option with a specified bin
 
     public update(options: VisualUpdateOptions) {
+        
         try {
             this.dataview = options.dataViews[0];
             this.visualContainer.selectAll('*').remove();
-
+            debugger;
             this.viewModel = visualTransform(options, this.host);
 
             let linesDots: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
@@ -104,18 +106,19 @@ export class Visual implements IVisual {
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>; // TODO #1
 
             for (let plotModel of this.viewModel.plotModels) {
-                if (plotModel.plotSettings.plotSettings.plotType == 'line') {
-                    let lines =this.drawLineChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName)
+                const plotType = plotModel.plotSettings.plotSettings.plotType;
+                if (plotType == PlotType.LinePlot) {
+                    let lines = this.drawLineChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName)
                     lineCharts.push(lines);
                     linesDots.push(lines.points);
                 }
-                else if (plotModel.plotSettings.plotSettings.plotType == 'scatter') {
-                    let lines = this.drawDots(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
+                else if (plotType == PlotType.ScatterPlot) {
+                    let lines = this.drawScatterPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                     lineCharts.push(lines);
                     linesDots.push(lines.points);
                 }
 
-                else if (plotModel.plotSettings.plotSettings.plotType == 'bar') {
+                else if (plotType == PlotType.BarPlot) {
                     bars = this.drawBarChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
@@ -292,7 +295,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private drawDots(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+    private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
         try {
             let result = {};
             const chartInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
@@ -431,59 +434,11 @@ export class Visual implements IVisual {
             let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
             let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
-                case 'plotSettings':
-                    objectEnumeration = new Array<VisualObjectInstance>(yCount);
-                    for (let i = 0; i < metadataColumns.length; i++) {
-                        let column: DataViewMetadataColumn = metadataColumns[i];
-                        if (column.roles.y_axis) {
-                            let columnObjects = column.objects;
-                            //explain
-                            let yIndex: number = column['rolesIndex']['y_axis'][0];
-
-                            objectEnumeration[yIndex] = {
-                                objectName: objectName,
-                                displayName: column.displayName,
-                                properties: {
-                                    plotType: getValue<string>(columnObjects, 'plotSettings', 'plotType', 'line'),
-                                    fill: getPlotFillColor(columnObjects, this.host.colorPalette, '#000000')
-                                },
-                                selector: { metadata: column.queryName },
-                            };
-                        }
-                    }
+                case Settings.plotSettings:
+                case Settings.enableAxis:
+                    setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
-
-                case 'enableAxis':
-                    objectEnumeration = new Array<VisualObjectInstance>(yCount);
-                    for (let i = 0; i < metadataColumns.length; i++) {
-                        let column: DataViewMetadataColumn = metadataColumns[i];
-                        if (column.roles.y_axis) {
-                            let columnObjects = column.objects;
-                            let yIndex: number = column['rolesIndex']['y_axis'][0];
-                            objectEnumeration[yIndex] = {
-                                objectName: objectName,
-                                displayName: column.displayName,
-                                properties: {
-                                    enabled: getValue<boolean>(columnObjects, 'enableAxis', 'enabled', true)
-                                },
-                                selector: { metadata: column.queryName },
-                            };
-                        }
-                    }
-                    break;
-
-                // case 'test':
-                //     objectEnumeration.push({
-                //         objectName: objectName,
-
-                //                 properties: {
-                //                     testType: getValue<string>(this.dataview.metadata.objects, 'test', 'testType', 'dashed')
-                //                     // show2: getValue<boolean>(columnObjects, 'enableAxis', 'show2', true),//false,
-                //                     // fill: getValue<string>(columnObjects, 'enableAxis', 'fill', '#000000')
-                //                 },
-                //                 selector: null,
-                //     });
-                case 'colorSelector':
+                case Settings.colorSelector:
                     // for (let barDataPoint of this.barDataPoints) {
                     //     objectEnumeration.push({
                     //         objectName: objectName,
@@ -510,20 +465,33 @@ export class Visual implements IVisual {
             console.log('Error in Object Enumeration: ', error);
         }
         return objectEnumeration;
-    }
-    private persist() {
 
-        let objects: powerbi.VisualObjectInstancesToPersist = {
-            merge: [
-                <VisualObjectInstance>{
-                    objectName: "dumpObject",
-                    selector: undefined,
-                    properties: {
-                        "dumpProperty": "dump"
+        function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[]) {
+            objectEnumeration = new Array<VisualObjectInstance>(yCount);
+            for (let column of metadataColumns) {
+                if (column.roles.y_axis) {
+                    const columnObjects = column.objects;
+                    //index that the column has in the plot (differs from index in metadata) and is used to have the same order in settings
+                    const yIndex: number = column['rolesIndex']['y_axis'][0];
+                    let properties;
+                    if (objectName === Settings.plotSettings) {
+                        properties = {
+                            plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+                            fill: getPlotFillColor(columnObjects, this.host.colorPalette, '#000000')
+                        }
+                    } else if (objectName === Settings.enableAxis) {
+                        properties = {
+                            enabled: getValue<boolean>(columnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
+                        };
                     }
-                }]
-        };
-
-        this.host.persistProperties(objects);
+                    objectEnumeration[yIndex] = {
+                        objectName: objectName,
+                        displayName: column.displayName,
+                        properties: properties,
+                        selector: { metadata: column.queryName },
+                    };
+                }
+            }
+        }
     }
 }

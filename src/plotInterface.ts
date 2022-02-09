@@ -11,7 +11,11 @@ export interface ViewModel {
     plotModels: PlotModel[];
 }
 
-
+export enum PlotType{
+    BarPlot = "BarPlot",
+    ScatterPlot = "ScatterPlot",
+    LinePlot = "LinePlot"
+}
 
 export interface PlotModel{
     plotId: number;
@@ -48,7 +52,7 @@ export interface FormatSettings {
 export interface PlotSettings {
     plotSettings: {
         fill: string;
-        plotType: string;
+        plotType: PlotType;
     };
 }
 
