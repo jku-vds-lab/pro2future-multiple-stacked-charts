@@ -86,13 +86,6 @@ export class Visual implements IVisual {
     }
 
 
-    // TODO #3: Add x and y labels
-    // TODO #5: Add code for scatterplot
-    // TODO #6: Use same axis for displaying values
-    // TODO #7: Align the values
-    // TODO #8: Add vertical ruler
-    // TODO #9: Add zooming option with a specified bin
-
     public update(options: VisualUpdateOptions) {
 
         try {
@@ -102,7 +95,7 @@ export class Visual implements IVisual {
 
             let linesDots: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
             let lineCharts: any[] = [];
-            let bars: d3.Selection<SVGRectElement, DataPoint, any, any>; // TODO #1
+            let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
 
             for (let plotModel of this.viewModel.plotModels) {
                 const plotType = plotModel.plotSettings.plotSettings.plotType;
@@ -185,7 +178,7 @@ export class Visual implements IVisual {
                 getAxisTextFillColor(
                     colorObjects,
                     this.host.colorPalette,
-                    '#000000' // can be defaultSettings.enableAxis.fill
+                    '#000000'
                 )
             );
 
@@ -206,7 +199,7 @@ export class Visual implements IVisual {
             getAxisTextFillColor(
                 colorObjects,
                 this.host.colorPalette,
-                '#000000' // can be defaultSettings.enableAxis.fill
+                '#000000'
             )
         );
 
@@ -229,7 +222,7 @@ export class Visual implements IVisual {
     }
 
     private drawLineChart(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
-        // d3.Selection<SVGCircleElement, DataPoint, any, any> // fix return type
+
         try {
             let result = {};
             const chartInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
@@ -250,7 +243,7 @@ export class Visual implements IVisual {
                         .y((d) => yScale(<number>d.yValue))
                 )
                 .attr('fill', 'none')
-                .attr('stroke', 'steelblue')
+                .attr('stroke', plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke-width', 1.5);
 
             const dots = lineChart
@@ -263,30 +256,6 @@ export class Visual implements IVisual {
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', 3);
-
-            // vertical ruler
-            // lineChart.append('line').attr('stroke', 'steelblue').attr('class', 'verticalLine').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 200);
-            // let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
-            // let focus = lineChart.append('circle').style('fill', 'none').attr('stroke', 'black').attr('r', 8.5).style('opacity', 0);
-
-            // let mouseover = function () {
-            //     focus.style('opacity', 1);
-            // };
-
-            // let mousemove = function (event) {
-            //     debugger;
-            //     console.log('mousemoved');
-            //     let x0 = xAxis.invert(event.clientX);
-            //     let i = bisect(dataPoints, x0, 1);
-            //     let selectedData = dataPoints[i];
-            //     focus.attr('cx', xScale(selectedData.xValue)).attr('cy', yScale(selectedData.yValue));
-            // };
-
-            // let mouseout = function () {
-            //     focus.style('opacity', 0);
-            // };
-
-            // lineChart.append('rect').style('fill', 'none').style('pointer-events', 'all').on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
 
             result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             return result;
@@ -305,19 +274,7 @@ export class Visual implements IVisual {
             const xAxis = chartInfo.xAxis;
             const dataPoints = plotModel.dataPoints;
 
-            // lineChart
-            //     .append('path')
-            //     .datum(dataPoints)
-            //     .attr(
-            //         'd',
-            //         d3
-            //             .line<DataPoint>()
-            //             .x((d) => xScale(<number>d.xValue))
-            //             .y((d) => yScale(<number>d.yValue))
-            //     )
-            //     .attr('fill', 'none')
-            //     .attr('stroke', 'steelblue')
-            //     .attr('stroke-width', 1.5);
+
             const dots = lineChart
                 .selectAll('dots')
                 .data(dataPoints)
@@ -368,21 +325,6 @@ export class Visual implements IVisual {
 
     private drawVerticalRuler(chart: any, dataPoints: DataPoint[], xAxis: any, xScale: any, yScale: any) {
         try {
-            // let verticalLine = chart.append('line').attr('stroke', 'steelblue').attr('class', 'verticalLine').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 200);
-
-            // chart
-            //     .on('mousemove', (event) => {
-            //         d3.select('.verticalLine').attr('transform', () => {
-            //             return 'translate(' + event.clientX + ',0)';
-            //         });
-            //     })
-            //     .on('mouseover', (event) => {
-            //         d3.select('.verticalLine').attr('transform', () => {
-            //             return 'translate(' + event.clientX + ',0)';
-            //         });
-            //     });
-
-            // debugger;
 
             console.log('Datapoints', dataPoints);
             let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
@@ -408,7 +350,6 @@ export class Visual implements IVisual {
 
             chart.on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
 
-            // chart.append('rect').style('fill', 'none').style('pointer-events', 'all').on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
         } catch (error) {
             console.log('Issue with ruler:', error);
         }
@@ -425,7 +366,6 @@ export class Visual implements IVisual {
         ];
     }
 
-    // TODO: this should be able to handle the object enumeration for all the plots
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
         const colorPalette = this.host.colorPalette;
@@ -439,26 +379,6 @@ export class Visual implements IVisual {
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
                 case Settings.colorSelector:
-                    // for (let barDataPoint of this.barDataPoints) {
-                    //     objectEnumeration.push({
-                    //         objectName: objectName,
-                    //         displayName: barDataPoint.category,
-                    //         properties: {
-                    //             fill: {
-                    //                 solid: {
-                    //                     color: barDataPoint.color,
-                    //                 },
-                    //             },
-                    //         },
-                    //         propertyInstanceKind: {
-                    //             fill: VisualEnumerationInstanceKinds.ConstantOrRule,
-                    //         },
-                    //         altConstantValueSelector: (<ISelectionId>barDataPoint.identity).getSelector(),
-                    //         selector: dataViewWildcard.createDataViewWildcardSelector(
-                    //             dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals
-                    //         ),
-                    //     });
-                    // }
                     break;
             }
         } catch (error) {
