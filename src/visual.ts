@@ -80,7 +80,7 @@ export class Visual implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.element = options.element;
-        this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, this.element);
+        // this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, this.element);
 
         this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
     }
@@ -93,42 +93,33 @@ export class Visual implements IVisual {
             this.visualContainer.selectAll('*').remove();
             this.viewModel = visualTransform(options, this.host);
 
-            let linesDots: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
-            let lineCharts: any[] = [];
+            let points: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
 
             for (let plotModel of this.viewModel.plotModels) {
                 const plotType = plotModel.plotSettings.plotSettings.plotType;
                 if (plotType == PlotType.LinePlot) {
-                    let lines = this.drawLineChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName)
-                    lineCharts.push(lines);
-                    linesDots.push(lines.points);
+                    const linePlot = this.drawLinePlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName)
+                    points.push(linePlot.points);
                 }
                 else if (plotType == PlotType.ScatterPlot) {
-                    let lines = this.drawScatterPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
-                    lineCharts.push(lines);
-                    linesDots.push(lines.points);
+                    const scatterPlot = this.drawScatterPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
+                    points.push(scatterPlot.points);
                 }
 
                 else if (plotType == PlotType.BarPlot) {
-                    bars = this.drawBarChart(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
+                    bars = this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
 
-            // assuming only one viewmodel exists
-
-            for (let lineChart of lineCharts) {
-                this.drawVerticalRuler(lineChart.chart, this.viewModel[0].dataPoints, lineChart.xAxis, lineChart.xScale, lineChart.yScale);
-            }
-
-            // Add Tooltips
-            for (let lineDots of linesDots) {
-                this.tooltipServiceWrapper.addTooltip(
-                    lineDots,
-                    (datapoint: DataPoint) => this.getTooltipData(datapoint),
-                    (datapoint: DataPoint) => datapoint.identity
-                );
-            }
+            // consist of all the three plots points
+            // for (let point of points) {
+            //     this.tooltipServiceWrapper.addTooltip(
+            //         point,
+            //         (datapoint: DataPoint) => this.getTooltipData(datapoint),
+            //         (datapoint: DataPoint) => datapoint.identity
+            //     );
+            // }
 
         } catch (error) {
             console.log(error());
@@ -178,7 +169,7 @@ export class Visual implements IVisual {
         //     .text(xLabel);
 
         const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([height, 0]);
-        //console.log(yScale.ticks(height/(plotModel.yRange.max/2)),height,plotModel.yRange.max);
+
         const yAxisValue = axisLeft(yScale).ticks(height/20);
 
         yAxis.call(yAxisValue).attr(
@@ -208,7 +199,7 @@ export class Visual implements IVisual {
         };
     }
 
-    private drawLineChart(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+    private drawLinePlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
 
         try {
             let result = {};
@@ -254,15 +245,15 @@ export class Visual implements IVisual {
     private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
         try {
             let result = {};
-            const chartInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
-            const lineChart = chartInfo.chart;
-            const xScale = chartInfo.xScale;
-            const yScale = chartInfo.yScale;
-            const xAxis = chartInfo.xAxis;
+            const plotInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
+            const plot = plotInfo.chart;
+            const xScale = plotInfo.xScale;
+            const yScale = plotInfo.yScale;
+            const xAxis = plotInfo.xAxis;
             const dataPoints = plotModel.dataPoints;
 
 
-            const dots = lineChart
+            const dots = plot
                 .selectAll('dots')
                 .data(dataPoints)
                 .enter()
@@ -273,6 +264,40 @@ export class Visual implements IVisual {
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', 2);
 
+            var Tooltip = this.visualContainer
+                .append("div")
+                .style("opacity", 0)
+                .attr("class", "tooltip")
+                .style("background-color", "white")
+                .style("border", "solid")
+                .style("border-width", "2px")
+                .style("border-radius", "5px")
+                .style("padding", "5px")
+
+            let mouseover = function () {
+                debugger;
+                    Tooltip.style('opacity', 1);
+                    d3.select(this)
+                    .style("stroke", "black")
+                    .style("opacity", 1)
+                };
+
+            let mousemove = function (event) {
+                Tooltip
+                .html("The exact value of<br>this cell is: " )
+                .style("left", (event.clientX+70) + "px")
+                .style("top", (event.clientY) + "px")
+                };
+
+                let mouseout = function () {
+                    Tooltip.style("opacity", 0)
+                    d3.select(this)
+                    .style("stroke", "none")
+                    .style("opacity", 0.8)
+                };
+
+                dots.on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
+
             result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             return result;
         } catch (error) {
@@ -280,7 +305,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private drawBarChart(
+    private drawBarPlot(
         options: VisualUpdateOptions,
         plotModel: PlotModel,
         visualNumber: number,
