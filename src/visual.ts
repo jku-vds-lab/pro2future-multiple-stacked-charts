@@ -73,7 +73,7 @@ export class Visual implements IVisual {
             top: 10,
             right: 30,
             bottom: 30,
-            left: 30,
+            left: 50,
         },
     };
 
@@ -130,11 +130,6 @@ export class Visual implements IVisual {
                 );
             }
 
-            // this.tooltipServiceWrapper.addTooltip(
-            //     bars,
-            //     (datapoint: DataPoint) => this.getTooltipData(datapoint),
-            //     (datapoint: DataPoint) => datapoint.identity
-            // );
         } catch (error) {
             console.log(error());
         }
@@ -153,15 +148,10 @@ export class Visual implements IVisual {
             .attr('width', width)
             .attr('height', height)
             .append('g')
-            .attr('transform', 'translate(' + Visual.Config.margins.left + ',' + Visual.Config.margins.top + ')');
+            .attr('transform', 'translate(' + Visual.Config.margins.left  + ',' + Visual.Config.margins.top + ')');
 
         const xAxis = chart.append('g').classed('xAxis', true);
         const yAxis = chart.append('g').classed('yAxis', true);
-
-        if (plotModel.formatSettings.enableAxis.enabled) {
-            let margins = Visual.Config.margins;
-            height -= margins.bottom;
-        }
 
         let margins = Visual.Config.margins;
         height -= margins.bottom;
@@ -170,29 +160,26 @@ export class Visual implements IVisual {
 
         const xAxisValue = axisBottom(xScale);
 
+        if (!plotModel.formatSettings.enableAxis.enabled) {
+            xAxisValue.tickValues([]);
+        }
+
         xAxis
             .attr('transform', 'translate(0, ' + height + ')')
-            .call(xAxisValue)
-            .attr(
-                'color',
-                getAxisTextFillColor(
-                    colorObjects,
-                    this.host.colorPalette,
-                    '#000000'
-                )
-            );
+            .call(xAxisValue);
 
-        const xAxisLabel = chart
-            .append('text')
-            .attr('class', 'xLabel')
-            .attr('text-anchor', 'end')
-            .attr('x', width / 2)
-            .attr('y', height + 20)
-            .text(xLabel);
+        // Displays the x-axis label. This also needs to be added in the format property
+        // const xAxisLabel = chart
+        //     .append('text')
+        //     .attr('class', 'xLabel')
+        //     .attr('text-anchor', 'end')
+        //     .attr('x', width / 2)
+        //     .attr('y', height + 20)
+        //     .text(xLabel);
 
         const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([height, 0]);
         //console.log(yScale.ticks(height/(plotModel.yRange.max/2)),height,plotModel.yRange.max);
-        const yAxisValue = axisLeft(yScale).ticks(height/10);
+        const yAxisValue = axisLeft(yScale).ticks(height/20);
 
         yAxis.call(yAxisValue).attr(
             'color',
@@ -207,7 +194,7 @@ export class Visual implements IVisual {
             .append('text')
             .attr('class', 'yLabel')
             .attr('text-anchor', 'middle')
-            .attr('y', 0 - Visual.Config.margins.left + 30)
+            .attr('y', 0 - Visual.Config.margins.left)
             .attr('x', 0 - height / 2)
             .attr('dy', '1em')
             .attr('transform', 'rotate(-90)')
@@ -255,7 +242,7 @@ export class Visual implements IVisual {
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
-                .attr('r', 3);
+                .attr('r', 2);
 
             result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             return result;
@@ -284,7 +271,7 @@ export class Visual implements IVisual {
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
-                .attr('r', 3);
+                .attr('r', 2);
 
             result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             return result;
