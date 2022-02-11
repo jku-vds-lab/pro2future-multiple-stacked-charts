@@ -274,7 +274,7 @@ export class Visual implements IVisual {
                 .style("border-radius", "5px")
                 .style("padding", "5px")
 
-            let mouseover = function () {
+            let mouseover = function (data) {
                 debugger;
                     Tooltip.style('opacity', 1);
                     d3.select(this)
@@ -282,10 +282,11 @@ export class Visual implements IVisual {
                     .style("opacity", 1)
                 };
 
-            let mousemove = function (event) {
+            let mousemove = function (event, data) {
+                debugger;
                 Tooltip
-                .html("The exact value of<br>this cell is: " )
-                .style("left", (event.clientX+70) + "px")
+                .html("The exact value of<br>this cell is: " + data.xValue )
+                .style("left", (event.clientX) + "px")
                 .style("top", (event.clientY) + "px")
                 };
 
