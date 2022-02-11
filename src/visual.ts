@@ -52,14 +52,13 @@ import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-vis
 import { ViewModel, DataPoint, PlotModel, PlotType } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { EnableAxisNames, PlotSettingsNames, Settings } from './constants';
+import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 export class Visual implements IVisual {
     private host: IVisualHost;
     private element: HTMLElement;
     private visualContainer: d3.Selection<HTMLDivElement, any, HTMLDivElement, any>;
-    private tooltipServiceWrapper: ITooltipServiceWrapper;
-
     private dataview: DataView;
 
 
@@ -80,8 +79,6 @@ export class Visual implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.element = options.element;
-        // this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, this.element);
-
         this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
     }
 
@@ -111,16 +108,6 @@ export class Visual implements IVisual {
                     bars = this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
-
-            // consist of all the three plots points
-            // for (let point of points) {
-            //     this.tooltipServiceWrapper.addTooltip(
-            //         point,
-            //         (datapoint: DataPoint) => this.getTooltipData(datapoint),
-            //         (datapoint: DataPoint) => datapoint.identity
-            //     );
-            // }
-
         } catch (error) {
             console.log(error());
         }
@@ -235,11 +222,66 @@ export class Visual implements IVisual {
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', 2);
 
+                let mouseEvents = this.customTooltip();
+                dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
+
             result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             return result;
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
         }
+    }
+
+    private customTooltip () {
+        var Tooltip = this.visualContainer
+        .append("div")
+        .attr('width', 10)
+        .attr('height', 10)
+        .style("opacity", 0)
+        .attr("class", "tooltip")
+        .style("background-color", "white")
+        .style("border", "solid")
+        .style("border-width", "2px")
+        .style("border-radius", "1px")
+        .style("padding", "5px")
+
+    let mouseover = function () {
+            Tooltip.style('opacity', 1);
+            d3.select(this)
+            .attr('r', 4)
+            .style("stroke", "black")
+            .style("opacity", 1)
+        };
+
+
+    let plotModels = this.viewModel.plotModels;
+
+    let mousemove = function (event, data) {
+        let tooltipText = "";
+        for (let plotModel of plotModels) {
+            for (let point of plotModel.dataPoints) {
+                if( point.xValue == data.xValue) {
+                    tooltipText +=  "<b> " + plotModel.yName + "</b> : " + point.yValue + " <br> ";
+                    console.log("Tooltip text: " + tooltipText)
+                    break;
+                }
+            }
+        }
+
+        Tooltip
+        .html(tooltipText)
+        .style("left", (event.clientX) + "px")
+        .style("top", (event.clientY) + "px")
+        };
+
+        let mouseout = function () {
+            Tooltip.style("opacity", 0)
+            d3.select(this)
+            .attr('r', 2)
+            .style("stroke", "none")
+            .style("opacity", 0.8)
+        }
+        return {mouseover, mousemove, mouseout};
     }
 
     private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
@@ -264,45 +306,8 @@ export class Visual implements IVisual {
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', 2);
 
-            var Tooltip = this.visualContainer
-                .append("div")
-                .attr('width', 10)
-                .attr('height', 10)
-                .style("opacity", 0)
-                .attr("class", "tooltip")
-                .style("background-color", "white")
-                .style("border", "solid")
-                .style("border-width", "2px")
-                .style("border-radius", "1px")
-                .style("padding", "5px")
-
-            let mouseover = function () {
-                    Tooltip.style('opacity', 1);
-                    d3.select(this)
-                    .attr('r', 4)
-                    .style("stroke", "black")
-                    .style("opacity", 1)
-                };
-
-            // based on the xvalue show all information on tooltip
-            // improve the dotsize
-            let mousemove = function (event, data) {
-                console.log("Data:", data);
-                Tooltip
-                .html("Param : " + data.yValue)
-                .style("left", (event.clientX) + "px")
-                .style("top", (event.clientY) + "px")
-                };
-
-                let mouseout = function () {
-                    Tooltip.style("opacity", 0)
-                    d3.select(this)
-                    .attr('r', 2)
-                    .style("stroke", "none")
-                    .style("opacity", 0.8)
-                };
-
-                dots.on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
+                let mouseEvents = this.customTooltip();
+                dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
             result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             return result;
@@ -371,17 +376,6 @@ export class Visual implements IVisual {
         } catch (error) {
             console.log('Issue with ruler:', error);
         }
-    }
-
-    //TODO only shows the categories and values nothing from the tooltip field
-    private getTooltipData(value: any): VisualTooltipDataItem[] {
-        return [
-            {
-                displayName: value.xValue.toString(),
-                value: value.yValue.toString(),
-                color: value.color ?? '#000000',
-            },
-        ];
     }
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
