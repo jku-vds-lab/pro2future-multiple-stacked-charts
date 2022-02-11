@@ -258,11 +258,11 @@ export class Visual implements IVisual {
 
     let mousemove = function (event, data) {
         let tooltipText = "";
+        tooltipText = "<b> x value </b> : " + data.xValue + " <br> ";
         for (let plotModel of plotModels) {
             for (let point of plotModel.dataPoints) {
                 if( point.xValue == data.xValue) {
                     tooltipText +=  "<b> " + plotModel.yName + "</b> : " + point.yValue + " <br> ";
-                    console.log("Tooltip text: " + tooltipText)
                     break;
                 }
             }
