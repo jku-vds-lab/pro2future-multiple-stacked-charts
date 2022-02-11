@@ -266,26 +266,30 @@ export class Visual implements IVisual {
 
             var Tooltip = this.visualContainer
                 .append("div")
+                .attr('width', 10)
+                .attr('height', 10)
                 .style("opacity", 0)
                 .attr("class", "tooltip")
                 .style("background-color", "white")
                 .style("border", "solid")
                 .style("border-width", "2px")
-                .style("border-radius", "5px")
+                .style("border-radius", "1px")
                 .style("padding", "5px")
 
-            let mouseover = function (data) {
-                debugger;
+            let mouseover = function () {
                     Tooltip.style('opacity', 1);
                     d3.select(this)
+                    .attr('r', 4)
                     .style("stroke", "black")
                     .style("opacity", 1)
                 };
 
+            // based on the xvalue show all information on tooltip
+            // improve the dotsize
             let mousemove = function (event, data) {
-                debugger;
+                console.log("Data:", data);
                 Tooltip
-                .html("The exact value of<br>this cell is: " + data.xValue )
+                .html("Param : " + data.yValue)
                 .style("left", (event.clientX) + "px")
                 .style("top", (event.clientY) + "px")
                 };
@@ -293,6 +297,7 @@ export class Visual implements IVisual {
                 let mouseout = function () {
                     Tooltip.style("opacity", 0)
                     d3.select(this)
+                    .attr('r', 2)
                     .style("stroke", "none")
                     .style("opacity", 0.8)
                 };
