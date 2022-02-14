@@ -235,18 +235,18 @@ export class Visual implements IVisual {
     private customTooltip () {
         var Tooltip = this.visualContainer
         .append("div")
-        .attr('width', 10)
-        .attr('height', 10)
-        .style("opacity", 0)
-        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("visibility", "hidden")
         .style("background-color", "white")
         .style("border", "solid")
-        .style("border-width", "2px")
-        .style("border-radius", "1px")
-        .style("padding", "5px")
+        .style("border-width", "1px")
+        .style("border-radius", "5px")
+        .style("padding", "10px")
+        .html("No tooltip info available");
+
 
     let mouseover = function () {
-            Tooltip.style('opacity', 1);
+            Tooltip.style("visibility", "visible");
             d3.select(this)
             .attr('r', 4)
             .style("stroke", "black")
@@ -275,11 +275,11 @@ export class Visual implements IVisual {
         };
 
         let mouseout = function () {
-            Tooltip.style("opacity", 0)
+            Tooltip.style("visibility", "hidden");
             d3.select(this)
             .attr('r', 2)
             .style("stroke", "none")
-            .style("opacity", 0.8)
+            .style("opacity", 0.8);
         }
         return {mouseover, mousemove, mouseout};
     }
