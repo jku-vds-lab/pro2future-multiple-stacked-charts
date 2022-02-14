@@ -195,7 +195,7 @@ export class Visual implements IVisual {
             const xScale = chartInfo.xScale;
             const yScale = chartInfo.yScale;
             const xAxis = chartInfo.xAxis;
-            const dataPoints = plotModel.dataPoints;
+            const dataPoints =  filterNullValues(plotModel.dataPoints);
 
             lineChart
                 .append('path')
@@ -292,8 +292,7 @@ export class Visual implements IVisual {
             const xScale = plotInfo.xScale;
             const yScale = plotInfo.yScale;
             const xAxis = plotInfo.xAxis;
-            const dataPoints = plotModel.dataPoints;
-
+            const dataPoints =  filterNullValues(plotModel.dataPoints);
 
             const dots = plot
                 .selectAll('dots')
@@ -329,7 +328,7 @@ export class Visual implements IVisual {
         const barChart = chartInfo.chart;
         const xScale = chartInfo.xScale;
         const yScale = chartInfo.yScale;
-        const dataPoints = plotModel.dataPoints;
+        const dataPoints =  filterNullValues(plotModel.dataPoints);
         const bar = barChart.selectAll('.bar').data(dataPoints);
 
         const mergedBars = bar
@@ -377,6 +376,8 @@ export class Visual implements IVisual {
             console.log('Issue with ruler:', error);
         }
     }
+
+    
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
@@ -428,3 +429,8 @@ export class Visual implements IVisual {
         }
     }
 }
+function filterNullValues(dataPoints: DataPoint[]) {
+    dataPoints = dataPoints.filter(d => { return d.yValue != null; });
+    return dataPoints;
+}
+
