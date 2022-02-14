@@ -53,6 +53,7 @@ import { ViewModel, DataPoint, PlotModel, PlotType } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
 import { data } from 'jquery';
+import { transform } from 'lodash-es';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 export class Visual implements IVisual {
@@ -129,7 +130,8 @@ export class Visual implements IVisual {
             .attr('width', width)
             .attr('height', height)
             .append('g')
-            .attr('transform', 'translate(' + Visual.Config.margins.left + ',' + Visual.Config.margins.top + ')');
+
+            .attr('transform', 'translate(' + Visual.Config.margins.left  + ',' + Visual.Config.margins.top + ')');
         const xAxis = chart.append('g').classed('xAxis', true);
         const yAxis = chart.append('g').classed('yAxis', true);
         const lineGroup = chart.append("g").attr("class", Constants.verticalRulerClass);
@@ -309,6 +311,9 @@ export class Visual implements IVisual {
 
     private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
         try {
+            debugger;
+            let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
+            let height = 100;
             let result = {};
             const plotInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
             const plot = plotInfo.chart;
@@ -326,10 +331,28 @@ export class Visual implements IVisual {
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
-                .attr('r', 2);
+                .attr('r', 2)
+                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
             let mouseEvents = this.customTooltip();
             dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
+
+                let zoomed = function(event) {
+                    dots.attr("transform", event.transform);
+                }
+
+                plot
+                .append("rect")
+                .attr("fill", "none")
+                .attr("pointer-events", "all")
+                .attr("width", width)
+                .attr("height", height)
+                .call(
+                  d3
+                    .zoom()
+                    .on("zoom", zoomed)
+                );
+
 
             result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             // this.drawVerticalRuler(dots, dataPoints, xAxis, xScale, yScale);
@@ -386,7 +409,7 @@ export class Visual implements IVisual {
     //         };
 
     //         let mousemove = function (event) {
-                
+
     //             let xPos = event.clientX - margins.left;
     //             let x0 = Math.floor(xScale.invert(event.clientX)); // returns the invert of the value?
     //             let i = bisect(dataPoints, x0);
