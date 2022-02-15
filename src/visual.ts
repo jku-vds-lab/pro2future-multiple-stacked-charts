@@ -191,6 +191,7 @@ export class Visual implements IVisual {
         return {
             chart: chart,
             xScale: xScale,
+            xAxisValue: xAxisValue,
             yScale: yScale,
             xAxis: xAxis,
         };
@@ -318,6 +319,7 @@ export class Visual implements IVisual {
             const plotInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
             const plot = plotInfo.chart;
             const xScale = plotInfo.xScale;
+            const xAxisValue = plotInfo.xAxisValue;
             const yScale = plotInfo.yScale;
             const xAxis = plotInfo.xAxis;
             const dataPoints = filterNullValues(plotModel.dataPoints);
@@ -334,33 +336,48 @@ export class Visual implements IVisual {
                 .attr('r', 2)
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
-            let mouseEvents = this.customTooltip();
-            dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
+
+                // Zoom
                 let zoomed = function(event) {
-                    dots.attr("transform", event.transform);
+
+                    let transform = event.transform;
+                    transform.x = Math.min(0, transform.x);
+                    transform.y = 0;
+
+                    let xScaleNew = transform.rescaleX(xScale);
+                    xAxisValue.scale(xScaleNew);
+                    xAxis.call(xAxisValue);
+
+                    dots.attr('cx', (d) => xScaleNew(<number>d.xValue))
+                    .attr('r', 2);
                 }
 
-                plot
-                .append("rect")
-                .attr("fill", "none")
-                .attr("pointer-events", "all")
-                .attr("width", width)
-                .attr("height", height)
-                .call(
-                  d3
-                    .zoom()
-                    .on("zoom", zoomed)
-                );
+                let zoom = d3.zoom().scaleExtent([1, 10]).on('zoom', zoomed); // with scale extent you can control how much you scale
+
+                var listenerRect = plot
+                .append('rect')
+                  .attr('class', 'listener-rect')
+                  .attr('x', 0)
+                  .attr('y',  0 - Visual.Config.margins.left)
+                  .attr('width', width)
+                  .attr('height', height )
+                  .style('opacity', 0);
+
+                listenerRect.call(zoom);
+
+                let mouseEvents = this.customTooltip();
+                dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
 
             result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             // this.drawVerticalRuler(dots, dataPoints, xAxis, xScale, yScale);
             return result;
         } catch (error) {
-            console.log('Error in Draw Line Chart: ', error);
+            console.log('Error in ScatterPlot: ', error);
         }
     }
+
 
     private drawBarPlot(
         options: VisualUpdateOptions,
