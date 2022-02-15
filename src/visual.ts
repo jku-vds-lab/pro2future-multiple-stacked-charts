@@ -109,15 +109,6 @@ export class Visual implements IVisual {
                     bars = this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
-            let svg = this.visualContainer.append("svg").attr("width", 800).attr("height", 200).style("position", "absolute");
-            
-            svg.append('line')
-                .attr('x1', 10)
-                .attr('y1', 10)
-                .attr('x2', 700)
-                .attr('y2', 100)
-                .attr('stroke', 'red').raise();
-            svg.raise();
         } catch (error) {
             console.log(error());
         }
@@ -133,16 +124,22 @@ export class Visual implements IVisual {
         const chart: Selection<any> = this.visualContainer
             .append('svg')
             .classed(plotType + plotNr, true)
+            .classed('chart-selector', true)
             .attr('width', width)
             .attr('height', height)
             .append('g')
             .attr('transform', 'translate(' + Visual.Config.margins.left + ',' + Visual.Config.margins.top + ')');
-
         const xAxis = chart.append('g').classed('xAxis', true);
         const yAxis = chart.append('g').classed('yAxis', true);
-
+        const lineGroup = chart.append("g").attr("class", "hover-line");
         let margins = Visual.Config.margins;
         height -= margins.bottom;
+        lineGroup.append("line")
+            .attr("stroke", "green")
+            .attr("x1", 10).attr("x2", 10)
+            .attr("y1", 0).attr("y2", height)
+
+        
 
         const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, width]);
 
@@ -236,7 +233,7 @@ export class Visual implements IVisual {
             dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
             result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
-            this.drawVerticalRuler(lineChart, dataPoints, xAxis, xScale, yScale);
+            //this.drawVerticalRuler(lineChart, dataPoints, xAxis, xScale, yScale);
             return result;
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
@@ -244,6 +241,8 @@ export class Visual implements IVisual {
     }
 
     private customTooltip() {
+        var lines = d3.selectAll(".hover-line line");
+        const margins = Visual.Config.margins;
         var Tooltip = this.visualContainer
             .append("div")
             .style("position", "absolute")
@@ -254,19 +253,20 @@ export class Visual implements IVisual {
             .style("border-radius", "5px")
             .style("padding", "10px")
             .html("No tooltip info available");
-        let lineGroup = this.visualContainer.append("g").attr("class", "hover-line");
-        let line = lineGroup.append("line")
-            .attr("stroke", "green")
-            .attr("x1", 10).attr("x2", 10)
-            .attr("y1", 0).attr("y2", 50);
+        // let lineGroup = this.visualContainer.append("g").attr("class", "hover-line");
+        // let line = lineGroup.append("line")
+        //     .attr("stroke", "red")
+        //     .attr("x1", 10).attr("x2", 10)
+        //     .attr("y1", 0).attr("y2", 100);
 
         let mouseover = function () {
+            lines = d3.selectAll(".hover-line line");
             Tooltip.style("visibility", "visible");
             d3.select(this)
                 .attr('r', 4)
                 .style("stroke", "black")
                 .style("opacity", 1);
-            console.log("datapoint", d3.select(this));
+            lines.style("opacity", 1);
         };
 
 
@@ -288,8 +288,10 @@ export class Visual implements IVisual {
                 .html(tooltipText)
                 .style("left", (event.clientX) + "px")
                 .style("top", (event.clientY) + "px");
-            line.attr("x1", event.clientX).attr("x2", event.clientX);
-            lineGroup.style("opacity", 1);
+            const x = event.clientX - Visual.Config.margins.left;
+            lines.attr("x1", x).attr("x2", x);
+            // line.attr("x1", event.clientX).attr("x2", event.clientX);
+            // lineGroup.style("opacity", 1);
 
         };
 
@@ -299,6 +301,7 @@ export class Visual implements IVisual {
                 .attr('r', 2)
                 .style("stroke", "none")
                 .style("opacity", 0.8);
+            lines.style("opacity", 0);
         }
         return { mouseover, mousemove, mouseout };
     }
@@ -382,8 +385,8 @@ export class Visual implements IVisual {
             };
 
             let mousemove = function (event) {
-                console.log(event);
-                console.log(xAxis);
+                console.log(d3.selectAll('.chart-selector'));
+                //console.log(xAxis);
                 let xPos = event.clientX - margins.left;
                 let x0 = Math.floor(xScale.invert(event.clientX)); // returns the invert of the value?
                 // console.log('x0 ', x0, 'mousex', event.clientX);
