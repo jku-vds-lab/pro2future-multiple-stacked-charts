@@ -47,11 +47,11 @@ import { scaleBand, scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft, axisRight } from 'd3-axis';
 import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
-import { getAxisTextFillColor, getPlotFillColor, getValue } from './objectEnumerationUtility';
+import { getAxisTextFillColor, getPlotFillColor, getValue, getVerticalRulerColor } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { ViewModel, DataPoint, PlotModel, PlotType } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { EnableAxisNames, PlotSettingsNames, Settings } from './constants';
+import { Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
 import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -121,6 +121,7 @@ export class Visual implements IVisual {
         const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
         const plotType = plotModel.plotSettings.plotSettings.plotType;
         const plotNr = plotModel.plotId;
+        const verticalRulerSettings = this.viewModel.verticalRulerSettings.verticalRulerSettings;
         const chart: Selection<any> = this.visualContainer
             .append('svg')
             .classed(plotType + plotNr, true)
@@ -131,15 +132,15 @@ export class Visual implements IVisual {
             .attr('transform', 'translate(' + Visual.Config.margins.left + ',' + Visual.Config.margins.top + ')');
         const xAxis = chart.append('g').classed('xAxis', true);
         const yAxis = chart.append('g').classed('yAxis', true);
-        const lineGroup = chart.append("g").attr("class", "hover-line");
+        const lineGroup = chart.append("g").attr("class", Constants.verticalRulerClass);
         let margins = Visual.Config.margins;
         height -= margins.bottom;
         lineGroup.append("line")
-            .attr("stroke", "green")
+            .attr("stroke", verticalRulerSettings.fill)
             .attr("x1", 10).attr("x2", 10)
             .attr("y1", 0).attr("y2", height)
 
-        
+
 
         const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, width]);
 
@@ -241,7 +242,9 @@ export class Visual implements IVisual {
     }
 
     private customTooltip() {
-        var lines = d3.selectAll(".hover-line line");
+        const tooltipOffset = 10;
+        let visualContainer = this.visualContainer.node();
+        var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
         const margins = Visual.Config.margins;
         var Tooltip = this.visualContainer
             .append("div")
@@ -253,14 +256,9 @@ export class Visual implements IVisual {
             .style("border-radius", "5px")
             .style("padding", "10px")
             .html("No tooltip info available");
-        // let lineGroup = this.visualContainer.append("g").attr("class", "hover-line");
-        // let line = lineGroup.append("line")
-        //     .attr("stroke", "red")
-        //     .attr("x1", 10).attr("x2", 10)
-        //     .attr("y1", 0).attr("y2", 100);
 
         let mouseover = function () {
-            lines = d3.selectAll(".hover-line line");
+           lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
             Tooltip.style("visibility", "visible");
             d3.select(this)
                 .attr('r', 4)
@@ -273,6 +271,9 @@ export class Visual implements IVisual {
         let plotModels = this.viewModel.plotModels;
 
         let mousemove = function (event, data) {
+
+            const height = visualContainer.offsetHeight;
+            const width = visualContainer.offsetWidth;
             let tooltipText = "";
             tooltipText = "<b> x value </b> : " + data.xValue + " <br> ";
             for (let plotModel of plotModels) {
@@ -283,15 +284,15 @@ export class Visual implements IVisual {
                     }
                 }
             }
-
+            const x = event.clientX - margins.left;
+            const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX+tooltipOffset;
+            const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY+tooltipOffset;
             Tooltip
                 .html(tooltipText)
-                .style("left", (event.clientX) + "px")
-                .style("top", (event.clientY) + "px");
-            const x = event.clientX - Visual.Config.margins.left;
+                .style("left", (tooltipX) + "px")
+                .style("top", (tooltipY) + "px");
+
             lines.attr("x1", x).attr("x2", x);
-            // line.attr("x1", event.clientX).attr("x2", event.clientX);
-            // lineGroup.style("opacity", 1);
 
         };
 
@@ -331,7 +332,7 @@ export class Visual implements IVisual {
             dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
             result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
-            this.drawVerticalRuler(dots, dataPoints, xAxis, xScale, yScale);
+            // this.drawVerticalRuler(dots, dataPoints, xAxis, xScale, yScale);
             return result;
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
@@ -368,47 +369,45 @@ export class Visual implements IVisual {
         return mergedBars;
     }
 
-    private drawVerticalRuler(chart: any, dataPoints: DataPoint[], xAxis: any, xScale: any, yScale: any) {
-        try {
-            const margins = Visual.Config.margins;
-            let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
-            let focus = chart.append('circle').style('fill', 'none').attr('stroke', 'black').attr('r', 8.5).style('opacity', 0);
-            let lineGroup = chart.append("g").attr("class", "hover-line");
-            let line = lineGroup
-                .append("line")
-                .attr("stroke", "red")
-                .attr("x1", 10).attr("x2", 10)
-                .attr("y1", 0).attr("y2", 100);
-            let mouseover = function () {
-                line.style('opacity', 1);
-                focus.style('opacity', 1);
-            };
+    // private drawVerticalRuler(chart: any, dataPoints: DataPoint[], xAxis: any, xScale: any, yScale: any) {
+    //     try {
+    //         const margins = Visual.Config.margins;
+    //         let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
+    //         let focus = chart.append('circle').style('fill', 'none').attr('stroke', 'black').attr('r', 8.5).style('opacity', 0);
+    //         let lineGroup = chart.append("g").attr("class", Constants.verticalRulerClass);
+    //         let line = lineGroup
+    //             .append("line")
+    //             .attr("stroke", "red")
+    //             .attr("x1", 10).attr("x2", 10)
+    //             .attr("y1", 0).attr("y2", 100);
+    //         let mouseover = function () {
+    //             line.style('opacity', 1);
+    //             focus.style('opacity', 1);
+    //         };
 
-            let mousemove = function (event) {
-                console.log(d3.selectAll('.chart-selector'));
-                //console.log(xAxis);
-                let xPos = event.clientX - margins.left;
-                let x0 = Math.floor(xScale.invert(event.clientX)); // returns the invert of the value?
-                // console.log('x0 ', x0, 'mousex', event.clientX);
-                let i = bisect(dataPoints, x0);
-                // console.log('Index ', i, ' DataPoint at index ', dataPoints[i - 1]);
+    //         let mousemove = function (event) {
+                
+    //             let xPos = event.clientX - margins.left;
+    //             let x0 = Math.floor(xScale.invert(event.clientX)); // returns the invert of the value?
+    //             let i = bisect(dataPoints, x0);
 
-                let selectedData = dataPoints[i];
-                focus.attr('cx', xScale(selectedData.xValue)).attr('cy', yScale(selectedData.yValue));
-                line.attr("x1", xPos).attr("x2", xPos);
-            };
 
-            let mouseout = function () {
-                focus.style('opacity', 0);
-                line.style('opacity', 0);
-            };
+    //             let selectedData = dataPoints[i];
+    //             focus.attr('cx', xScale(selectedData.xValue)).attr('cy', yScale(selectedData.yValue));
+    //             line.attr("x1", xPos).attr("x2", xPos);
+    //         };
 
-            chart.on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
+    //         let mouseout = function () {
+    //             focus.style('opacity', 0);
+    //             line.style('opacity', 0);
+    //         };
 
-        } catch (error) {
-            console.log('Issue with ruler:', error);
-        }
-    }
+    //         chart.on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
+
+    //     } catch (error) {
+    //         console.log('Issue with ruler:', error);
+    //     }
+    // }
 
 
 
@@ -425,6 +424,17 @@ export class Visual implements IVisual {
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
                 case Settings.colorSelector:
+                    break;
+                case Settings.verticalRulerSettings:
+                    console.log("test");
+                    let objects = this.dataview.metadata.objects;
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            fill: getVerticalRulerColor(objects,colorPalette,'#000000'),
+                        },
+                        selector: null
+                    });
                     break;
             }
         } catch (error) {
