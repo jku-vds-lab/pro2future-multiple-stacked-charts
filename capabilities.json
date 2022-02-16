@@ -94,6 +94,16 @@
                             "for": {
                                 "in": "y_axis"
                             }
+                        },
+                        {
+                            "for": {
+                                "in": "slabX"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "slabY"
+                            }
                         }
                     ]
                 }

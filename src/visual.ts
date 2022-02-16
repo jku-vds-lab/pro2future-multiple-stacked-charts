@@ -139,6 +139,7 @@ export class Visual implements IVisual {
             .attr("stroke", verticalRulerSettings.fill)
             .attr("x1", 10).attr("x2", 10)
             .attr("y1", 0).attr("y2", height)
+            .attr("opacity", 0);
 
 
 
@@ -185,6 +186,19 @@ export class Visual implements IVisual {
             .attr('dy', '1em')
             .attr('transform', 'rotate(-90)')
             .text(yLabel);
+
+
+        //Additional plot settings: line, rect, none
+        chart.selectAll("slabBars").data(this.viewModel.slabRectangles).enter()
+            .append("rect")
+            .attr("x", function (d) { return xScale(d.x); })
+            .attr("y", function (d) { return yScale(d.width - d.y); })
+            .attr("width", function (d) { return xScale(d.length); })
+            .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
+            .attr("fill", "#FFFFFF")
+            .attr("stroke", "black")
+
+        // .attr("stroke-width","1px");
 
         return {
             chart: chart,
@@ -233,6 +247,7 @@ export class Visual implements IVisual {
             let mouseEvents = this.customTooltip();
             dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
+
             result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
             //this.drawVerticalRuler(lineChart, dataPoints, xAxis, xScale, yScale);
             return result;
@@ -258,7 +273,7 @@ export class Visual implements IVisual {
             .html("No tooltip info available");
 
         let mouseover = function () {
-           lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
+            lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
             Tooltip.style("visibility", "visible");
             d3.select(this)
                 .attr('r', 4)
@@ -285,8 +300,8 @@ export class Visual implements IVisual {
                 }
             }
             const x = event.clientX - margins.left;
-            const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX+tooltipOffset;
-            const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY+tooltipOffset;
+            const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
+            const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
             Tooltip
                 .html(tooltipText)
                 .style("left", (tooltipX) + "px")
@@ -386,7 +401,7 @@ export class Visual implements IVisual {
     //         };
 
     //         let mousemove = function (event) {
-                
+
     //             let xPos = event.clientX - margins.left;
     //             let x0 = Math.floor(xScale.invert(event.clientX)); // returns the invert of the value?
     //             let i = bisect(dataPoints, x0);
@@ -431,7 +446,7 @@ export class Visual implements IVisual {
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
-                            fill: getVerticalRulerColor(objects,colorPalette,'#000000'),
+                            fill: getVerticalRulerColor(objects, colorPalette, '#000000'),
                         },
                         selector: null
                     });
