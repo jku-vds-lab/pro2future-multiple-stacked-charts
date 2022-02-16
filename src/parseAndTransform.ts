@@ -176,13 +176,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             let yColumnObjects = metadataColumns[yColumnId].objects;
 
             dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
-                if (a.xValue > b.xValue) {
-                    return 1;
-                } else if (a.xValue < b.xValue) {
-                    return -1;
-                } else {
-                    return 0;
-                }
+                return <number>a.xValue-<number>b.xValue;
             });
 
             let formatSettings: FormatSettings = {

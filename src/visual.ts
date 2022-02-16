@@ -49,7 +49,7 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, PlotModel, PlotType, SlabType } from './plotInterface';
+import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, SlabRectangle } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { AdditionalPlotSettingsNames, ColorSettingsNames, Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
 import { data } from 'jquery';
@@ -90,23 +90,18 @@ export class Visual implements IVisual {
             this.visualContainer.selectAll('*').remove();
             this.viewModel = visualTransform(options, this.host);
 
-            let points: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
-            let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
-
-
             for (let plotModel of this.viewModel.plotModels) {
                 const plotType = plotModel.plotSettings.plotSettings.plotType;
                 if (plotType == PlotType.LinePlot) {
-                    const linePlot = this.drawLinePlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName)
-                    points.push(linePlot.points);
+                    this.drawLinePlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName)
+
                 }
                 else if (plotType == PlotType.ScatterPlot) {
-                    const scatterPlot = this.drawScatterPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
-                    points.push(scatterPlot.points);
+                    this.drawScatterPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
 
                 else if (plotType == PlotType.BarPlot) {
-                    bars = this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
+                    this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
         } catch (error) {
@@ -186,27 +181,7 @@ export class Visual implements IVisual {
 
 
 
-        if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
-            if (slabtype == SlabType.Rectangle) {
-                chart.selectAll("slabBars").data(slabRectangles).enter()
-                    .append("rect")
-                    .attr("x", function (d) { return xScale(d.x); })
-                    .attr("y", function (d) { return yScale(d.width - d.y); })
-                    .attr("width", function (d) { return xScale(d.length); })
-                    .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
-                    .attr("fill", "transparent")
-                    .attr("stroke", colorSettings.slabColor)
-            } else if (slabtype == SlabType.Line) {
-                chart.selectAll("slabBars").data(slabRectangles).enter()
-                    .append("line")
-                    .attr("stroke", colorSettings.slabColor)
-                    .attr("x1", function (d) { return xScale(d.x); })
-                    .attr("x2", function (d) { return xScale(d.x); })
-                    .attr("y1", 0)
-                    .attr("y2", height)
-                    .attr("opacity", 1);
-            }
-        }
+        this.drawSlabs(slabtype, slabRectangles, chart, xScale, yScale, colorSettings, height);
 
         lineGroup.append("line")
             .attr("stroke", colorSettings.verticalRulerColor)
@@ -220,6 +195,30 @@ export class Visual implements IVisual {
             yScale: yScale,
             xAxis: xAxis,
         };
+    }
+
+    private drawSlabs(slabtype: SlabType, slabRectangles: SlabRectangle[], chart: Selection<any, any>, xScale: d3.ScaleLinear<number, number, never>, yScale: d3.ScaleLinear<number, number, never>, colorSettings: { verticalRulerColor: string; slabColor: string; }, height: number) {
+        if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
+            if (slabtype == SlabType.Rectangle) {
+                chart.selectAll("slabBars").data(slabRectangles).enter()
+                    .append("rect")
+                    .attr("x", function (d) { return xScale(d.x); })
+                    .attr("y", function (d) { return yScale(d.width - d.y); })
+                    .attr("width", function (d) { return xScale(d.length); })
+                    .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
+                    .attr("fill", "transparent")
+                    .attr("stroke", colorSettings.slabColor);
+            } else if (slabtype == SlabType.Line) {
+                chart.selectAll("slabBars").data(slabRectangles).enter()
+                    .append("line")
+                    .attr("stroke", colorSettings.slabColor)
+                    .attr("x1", function (d) { return xScale(d.x); })
+                    .attr("x2", function (d) { return xScale(d.x); })
+                    .attr("y1", 0)
+                    .attr("y2", height)
+                    .attr("opacity", 1);
+            }
+        }
     }
 
     private drawLinePlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
@@ -398,47 +397,7 @@ export class Visual implements IVisual {
         return mergedBars;
     }
 
-    // private drawVerticalRuler(chart: any, dataPoints: DataPoint[], xAxis: any, xScale: any, yScale: any) {
-    //     try {
-    //         const margins = Visual.Config.margins;
-    //         let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
-    //         let focus = chart.append('circle').style('fill', 'none').attr('stroke', 'black').attr('r', 8.5).style('opacity', 0);
-    //         let lineGroup = chart.append("g").attr("class", Constants.verticalRulerClass);
-    //         let line = lineGroup
-    //             .append("line")
-    //             .attr("stroke", "red")
-    //             .attr("x1", 10).attr("x2", 10)
-    //             .attr("y1", 0).attr("y2", 100);
-    //         let mouseover = function () {
-    //             line.style('opacity', 1);
-    //             focus.style('opacity', 1);
-    //         };
-
-    //         let mousemove = function (event) {
-
-    //             let xPos = event.clientX - margins.left;
-    //             let x0 = Math.floor(xScale.invert(event.clientX)); // returns the invert of the value?
-    //             let i = bisect(dataPoints, x0);
-
-
-    //             let selectedData = dataPoints[i];
-    //             focus.attr('cx', xScale(selectedData.xValue)).attr('cy', yScale(selectedData.yValue));
-    //             line.attr("x1", xPos).attr("x2", xPos);
-    //         };
-
-    //         let mouseout = function () {
-    //             focus.style('opacity', 0);
-    //             line.style('opacity', 0);
-    //         };
-
-    //         chart.on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
-
-    //     } catch (error) {
-    //         console.log('Issue with ruler:', error);
-    //     }
-    // }
-
-
+ 
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
