@@ -71,9 +71,10 @@ export interface FormatSettings {
     };
 }
 
-export interface VerticalRulerSettings{
-    verticalRulerSettings:{
-        fill: string;
+export interface ColorSettings{
+    colorSettings:{
+        verticalRulerColor: string;
+        slabColor: string;
     }
 }
 
