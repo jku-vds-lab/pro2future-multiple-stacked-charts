@@ -52,18 +52,14 @@ import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-vis
 import { ViewModel, DataPoint, PlotModel, PlotType } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
-import { data } from 'jquery';
-import { transform } from 'lodash-es';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 export class Visual implements IVisual {
     private host: IVisualHost;
     private element: HTMLElement;
-    private visualContainer: d3.Selection<HTMLDivElement, any, HTMLDivElement, any>;
     private dataview: DataView;
-
-
     private viewModel: ViewModel;
+    private svg: Selection<any>;
 
     static Config = {
         xScalePadding: 0.1,
@@ -80,7 +76,7 @@ export class Visual implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.element = options.element;
-        this.visualContainer = d3.select(this.element).append('div').attr('class', 'visualContainer');
+        this.svg = d3.select(this.element).append('svg').classed('visualContainer', true);
     }
 
 
@@ -88,7 +84,7 @@ export class Visual implements IVisual {
 
         try {
             this.dataview = options.dataViews[0];
-            this.visualContainer.selectAll('*').remove();
+            this.svg.selectAll('*').remove();
             this.viewModel = visualTransform(options, this.host);
 
             let points: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
@@ -123,15 +119,18 @@ export class Visual implements IVisual {
         const plotType = plotModel.plotSettings.plotSettings.plotType;
         const plotNr = plotModel.plotId;
         const verticalRulerSettings = this.viewModel.verticalRulerSettings.verticalRulerSettings;
-        const chart: Selection<any> = this.visualContainer
-            .append('svg')
-            .classed(plotType + plotNr, true)
-            .classed('chart-selector', true)
-            .attr('width', width)
-            .attr('height', height)
-            .append('g')
+        const top = height * plotNr;
 
-            .attr('transform', 'translate(' + Visual.Config.margins.left  + ',' + Visual.Config.margins.top + ')');
+        this.svg
+            .attr("width", width)
+            .attr("height", 1000); // svg container height
+
+        const chart = this.svg.append('g')
+                    .classed(plotType + plotNr, true)
+                    .attr('width', width)
+                    .attr('height', height)
+                    .attr('transform', 'translate(' + Visual.Config.margins.left  + ',' + top + ')');
+
         const xAxis = chart.append('g').classed('xAxis', true);
         const yAxis = chart.append('g').classed('yAxis', true);
         const lineGroup = chart.append("g").attr("class", Constants.verticalRulerClass);
@@ -246,10 +245,10 @@ export class Visual implements IVisual {
 
     private customTooltip() {
         const tooltipOffset = 10;
-        let visualContainer = this.visualContainer.node();
+        let visualContainer = this.svg.node();
         var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
         const margins = Visual.Config.margins;
-        var Tooltip = this.visualContainer
+        var Tooltip = this.svg
             .append("div")
             .style("position", "absolute")
             .style("visibility", "hidden")
@@ -336,7 +335,8 @@ export class Visual implements IVisual {
                 .attr('r', 2)
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
-
+                let mouseEvents = this.customTooltip();
+                dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
                 // Zoom
                 let zoomed = function(event) {
@@ -355,19 +355,18 @@ export class Visual implements IVisual {
 
                 let zoom = d3.zoom().scaleExtent([1, 10]).on('zoom', zoomed); // with scale extent you can control how much you scale
 
-                var listenerRect = plot
-                .append('rect')
-                  .attr('class', 'listener-rect')
-                  .attr('x', 0)
-                  .attr('y',  0 - Visual.Config.margins.left)
-                  .attr('width', width)
-                  .attr('height', height )
-                  .style('opacity', 0);
+                // var listenerRect = plot
+                // .append('rect')
+                //   .attr('class', 'listener-rect')
+                //   .attr('x', 0)
+                //   .attr('y',  0 - Visual.Config.margins.left)
+                //   .attr('width', width)
+                //   .attr('height', height )
+                //   .style('opacity', 0);
 
-                listenerRect.call(zoom);
+                plot.call(zoom);
 
-                let mouseEvents = this.customTooltip();
-                dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
+
 
 
             result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
@@ -423,7 +422,6 @@ export class Visual implements IVisual {
                 case Settings.colorSelector:
                     break;
                 case Settings.verticalRulerSettings:
-                    console.log("test");
                     let objects = this.dataview.metadata.objects;
                     objectEnumeration.push({
                         objectName: objectName,
