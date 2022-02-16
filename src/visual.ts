@@ -248,8 +248,8 @@ export class Visual implements IVisual {
         let visualContainer = this.svg.node();
         var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
         const margins = Visual.Config.margins;
-        var Tooltip = this.svg
-            .append("div")
+        var Tooltip = d3.select(this.element)
+            .append('div')
             .style("position", "absolute")
             .style("visibility", "hidden")
             .style("background-color", "white")
