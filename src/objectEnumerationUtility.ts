@@ -1,6 +1,6 @@
 import { color } from "d3-color";
 import powerbi from "powerbi-visuals-api";
-import { ColorSelectorNames, PlotSettingsNames, Settings } from "./constants";
+import { ColorSelectorNames, PlotSettingsNames, Settings, VerticalRulerSettingsNames } from "./constants";
 import DataViewObjects = powerbi.DataViewObjects;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import DataViewObject = powerbi.DataViewObject;
@@ -17,17 +17,17 @@ import Fill = powerbi.Fill;
  */
 
 export function getValue<T>(objects: DataViewObjects, objectName: string, propertyName: string, defaultValue: T): T {
-    if(objects) {
-      let object = objects[objectName];
-      if(object) {
-        let property: T = <T>object[propertyName];
-        if(property != undefined) {
-          return property;
-        }
+  if (objects) {
+    let object = objects[objectName];
+    if (object) {
+      let property: T = <T>object[propertyName];
+      if (property != undefined) {
+        return property;
       }
     }
+  }
 
-    return defaultValue;
+  return defaultValue;
 }
 
 /**
@@ -44,13 +44,13 @@ export function getValue<T>(objects: DataViewObjects, objectName: string, proper
 export function getCategoricalObjectValue<T>(category: DataViewCategoryColumn, index: number, objectName: string, propertyName: string, defaultValue: T): T {
   let categoryObjects = category.objects;
 
-  if(categoryObjects) {
+  if (categoryObjects) {
     let categoryObject: DataViewObject = categoryObjects[index];
-    if(categoryObject) {
+    if (categoryObject) {
       let object = categoryObject[objectName];
-      if(object) {
+      if (object) {
         let property: T = <T>object[propertyName];
-        if(property !== undefined) {
+        if (property !== undefined) {
           return property;
         }
       }
@@ -62,54 +62,73 @@ export function getCategoricalObjectValue<T>(category: DataViewCategoryColumn, i
 export function getAxisTextFillColor(objects: DataViewObjects,
   colorPalette: ISandboxExtendedColorPalette,
   defaultColor: string): string {
-    if(colorPalette.isHighContrast) {
-      return colorPalette.foreground.value;
-    }
-    return getValue<Fill>(
-      objects,
-        "enableAxis",
-        "fill",
-        {
-            solid: {
-                color: defaultColor,
-            }
-        },
-    ).solid.color;
+  if (colorPalette.isHighContrast) {
+    return colorPalette.foreground.value;
   }
-
-  export function getPlotFillColor(objects: DataViewObjects,
-    colorPalette: ISandboxExtendedColorPalette,
-    defaultColor: string): string {
-      if(colorPalette.isHighContrast) {
-        return colorPalette.foreground.value;
-      }
-      return getValue<Fill>(
-        objects,
-          Settings.plotSettings,
-          PlotSettingsNames.fill,
-          {
-              solid: {
-                  color: defaultColor,
-              }
-          },
-      ).solid.color;
-    }
-
-  export function getColumnnColorByIndex(category: DataViewCategoryColumn, index: number, colorPalette: ISandboxExtendedColorPalette): string {
-    if(colorPalette.isHighContrast) {
-      return colorPalette.background.value;
-    }
-    const defaultColor:Fill = {
+  return getValue<Fill>(
+    objects,
+    "enableAxis",
+    "fill",
+    {
       solid: {
-        color: colorPalette.getColor(`${category.values[index]}`).value,
+        color: defaultColor,
       }
-    };
+    },
+  ).solid.color;
+}
 
-    return getCategoricalObjectValue<Fill>(
-      category,
-      index,
-      Settings.colorSelector,
-      ColorSelectorNames.fill,
-      defaultColor
-    ).solid.color;
+export function getPlotFillColor(objects: DataViewObjects,
+  colorPalette: ISandboxExtendedColorPalette,
+  defaultColor: string): string {
+  if (colorPalette.isHighContrast) {
+    return colorPalette.foreground.value;
   }
+  return getValue<Fill>(
+    objects,
+    Settings.plotSettings,
+    PlotSettingsNames.fill,
+    {
+      solid: {
+        color: defaultColor,
+      }
+    },
+  ).solid.color;
+}
+
+
+export function getVerticalRulerColor(objects: DataViewObjects,
+  colorPalette: ISandboxExtendedColorPalette,
+  defaultColor: string): string {
+  if (colorPalette.isHighContrast) {
+    return colorPalette.foreground.value;
+  }
+  return getValue<Fill>(
+    objects,
+    Settings.verticalRulerSettings,
+    VerticalRulerSettingsNames.fill,
+    {
+      solid: {
+        color: defaultColor,
+      }
+    },
+  ).solid.color;
+}
+
+export function getColumnnColorByIndex(category: DataViewCategoryColumn, index: number, colorPalette: ISandboxExtendedColorPalette): string {
+  if (colorPalette.isHighContrast) {
+    return colorPalette.background.value;
+  }
+  const defaultColor: Fill = {
+    solid: {
+      color: colorPalette.getColor(`${category.values[index]}`).value,
+    }
+  };
+
+  return getCategoricalObjectValue<Fill>(
+    category,
+    index,
+    Settings.colorSelector,
+    ColorSelectorNames.fill,
+    defaultColor
+  ).solid.color;
+}

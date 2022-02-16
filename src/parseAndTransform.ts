@@ -3,10 +3,10 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
-import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor } from './objectEnumerationUtility';
+import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getVerticalRulerColor } from './objectEnumerationUtility';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType } from './plotInterface';
 import { Color } from 'd3';
-import {EnableAxisNames, PlotSettingsNames, Settings} from './constants';
+import { EnableAxisNames, PlotSettingsNames, Settings, VerticalRulerSettingsNames } from './constants';
 
 // TODO #12: Add the param length from the metadata objects
 // TODO #13: Add advanced interface for adding plot type and number
@@ -32,7 +32,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             return null;
         }
 
-        //let objects = dataViews[0].metadata.objects; => maybe used for other settings
+        const objects = dataViews[0].metadata.objects;
         const categorical = dataViews[0].categorical;
         const metadataColumns = dataViews[0].metadata.columns;
         const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
@@ -52,13 +52,18 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         let xData = new Array<XAxisData>(xCount);
         let yData = new Array<YAxisData>(yCount);
         let viewModel: ViewModel = <ViewModel>{
-            plotModels: new Array<PlotModel>(yCount)
+            plotModels: new Array<PlotModel>(yCount),
+            verticalRulerSettings: {
+                verticalRulerSettings: {
+                    fill: getVerticalRulerColor(objects, colorPalette, '#000000')
+                }
+            }
         };
         let xDataPoints: number[] = [];
         let yDataPoints: number[] = [];
         let dataPoints: DataPoint[] = [];
 
-        
+
 
         //aquire all categorical values
         if (categorical.categories !== undefined) {
@@ -104,7 +109,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
         }
 
-        
+
         //create Plotmodels 
         for (let plotNr = 0; plotNr < yCount; plotNr++) {
             //get x- and y-data for plotnumber

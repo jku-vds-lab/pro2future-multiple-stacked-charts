@@ -9,6 +9,7 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 
 export interface ViewModel {
     plotModels: PlotModel[];
+    verticalRulerSettings: VerticalRulerSettings;
 }
 
 export enum PlotType{
@@ -16,6 +17,7 @@ export enum PlotType{
     ScatterPlot = "ScatterPlot",
     LinePlot = "LinePlot"
 }
+
 
 export interface PlotModel{
     plotId: number;
@@ -47,6 +49,12 @@ export interface FormatSettings {
     enableAxis: {
         enabled: boolean;
     };
+}
+
+export interface VerticalRulerSettings{
+    verticalRulerSettings:{
+        fill: string;
+    }
 }
 
 export interface PlotSettings {

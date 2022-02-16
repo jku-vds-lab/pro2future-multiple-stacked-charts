@@ -69,6 +69,22 @@
         }
     ],
     "objects": {
+        "verticalRulerSettings": {
+            "displayName": "Vertical Ruler Settings",
+            "properties": {
+                "fill": {
+                    "displayName": "Color",
+                    "description": "The fill color of the circle.",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "plotSettings": {
             "displayName": "Plot Settings",
             "properties": {
