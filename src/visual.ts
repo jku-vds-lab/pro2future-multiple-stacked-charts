@@ -237,7 +237,7 @@ export class Visual implements IVisual {
             dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
             result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
-            //this.drawVerticalRuler(lineChart, dataPoints, xAxis, xScale, yScale);
+
             return result;
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
@@ -371,7 +371,6 @@ export class Visual implements IVisual {
 
 
             result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
-            // this.drawVerticalRuler(dots, dataPoints, xAxis, xScale, yScale);
             return result;
         } catch (error) {
             console.log('Error in ScatterPlot: ', error);
@@ -408,48 +407,6 @@ export class Visual implements IVisual {
             .style('fill', (dataPoint: DataPoint) => dataPoint.color);
         return mergedBars;
     }
-
-    // private drawVerticalRuler(chart: any, dataPoints: DataPoint[], xAxis: any, xScale: any, yScale: any) {
-    //     try {
-    //         const margins = Visual.Config.margins;
-    //         let bisect = d3.bisector((d: DataPoint) => <number>d.xValue).left;
-    //         let focus = chart.append('circle').style('fill', 'none').attr('stroke', 'black').attr('r', 8.5).style('opacity', 0);
-    //         let lineGroup = chart.append("g").attr("class", Constants.verticalRulerClass);
-    //         let line = lineGroup
-    //             .append("line")
-    //             .attr("stroke", "red")
-    //             .attr("x1", 10).attr("x2", 10)
-    //             .attr("y1", 0).attr("y2", 100);
-    //         let mouseover = function () {
-    //             line.style('opacity', 1);
-    //             focus.style('opacity', 1);
-    //         };
-
-    //         let mousemove = function (event) {
-
-    //             let xPos = event.clientX - margins.left;
-    //             let x0 = Math.floor(xScale.invert(event.clientX)); // returns the invert of the value?
-    //             let i = bisect(dataPoints, x0);
-
-
-    //             let selectedData = dataPoints[i];
-    //             focus.attr('cx', xScale(selectedData.xValue)).attr('cy', yScale(selectedData.yValue));
-    //             line.attr("x1", xPos).attr("x2", xPos);
-    //         };
-
-    //         let mouseout = function () {
-    //             focus.style('opacity', 0);
-    //             line.style('opacity', 0);
-    //         };
-
-    //         chart.on('mouseover', mouseover).on('mousemove', mousemove).on('mouseout', mouseout);
-
-    //     } catch (error) {
-    //         console.log('Issue with ruler:', error);
-    //     }
-    // }
-
-
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
