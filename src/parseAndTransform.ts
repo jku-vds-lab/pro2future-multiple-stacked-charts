@@ -3,10 +3,10 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
-import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getVerticalRulerColor } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType } from './plotInterface';
+import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType } from './plotInterface';
 import { Color } from 'd3';
-import { EnableAxisNames, PlotSettingsNames, Settings, VerticalRulerSettingsNames } from './constants';
+import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames,AdditionalPlotSettingsNames } from './constants';
 
 // TODO #12: Add the param length from the metadata objects
 // TODO #13: Add advanced interface for adding plot type and number
@@ -53,16 +53,18 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         let yData = new Array<YAxisData>(yCount);
         let viewModel: ViewModel = <ViewModel>{
             plotModels: new Array<PlotModel>(yCount),
-            verticalRulerSettings: {
-                verticalRulerSettings: {
-                    fill: getVerticalRulerColor(objects, colorPalette, '#000000')
+            colorSettings: {
+                colorSettings: {
+                    verticalRulerColor: getColorSettings(objects,ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
+                    slabColor: getColorSettings(objects,ColorSettingsNames.slabColor, colorPalette, '#000000')
                 }
             }
         };
         let xDataPoints: number[] = [];
         let yDataPoints: number[] = [];
         let dataPoints: DataPoint[] = [];
-
+        let slabWidth: number[] = [];
+        let slabLength: number[] = [];
 
 
         //aquire all categorical values
@@ -83,6 +85,12 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                         columnId: category.source.index
                     }
                     yData[yId] = yAxis;
+                }
+                else if (category.source.roles.slabX) {
+                    slabLength = <number[]>category.values;
+                }
+                else if (category.source.roles.slabY) {
+                    slabWidth = <number[]>category.values;
                 }
             }
         }
@@ -106,11 +114,39 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     }
                     yData[yId] = yAxis;
                 }
+                else if (value.source.roles.slabX) {
+                    slabLength = <number[]>value.values;
+                }
+                else if (value.source.roles.slabY) {
+                    slabWidth = <number[]>value.values;
+                }
             }
         }
+        if (slabLength.length == slabWidth.length && slabWidth.length > 0) {
+            let slabRectangles = new Array<SlabRectangle>(slabLength.length);
+            for (let i = 0; i < slabLength.length; i++) {
+                slabRectangles[i] = {
+                    width: slabWidth[i],
+                    length: 0,
+                    y: 0,
+                    x: slabLength[i]
+                };
+            }
+            slabRectangles = slabRectangles.filter(x => x.x != null && x.x != 0)
+                .sort((a, b) => { return a.x - b.x });
+            let lastX = slabRectangles[0].x;
+            slabRectangles[0].length = lastX;
+            slabRectangles[0].x = 0;
+            for (let i = 1; i < slabRectangles.length; i++) {
+                slabRectangles[i].length = slabRectangles[i].x - lastX;
+                lastX = slabRectangles[i].x;
+                slabRectangles[i].x = lastX - slabRectangles[i].length
+            }
 
+            viewModel.slabRectangles = slabRectangles;
+        }
 
-        //create Plotmodels 
+        //create Plotmodels
         for (let plotNr = 0; plotNr < yCount; plotNr++) {
             //get x- and y-data for plotnumber
             let xAxis: XAxisData = sharedXAxis ? xData[0] : xData[plotNr];
@@ -140,13 +176,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             let yColumnObjects = metadataColumns[yColumnId].objects;
 
             dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
-                if (a.xValue > b.xValue) {
-                    return 1;
-                } else if (a.xValue < b.xValue) {
-                    return -1;
-                } else {
-                    return 0;
-                }
+                return <number>a.xValue-<number>b.xValue;
             });
 
             let formatSettings: FormatSettings = {
@@ -165,7 +195,13 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
                         plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
                     },
-                }, xRange: {
+                },
+                additionalPlotSettings:{
+                    additionalPlotSettings:{
+                        slabType: SlabType[getValue<string>(yColumnObjects, Settings.additionalPlotSettings, AdditionalPlotSettingsNames.slabType, SlabType.None)]
+                    }
+                },
+                xRange: {
                     min: Math.min(...xDataPoints),
                     max: Math.max(...xDataPoints),
                 },
