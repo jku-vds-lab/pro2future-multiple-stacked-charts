@@ -104,7 +104,7 @@ export class Visual implements IVisual {
                 }
 
                 else if (plotType == PlotType.BarPlot) {
-                    bars = this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
+                    this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
 
