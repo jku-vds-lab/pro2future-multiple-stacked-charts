@@ -27,6 +27,32 @@
             ]
         },
         {
+            "displayName": "Slab length",
+            "name": "slabX",
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
+        },
+        {
+            "displayName": "Slab width",
+            "name": "slabY",
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
+        },
+        {
             "displayName": "Tooltips",
             "name": "Tooltips",
             "kind": "Measure"
@@ -37,16 +63,22 @@
             "conditions": [
                 {
                     "x_axis": {
-                        "max": 3
+                        "max": 8
                     },
                     "y_axis": {
-                        "max": 3
+                        "max": 8
+                    },
+                    "slabX": {
+                        "max": 1
+                    },
+                    "slabY": {
+                        "max": 1
                     },
                     "category": {
-                        "max": 3
+                        "max": 16
                     },
                     "measure": {
-                        "max": 3
+                        "max": 16
                     }
                 }
             ],
