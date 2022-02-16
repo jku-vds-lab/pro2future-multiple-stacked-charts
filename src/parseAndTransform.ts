@@ -3,10 +3,10 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
-import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getVerticalRulerColor } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle } from './plotInterface';
+import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType } from './plotInterface';
 import { Color } from 'd3';
-import { EnableAxisNames, PlotSettingsNames, Settings, VerticalRulerSettingsNames } from './constants';
+import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames,AdditionalPlotSettingsNames } from './constants';
 
 // TODO #12: Add the param length from the metadata objects
 // TODO #13: Add advanced interface for adding plot type and number
@@ -53,9 +53,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         let yData = new Array<YAxisData>(yCount);
         let viewModel: ViewModel = <ViewModel>{
             plotModels: new Array<PlotModel>(yCount),
-            verticalRulerSettings: {
-                verticalRulerSettings: {
-                    fill: getVerticalRulerColor(objects, colorPalette, '#000000')
+            colorSettings: {
+                colorSettings: {
+                    verticalRulerColor: getColorSettings(objects,ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
+                    slabColor: getColorSettings(objects,ColorSettingsNames.slabColor, colorPalette, '#000000')
                 }
             }
         };
@@ -200,7 +201,13 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
                         plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
                     },
-                }, xRange: {
+                }, 
+                additionalPlotSettings:{
+                    additionalPlotSettings:{
+                        slabType: SlabType[getValue<string>(yColumnObjects, Settings.additionalPlotSettings, AdditionalPlotSettingsNames.slabType, SlabType.None)]
+                    }
+                },
+                xRange: {
                     min: Math.min(...xDataPoints),
                     max: Math.max(...xDataPoints),
                 },

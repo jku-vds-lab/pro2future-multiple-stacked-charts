@@ -9,7 +9,7 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 
 export interface ViewModel {
     plotModels: PlotModel[];
-    verticalRulerSettings: VerticalRulerSettings;
+    colorSettings: ColorSettings;
     slabRectangles?: SlabRectangle[];
 }
 
@@ -19,6 +19,12 @@ export enum PlotType{
     LinePlot = "LinePlot"
 }
 
+export enum SlabType{
+    Rectangle = "Rectangle",
+    Line = "Line",
+    None = "None"
+}
+
 
 export interface PlotModel{
     plotId: number;
@@ -26,6 +32,7 @@ export interface PlotModel{
     yName: string;
     formatSettings: FormatSettings;
     plotSettings: PlotSettings;
+    additionalPlotSettings: AdditionalPlotSettings;
     dataPoints: DataPoint[];
 
     xRange: {
@@ -59,9 +66,10 @@ export interface FormatSettings {
     };
 }
 
-export interface VerticalRulerSettings{
-    verticalRulerSettings:{
-        fill: string;
+export interface ColorSettings{
+    colorSettings:{
+        verticalRulerColor: string;
+        slabColor: string;
     }
 }
 
@@ -69,6 +77,12 @@ export interface PlotSettings {
     plotSettings: {
         fill: string;
         plotType: PlotType;
+    };
+}
+
+export interface AdditionalPlotSettings {
+    additionalPlotSettings: {
+        slabType: SlabType;
     };
 }
 

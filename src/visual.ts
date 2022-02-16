@@ -47,11 +47,11 @@ import { scaleBand, scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft, axisRight } from 'd3-axis';
 import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
-import { getAxisTextFillColor, getPlotFillColor, getValue, getVerticalRulerColor } from './objectEnumerationUtility';
+import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, PlotModel, PlotType } from './plotInterface';
+import { ViewModel, DataPoint, PlotModel, PlotType, SlabType } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
+import { AdditionalPlotSettingsNames, ColorSettingsNames, Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
 import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -121,7 +121,7 @@ export class Visual implements IVisual {
         const colorObjects = options.dataViews[0] ? options.dataViews[0].metadata.objects : null;
         const plotType = plotModel.plotSettings.plotSettings.plotType;
         const plotNr = plotModel.plotId;
-        const verticalRulerSettings = this.viewModel.verticalRulerSettings.verticalRulerSettings;
+        const colorSettings = this.viewModel.colorSettings.colorSettings;
         const chart: Selection<any> = this.visualContainer
             .append('svg')
             .classed(plotType + plotNr, true)
@@ -133,15 +133,12 @@ export class Visual implements IVisual {
         const xAxis = chart.append('g').classed('xAxis', true);
         const yAxis = chart.append('g').classed('yAxis', true);
         const lineGroup = chart.append("g").attr("class", Constants.verticalRulerClass);
+        const slabtype = plotModel.additionalPlotSettings.additionalPlotSettings.slabType;
+        const slabRectangles = this.viewModel.slabRectangles;
+
+
         let margins = Visual.Config.margins;
         height -= margins.bottom;
-        lineGroup.append("line")
-            .attr("stroke", verticalRulerSettings.fill)
-            .attr("x1", 10).attr("x2", 10)
-            .attr("y1", 0).attr("y2", height)
-            .attr("opacity", 0);
-
-
 
         const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, width]);
 
@@ -188,17 +185,34 @@ export class Visual implements IVisual {
             .text(yLabel);
 
 
-        //Additional plot settings: line, rect, none
-        chart.selectAll("slabBars").data(this.viewModel.slabRectangles).enter()
-            .append("rect")
-            .attr("x", function (d) { return xScale(d.x); })
-            .attr("y", function (d) { return yScale(d.width - d.y); })
-            .attr("width", function (d) { return xScale(d.length); })
-            .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
-            .attr("fill", "#FFFFFF")
-            .attr("stroke", "black")
 
-        // .attr("stroke-width","1px");
+        if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
+            if (slabtype == SlabType.Rectangle) {
+                chart.selectAll("slabBars").data(slabRectangles).enter()
+                    .append("rect")
+                    .attr("x", function (d) { return xScale(d.x); })
+                    .attr("y", function (d) { return yScale(d.width - d.y); })
+                    .attr("width", function (d) { return xScale(d.length); })
+                    .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
+                    .attr("fill", "transparent")
+                    .attr("stroke", colorSettings.slabColor)
+            } else if (slabtype == SlabType.Line) {
+                chart.selectAll("slabBars").data(slabRectangles).enter()
+                    .append("line")
+                    .attr("stroke", colorSettings.slabColor)
+                    .attr("x1", function (d) { return xScale(d.x); })
+                    .attr("x2", function (d) { return xScale(d.x); })
+                    .attr("y1", 0)
+                    .attr("y2", height)
+                    .attr("opacity", 1);
+            }
+        }
+
+        lineGroup.append("line")
+            .attr("stroke", colorSettings.verticalRulerColor)
+            .attr("x1", 10).attr("x2", 10)
+            .attr("y1", 0).attr("y2", height)
+            .attr("opacity", 0);
 
         return {
             chart: chart,
@@ -436,17 +450,19 @@ export class Visual implements IVisual {
             switch (objectName) {
                 case Settings.plotSettings:
                 case Settings.enableAxis:
+                case Settings.additionalPlotSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
                 case Settings.colorSelector:
                     break;
-                case Settings.verticalRulerSettings:
-                    console.log("test");
+                case Settings.colorSettings:
+                    debugger;
                     let objects = this.dataview.metadata.objects;
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
-                            fill: getVerticalRulerColor(objects, colorPalette, '#000000'),
+                            verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
+                            slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#0000FF')
                         },
                         selector: null
                     });
@@ -458,7 +474,6 @@ export class Visual implements IVisual {
         return objectEnumeration;
 
         function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[]) {
-
             objectEnumeration = new Array<VisualObjectInstance>(yCount);
             for (let column of metadataColumns) {
                 if (column.roles.y_axis) {
@@ -474,6 +489,10 @@ export class Visual implements IVisual {
                     } else if (objectName === Settings.enableAxis) {
                         properties = {
                             enabled: getValue<boolean>(columnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
+                        };
+                    } else if (objectName === Settings.additionalPlotSettings) {
+                        properties = {
+                            slabType: SlabType[getValue<string>(columnObjects, Settings.additionalPlotSettings, AdditionalPlotSettingsNames.slabType, SlabType.None)]
                         };
                     }
                     objectEnumeration[yIndex] = {

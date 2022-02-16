@@ -111,12 +111,23 @@
         }
     ],
     "objects": {
-        "verticalRulerSettings": {
-            "displayName": "Vertical Ruler Settings",
+        "colorSettings": {
+            "displayName": "Color Settings",
             "properties": {
-                "fill": {
-                    "displayName": "Color",
-                    "description": "The fill color of the circle.",
+                "verticalRulerColor": {
+                    "displayName": "Vertical ruler color",
+                    "description": "The stroke color of the vertical ruler.",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "slabColor": {
+                    "displayName": "Slab color",
+                    "description": "The stroke color of the slab lines.",
                     "type": {
                         "fill": {
                             "solid": {
@@ -145,6 +156,39 @@
                             {
                                 "displayName": "Bar Plot",
                                 "value": "BarPlot"
+                            }
+                        ]
+                    }
+                },
+                "fill": {
+                    "displayName": "Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
+        },"additionalPlotSettings": {
+            "displayName": "Additional Plot Settings",
+            "properties": {
+                "slabType": {
+                    "displayName": "Choose Type",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Rectangle",
+                                "value": "Rectangle"
+                            },
+                            {
+                                "displayName": "Line",
+                                "value": "Line"
+                            },
+                            {
+                                "displayName": "None",
+                                "value": "None"
                             }
                         ]
                     }
