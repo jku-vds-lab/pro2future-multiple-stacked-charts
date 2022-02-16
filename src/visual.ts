@@ -89,16 +89,25 @@ export class Visual implements IVisual {
 
             let points: d3.Selection<SVGCircleElement, DataPoint, any, any>[] = [];
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
+            let xAxis: any;
+            let xAxisValue: any;
+            let xScale: any;
 
 
             for (let plotModel of this.viewModel.plotModels) {
                 const plotType = plotModel.plotSettings.plotSettings.plotType;
                 if (plotType == PlotType.LinePlot) {
                     const linePlot = this.drawLinePlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName)
+                    xAxis = linePlot.xAxis;
+                    xScale = linePlot.xScale;
+                    xAxisValue = linePlot.xAxisValue;
                     points.push(linePlot.points);
                 }
                 else if (plotType == PlotType.ScatterPlot) {
                     const scatterPlot = this.drawScatterPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
+                    xAxis = scatterPlot.xAxis;
+                    xScale = scatterPlot.xScale;
+                    xAxisValue = scatterPlot.xAxisValue;
                     points.push(scatterPlot.points);
                 }
 
@@ -106,6 +115,7 @@ export class Visual implements IVisual {
                     bars = this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
+
         } catch (error) {
             console.log(error());
         }
@@ -155,14 +165,6 @@ export class Visual implements IVisual {
             .attr('transform', 'translate(0, ' + height + ')')
             .call(xAxisValue);
 
-        // Displays the x-axis label. This also needs to be added in the format property
-        // const xAxisLabel = chart
-        //     .append('text')
-        //     .attr('class', 'xLabel')
-        //     .attr('text-anchor', 'end')
-        //     .attr('x', width / 2)
-        //     .attr('y', height + 20)
-        //     .text(xLabel);
 
         const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([height, 0]);
 
@@ -187,14 +189,53 @@ export class Visual implements IVisual {
             .attr('transform', 'rotate(-90)')
             .text(yLabel);
 
+
+
         return {
             chart: chart,
             xScale: xScale,
             xAxisValue: xAxisValue,
-            yScale: yScale,
             xAxis: xAxis,
+            yScale: yScale,
         };
     }
+
+    private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
+        try {
+            debugger;
+            let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
+            let height = 100;
+            let result = {};
+            const plotInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
+            const plot = plotInfo.chart;
+            const xScale = plotInfo.xScale;
+            const xAxisValue = plotInfo.xAxisValue;
+            const yScale = plotInfo.yScale;
+            const xAxis = plotInfo.xAxis;
+            const dataPoints = filterNullValues(plotModel.dataPoints);
+
+            const dots = plot
+                .selectAll('dots')
+                .data(dataPoints)
+                .enter()
+                .append('circle')
+                .attr('fill', plotModel.plotSettings.plotSettings.fill)
+                .attr('stroke', 'none')
+                .attr('cx', (d) => xScale(<number>d.xValue))
+                .attr('cy', (d) => yScale(<number>d.yValue))
+                .attr('r', 2)
+                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
+
+                let mouseEvents = this.customTooltip();
+                dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
+
+            result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis, xAxisValue: xAxisValue };
+            return result;
+        } catch (error) {
+            console.log('Error in ScatterPlot: ', error);
+        }
+    }
+
 
     private drawLinePlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
 
@@ -203,6 +244,7 @@ export class Visual implements IVisual {
             const chartInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
             const lineChart = chartInfo.chart;
             const xScale = chartInfo.xScale;
+            const xAxisValue = chartInfo.xAxisValue;
             const yScale = chartInfo.yScale;
             const xAxis = chartInfo.xAxis;
             const dataPoints = filterNullValues(plotModel.dataPoints);
@@ -230,17 +272,40 @@ export class Visual implements IVisual {
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
-                .attr('r', 2);
+                .attr('r', 2)
+                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
             let mouseEvents = this.customTooltip();
             dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
-            result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
+            result = { chart: lineChart, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis , xAxisValue: xAxisValue};
 
             return result;
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
         }
+    }
+
+    private zoomCharts(xAxis: any, xAxisValue: any, xScale: any, charts: any[]) {
+
+         let zoomed = function(event) {
+
+            let transform = event.transform;
+
+            let xScaleNew = transform.rescaleX(xScale);
+            xAxisValue.scale(xScaleNew);
+            xAxis.call(xAxisValue);
+
+            for(let chart of charts) {
+                chart.attr('cx', (d) => xScaleNew(<number>d.xValue))
+                .attr('r', 2);
+            }
+        }
+
+        let zoom = d3.zoom().scaleExtent([1, 10]).on('zoom', zoomed); // with scale extent you can control how much you scale
+
+       this.svg.call(zoom);
+
     }
 
     private customTooltip() {
@@ -308,74 +373,6 @@ export class Visual implements IVisual {
         }
         return { mouseover, mousemove, mouseout };
     }
-
-    private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): any {
-        try {
-            debugger;
-            let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
-            let height = 100;
-            let result = {};
-            const plotInfo = this.getChartElement(options, plotModel, xLabel, yLabel);
-            const plot = plotInfo.chart;
-            const xScale = plotInfo.xScale;
-            const xAxisValue = plotInfo.xAxisValue;
-            const yScale = plotInfo.yScale;
-            const xAxis = plotInfo.xAxis;
-            const dataPoints = filterNullValues(plotModel.dataPoints);
-
-            const dots = plot
-                .selectAll('dots')
-                .data(dataPoints)
-                .enter()
-                .append('circle')
-                .attr('fill', plotModel.plotSettings.plotSettings.fill)
-                .attr('stroke', 'none')
-                .attr('cx', (d) => xScale(<number>d.xValue))
-                .attr('cy', (d) => yScale(<number>d.yValue))
-                .attr('r', 2)
-                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
-
-                let mouseEvents = this.customTooltip();
-                dots.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-
-                // Zoom
-                let zoomed = function(event) {
-
-                    let transform = event.transform;
-                    transform.x = Math.min(0, transform.x);
-                    transform.y = 0;
-
-                    let xScaleNew = transform.rescaleX(xScale);
-                    xAxisValue.scale(xScaleNew);
-                    xAxis.call(xAxisValue);
-
-                    dots.attr('cx', (d) => xScaleNew(<number>d.xValue))
-                    .attr('r', 2);
-                }
-
-                let zoom = d3.zoom().scaleExtent([1, 10]).on('zoom', zoomed); // with scale extent you can control how much you scale
-
-                // var listenerRect = plot
-                // .append('rect')
-                //   .attr('class', 'listener-rect')
-                //   .attr('x', 0)
-                //   .attr('y',  0 - Visual.Config.margins.left)
-                //   .attr('width', width)
-                //   .attr('height', height )
-                //   .style('opacity', 0);
-
-                plot.call(zoom);
-
-
-
-
-            result = { chart: dots, points: dots, xScale: xScale, yScale: yScale, xAxis: xAxis };
-            return result;
-        } catch (error) {
-            console.log('Error in ScatterPlot: ', error);
-        }
-    }
-
 
     private drawBarPlot(
         options: VisualUpdateOptions,
