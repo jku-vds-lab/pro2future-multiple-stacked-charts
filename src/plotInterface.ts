@@ -10,6 +10,7 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 export interface ViewModel {
     plotModels: PlotModel[];
     verticalRulerSettings: VerticalRulerSettings;
+    slabRectangles?: SlabRectangles;
 }
 
 export enum PlotType{
@@ -35,6 +36,11 @@ export interface PlotModel{
         min: number;
         max: number;
     };
+}
+
+export interface SlabRectangles {
+    width: number[];
+    height: number[];
 }
 
 export interface DataPoint extends SelectableDataPoint {
