@@ -46,13 +46,13 @@ import { select as d3Select } from 'd3-selection';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft, axisRight } from 'd3-axis';
 import * as d3 from 'd3';
-import { dataViewObjectsParser, dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
-import { getAxisTextFillColor, getPlotFillColor, getValue, getVerticalRulerColor } from './objectEnumerationUtility';
+import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
+import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, PlotModel, PlotType, D3Plot, D3PlotXAxis, D3PlotYAxis } from './plotInterface';
+import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
-
+import { AdditionalPlotSettingsNames, ColorSettingsNames, Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
+import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 export class Visual implements IVisual {
@@ -104,7 +104,7 @@ export class Visual implements IVisual {
                 }
 
                 else if (plotType == PlotType.BarPlot) {
-                    bars = this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
+                    this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
                 }
             }
 
@@ -123,6 +123,7 @@ export class Visual implements IVisual {
         const plotType = plotModel.plotSettings.plotSettings.plotType;
         const plotNr = plotModel.plotId;
         const plotTop = top * plotNr ;
+        const colorSettings = this.viewModel.colorSettings;
 
         this.svg
             .attr("width", width)
@@ -131,7 +132,9 @@ export class Visual implements IVisual {
         const plot = this.buildBasicPlot(width, height, plotType, plotNr, plotTop);
         const x  = this.buildXAxis(plotModel, plot, width, height, xLabelDesc);
         const y = this.buildYAxis(plotModel, plot, width, height, yLabelDesc);
-        this.addVerticalRuler(plot, top);
+        this.addVerticalRuler(plot, top, colorSettings);
+
+        this.drawSlabs(plotModel,plot, x.xScale, y.yScale, colorSettings, height);
 
         return<D3Plot>{type: plotType, plot, points: null, x, y};
 
@@ -198,17 +201,47 @@ export class Visual implements IVisual {
 
         return <D3PlotYAxis>{yAxis, yAxisValue, yLabel, yScale};
 
+
+
     }
 
-    private addVerticalRuler(plot: any, height: number) {
-        const verticalRulerSettings = this.viewModel.verticalRulerSettings.verticalRulerSettings;
+
+    private drawSlabs(plotModel: PlotModel, plot: Selection<any, any>, xScale: d3.ScaleLinear<number, number, never>, yScale: d3.ScaleLinear<number, number, never>, colorSettings: ColorSettings, height: number) {
+
+        const slabtype = plotModel.additionalPlotSettings.additionalPlotSettings.slabType;
+        const slabRectangles = this.viewModel.slabRectangles;
+        if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
+            if (slabtype == SlabType.Rectangle) {
+                plot.selectAll("slabBars").data(slabRectangles).enter()
+                    .append("rect")
+                    .attr("x", function (d) { return xScale(d.x); })
+                    .attr("y", function (d) { return yScale(d.width - d.y); })
+                    .attr("width", function (d) { return xScale(d.length); })
+                    .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
+                    .attr("fill", "transparent")
+                    .attr("stroke", colorSettings.colorSettings.slabColor);
+            } else if (slabtype == SlabType.Line) {
+                plot.selectAll("slabBars").data(slabRectangles).enter()
+                    .append("line")
+                    .attr("stroke", colorSettings.colorSettings.slabColor)
+                    .attr("x1", function (d) { return xScale(d.x); })
+                    .attr("x2", function (d) { return xScale(d.x); })
+                    .attr("y1", 0)
+                    .attr("y2", height)
+                    .attr("opacity", 1);
+            }
+        }
+    }
+
+    private addVerticalRuler(plot: any, height: number, colorSettings: ColorSettings) {
+        const verticalRulerSettings = colorSettings.colorSettings.verticalRulerColor;
         const lineGroup = plot.append("g").attr("class", Constants.verticalRulerClass);
         let margins = Visual.Config.margins;
         height -= margins.bottom;
 
 
         lineGroup.append("line")
-            .attr("stroke", verticalRulerSettings.fill)
+            .attr("stroke", verticalRulerSettings)
             .attr("x1", 10).attr("x2", 10)
             .attr("y1", 0).attr("y2", height);
     }
@@ -363,7 +396,7 @@ export class Visual implements IVisual {
             .html("No tooltip info available");
 
         let mouseover = function () {
-           lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
+            lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
             Tooltip.style("visibility", "visible");
             d3.select(this)
                 .attr('r', 4)
@@ -390,8 +423,8 @@ export class Visual implements IVisual {
                 }
             }
             const x = event.clientX - margins.left;
-            const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX+tooltipOffset;
-            const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY+tooltipOffset;
+            const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
+            const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
             Tooltip
                 .html(tooltipText)
                 .style("left", (tooltipX) + "px")
@@ -452,16 +485,19 @@ export class Visual implements IVisual {
             switch (objectName) {
                 case Settings.plotSettings:
                 case Settings.enableAxis:
+                case Settings.additionalPlotSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
                 case Settings.colorSelector:
                     break;
-                case Settings.verticalRulerSettings:
+                case Settings.colorSettings:
+                    debugger;
                     let objects = this.dataview.metadata.objects;
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
-                            fill: getVerticalRulerColor(objects,colorPalette,'#000000'),
+                            verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
+                            slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#0000FF')
                         },
                         selector: null
                     });
@@ -473,7 +509,6 @@ export class Visual implements IVisual {
         return objectEnumeration;
 
         function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[]) {
-
             objectEnumeration = new Array<VisualObjectInstance>(yCount);
             for (let column of metadataColumns) {
                 if (column.roles.y_axis) {
@@ -489,6 +524,10 @@ export class Visual implements IVisual {
                     } else if (objectName === Settings.enableAxis) {
                         properties = {
                             enabled: getValue<boolean>(columnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
+                        };
+                    } else if (objectName === Settings.additionalPlotSettings) {
+                        properties = {
+                            slabType: SlabType[getValue<string>(columnObjects, Settings.additionalPlotSettings, AdditionalPlotSettingsNames.slabType, SlabType.None)]
                         };
                     }
                     objectEnumeration[yIndex] = {

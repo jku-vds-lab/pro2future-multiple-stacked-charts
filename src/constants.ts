@@ -3,15 +3,19 @@ export enum Settings {
     plotSettings = "plotSettings",
     enableAxis = "enableAxis",
     colorSelector = "colorSelector",
-    verticalRulerSettings = "verticalRulerSettings"
+    colorSettings = "colorSettings",
+    additionalPlotSettings = "additionalPlotSettings"
 }
 export enum PlotSettingsNames {
     plotType = "plotType",
     fill = "fill"
 }
-
-export enum VerticalRulerSettingsNames {
-    fill = "fill"
+export enum AdditionalPlotSettingsNames {
+    slabType = "slabType"
+}
+export enum ColorSettingsNames {
+    verticalRulerColor = "verticalRulerColor",
+    slabColor = "slabColor"
 }
 export enum EnableAxisNames {
     enabled = "enabled"

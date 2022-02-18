@@ -1,6 +1,6 @@
 import { color } from "d3-color";
 import powerbi from "powerbi-visuals-api";
-import { ColorSelectorNames, PlotSettingsNames, Settings, VerticalRulerSettingsNames } from "./constants";
+import { ColorSelectorNames, PlotSettingsNames, Settings, ColorSettingsNames } from "./constants";
 import DataViewObjects = powerbi.DataViewObjects;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import DataViewObject = powerbi.DataViewObject;
@@ -96,7 +96,7 @@ export function getPlotFillColor(objects: DataViewObjects,
 }
 
 
-export function getVerticalRulerColor(objects: DataViewObjects,
+export function getColorSettings(objects: DataViewObjects, settingsName: string,
   colorPalette: ISandboxExtendedColorPalette,
   defaultColor: string): string {
   if (colorPalette.isHighContrast) {
@@ -104,8 +104,8 @@ export function getVerticalRulerColor(objects: DataViewObjects,
   }
   return getValue<Fill>(
     objects,
-    Settings.verticalRulerSettings,
-    VerticalRulerSettingsNames.fill,
+    Settings.colorSettings,
+    settingsName,
     {
       solid: {
         color: defaultColor,
