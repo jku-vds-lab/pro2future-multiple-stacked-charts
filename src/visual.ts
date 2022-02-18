@@ -271,7 +271,8 @@ export class Visual implements IVisual {
                 .attr('d', line)
                 .attr('fill', 'none')
                 .attr('stroke', plotModel.plotSettings.plotSettings.fill)
-                .attr('stroke-width', 1.5);
+                .attr('stroke-width', 1.5)
+                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));;
 
 
             const points = plot
