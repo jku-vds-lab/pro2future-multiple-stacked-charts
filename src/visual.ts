@@ -46,7 +46,7 @@ import { select as d3Select } from 'd3-selection';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft, axisRight } from 'd3-axis';
 import * as d3 from 'd3';
-import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
+import { dataViewObjectsParser, dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor, getPlotFillColor, getValue, getVerticalRulerColor } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { ViewModel, DataPoint, PlotModel, PlotType, D3Plot, D3PlotXAxis, D3PlotYAxis } from './plotInterface';
@@ -259,21 +259,20 @@ export class Visual implements IVisual {
 
             const dataPoints = filterNullValues(plotModel.dataPoints);
 
-            plot
+            const line =  d3
+            .line<DataPoint>()
+            .x((d) => x.xScale(<number>d.xValue))
+            .y((d) => y.yScale(<number>d.yValue));
+
+            const linePath = plot
                 .append('path')
                 .datum(dataPoints)
-                .attr("class", "line")
-                .attr(
-                    'd',
-                    d3
-                        .line<DataPoint>()
-                        .x((d) => x.xScale(<number>d.xValue))
-                        .y((d) => y.yScale(<number>d.yValue))
-                )
+                .attr("class", "path")
+                .attr('d', line)
                 .attr('fill', 'none')
                 .attr('stroke', plotModel.plotSettings.plotSettings.fill)
-                .attr('stroke-width', 1.5)
-                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
+                .attr('stroke-width', 1.5);
+
 
             const points = plot
                 .selectAll('dots')
@@ -290,7 +289,7 @@ export class Visual implements IVisual {
             let mouseEvents = this.customTooltip();
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
-            return <D3Plot>{type, plot, points, x, y};
+            return <D3Plot>{type, plot: linePath, points, x, y};
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
         }
@@ -315,14 +314,12 @@ export class Visual implements IVisual {
 
                 if(plot.type === 'LinePlot') {
 
-                    plot.plot.select('line')
-                    .attr(
-                        'd',
-                        d3
-                            .line<DataPoint>()
-                            .x((d) => xScaleNew(<number>d.xValue))
-                            .y((d) => plot.y.yScale(<number>d.yValue)))
-                    .attr('stroke-width', 3);
+                    let line =  d3
+                    .line<DataPoint>()
+                    .x((d) => xScaleNew(<number>d.xValue))
+                    .y((d) => plot.y.yScale(<number>d.yValue));
+
+                   plot.plot.attr('d', line);
                 }
             }
         }
