@@ -108,7 +108,7 @@ export class Visual implements IVisual {
                 }
             }
 
-        this.zoomCharts(plots);
+        this.zoomCharts(plots, options);
 
         } catch (error) {
             console.log(error());
@@ -295,13 +295,23 @@ export class Visual implements IVisual {
         }
     }
 
-    private zoomCharts(plots: D3Plot[]) {
+    private zoomCharts(plots: D3Plot[], options: VisualUpdateOptions) {
+
+        let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
+        let height = 50;
+        let defs = this.svg.append('defs').append('clipPath')
+                .attr('id', 'clip')
+                .append('rect')
+                .attr('width', width - Visual.Config.margins.right)
+                .attr('height', height)
 
          let zoomed = function(event) {
 
             let transform = event.transform;
 
             for (let plot of plots) {
+
+                plot.x.xAxis.attr('clip-path', 'url(#clip)')
 
                 let xAxisValue = plot.x.xAxisValue;
 
@@ -312,7 +322,11 @@ export class Visual implements IVisual {
                 plot.points.attr('cx', (d) => xScaleNew(<number>d.xValue))
                     .attr('r', 2);
 
+                plot.points.attr('clip-path', 'url(#clip)');
+
                 if(plot.type === 'LinePlot') {
+
+                    plot.plot.attr('clip-path', 'url(#clip)');
 
                     let line =  d3
                     .line<DataPoint>()
