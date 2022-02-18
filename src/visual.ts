@@ -118,10 +118,11 @@ export class Visual implements IVisual {
     private constructBasicPlot (options: VisualUpdateOptions, plotModel: PlotModel, xLabelDesc: string, yLabelDesc: string) {
 
         let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
-        let height = 100;
+        let height = 50;
+        let top = height + 30 ;
         const plotType = plotModel.plotSettings.plotSettings.plotType;
         const plotNr = plotModel.plotId;
-        const plotTop = height * plotNr;
+        const plotTop = top * plotNr ;
 
         this.svg
             .attr("width", width)
@@ -130,9 +131,9 @@ export class Visual implements IVisual {
         const plot = this.buildBasicPlot(width, height, plotType, plotNr, plotTop);
         const x  = this.buildXAxis(plotModel, plot, width, height, xLabelDesc);
         const y = this.buildYAxis(plotModel, plot, width, height, yLabelDesc);
-        this.addVerticalRuler(plot, height);
+        this.addVerticalRuler(plot, top);
 
-        return<D3Plot>{plot, points: null, x, y};
+        return<D3Plot>{type: plotType, plot, points: null, x, y};
 
     }
 
@@ -158,19 +159,21 @@ export class Visual implements IVisual {
             xAxisValue.tickValues([]);
         }
 
-        const xLabel = plot
-            .append('text')
-            .attr('class', 'xLabel')
-            .attr('text-anchor', 'end')
-            .attr('x', width / 2)
-            .attr('y', height + 20)
-            .text(xLabelDesc);
+        // can be uncommented later
+
+        // const xLabel = plot
+        //     .append('text')
+        //     .attr('class', 'xLabel')
+        //     .attr('text-anchor', 'end')
+        //     .attr('x', width / 2)
+        //     .attr('y', height + 20)
+        //     .text(xLabelDesc);
 
         xAxis
             .attr('transform', 'translate(0, ' + height + ')')
             .call(xAxisValue);
 
-        return<D3PlotXAxis>{xAxis, xAxisValue, xScale, xLabel};
+        return<D3PlotXAxis>{xAxis, xAxisValue, xScale, xLabel: null};
     }
 
     private buildYAxis(plotModel: PlotModel, plot: any, width: number, height: number, yLabelDesc: string): D3PlotYAxis {
@@ -214,6 +217,7 @@ export class Visual implements IVisual {
         try {
 
             const basicPlot = this.constructBasicPlot(options, plotModel, xLabel, yLabel);
+            const type = plotModel.plotSettings.plotSettings.plotType;
             const plot = basicPlot.plot;
             const x = basicPlot.x;
             const y = basicPlot.y;
@@ -235,7 +239,7 @@ export class Visual implements IVisual {
                 let mouseEvents = this.customTooltip();
                 points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
-               return<D3Plot>{plot, points, x, y};
+               return<D3Plot>{type, plot, points, x, y};
 
         } catch (error) {
             console.log('Error in ScatterPlot: ', error);
@@ -248,6 +252,7 @@ export class Visual implements IVisual {
         try {
 
             const basicPlot = this.constructBasicPlot(options, plotModel, xLabel, yLabel);
+            const type = plotModel.plotSettings.plotSettings.plotType;
             const plot = basicPlot.plot;
             const x = basicPlot.x;
             const y = basicPlot.y;
@@ -257,6 +262,7 @@ export class Visual implements IVisual {
             plot
                 .append('path')
                 .datum(dataPoints)
+                .attr("class", "line")
                 .attr(
                     'd',
                     d3
@@ -266,7 +272,8 @@ export class Visual implements IVisual {
                 )
                 .attr('fill', 'none')
                 .attr('stroke', plotModel.plotSettings.plotSettings.fill)
-                .attr('stroke-width', 1.5);
+                .attr('stroke-width', 1.5)
+                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
             const points = plot
                 .selectAll('dots')
@@ -283,7 +290,7 @@ export class Visual implements IVisual {
             let mouseEvents = this.customTooltip();
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
-            return <D3Plot>{plot, points, x, y};
+            return <D3Plot>{type, plot, points, x, y};
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
         }
@@ -306,6 +313,17 @@ export class Visual implements IVisual {
                 plot.points.attr('cx', (d) => xScaleNew(<number>d.xValue))
                     .attr('r', 2);
 
+                if(plot.type === 'LinePlot') {
+
+                    plot.plot.select('line')
+                    .attr(
+                        'd',
+                        d3
+                            .line<DataPoint>()
+                            .x((d) => xScaleNew(<number>d.xValue))
+                            .y((d) => plot.y.yScale(<number>d.yValue)))
+                    .attr('stroke-width', 3);
+                }
             }
         }
 
@@ -315,7 +333,7 @@ export class Visual implements IVisual {
 
     }
 
-    private customTooltip() {
+    private customTooltip() { // needs to be adjusted with vertical ruler method
 
         const tooltipOffset = 10;
         let visualContainer = this.svg.node();

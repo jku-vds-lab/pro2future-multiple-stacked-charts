@@ -83,6 +83,7 @@ export interface YAxisData{
 }
 
 export interface D3Plot {
+    type: string;
     plot: any;
     points: any;
     x: D3PlotXAxis;
