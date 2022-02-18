@@ -21,6 +21,7 @@
     "core-js": "3.21.0",
     "d3": "^7.3.0",
     "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
     "powerbi-visuals-utils-dataviewutils": "^2.4.1",
     "powerbi-visuals-utils-interactivityutils": "^5.7.1",
     "powerbi-visuals-utils-tooltiputils": "^2.5.2",

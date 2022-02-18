@@ -81,3 +81,26 @@ export interface YAxisData{
     name?: string;
     columnId: number;
 }
+
+export interface D3Plot {
+    type: string;
+    plot: any;
+    points: any;
+    x: D3PlotXAxis;
+    y: D3PlotYAxis;
+}
+
+export interface D3PlotXAxis {
+    xAxis: any;
+    xAxisValue: any;
+    xScale: any;
+    xLabel: any;
+}
+
+
+export interface D3PlotYAxis {
+    yAxis: any;
+    yAxisValue: any;
+    yScale: any;
+    yLabel: any;
+}
