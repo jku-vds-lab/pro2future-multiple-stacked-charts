@@ -171,6 +171,39 @@
                     }
                 }
             }
+        },"additionalPlotSettings": {
+            "displayName": "Additional Plot Settings",
+            "properties": {
+                "slabType": {
+                    "displayName": "Choose Type",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Rectangle",
+                                "value": "Rectangle"
+                            },
+                            {
+                                "displayName": "Line",
+                                "value": "Line"
+                            },
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            }
+                        ]
+                    }
+                },
+                "fill": {
+                    "displayName": "Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
         },
         "additionalPlotSettings": {
             "displayName": "Additional Plot Settings",
