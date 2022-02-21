@@ -79,32 +79,34 @@ export class Visual implements IVisual {
             this.svg.attr("width", this.viewModel.svgWidth)
                 .attr("height", this.viewModel.svgHeight);
 
-            //TODO: global variable?
-            let plots: D3Plot[] = [];
+
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
-
-
-            for (let plotModel of this.viewModel.plotModels) {
-                const plotType = plotModel.plotSettings.plotSettings.plotType;
-                if (plotType == PlotType.LinePlot) {
-                    const linePlot = this.drawLinePlot(options, plotModel);
-                    plots.push(linePlot);
-                }
-                else if (plotType == PlotType.ScatterPlot) {
-                    const scatterPlot = this.drawScatterPlot(options, plotModel);
-                    plots.push(scatterPlot);
-                }
-
-                else if (plotType == PlotType.BarPlot) {
-                    this.drawBarPlot(options, plotModel);
-                }
-            }
-
-            this.zoomCharts(plots, options);
+            this.drawPlots(options);
 
         } catch (error) {
             console.log(error());
         }
+    }
+
+    private drawPlots(options: VisualUpdateOptions) {
+        let plots: D3Plot[] = [];
+        for (let plotModel of this.viewModel.plotModels) {
+            const plotType = plotModel.plotSettings.plotSettings.plotType;
+            if (plotType == PlotType.LinePlot) {
+                const linePlot = this.drawLinePlot(options, plotModel);
+                plots.push(linePlot);
+            }
+            else if (plotType == PlotType.ScatterPlot) {
+                const scatterPlot = this.drawScatterPlot(options, plotModel);
+                plots.push(scatterPlot);
+            }
+
+            else if (plotType == PlotType.BarPlot) {
+                this.drawBarPlot(options, plotModel);
+            }
+        }
+
+        this.zoomCharts(plots, options);
     }
 
     private constructBasicPlot(options: VisualUpdateOptions, plotModel: PlotModel) {
@@ -363,9 +365,11 @@ export class Visual implements IVisual {
     private customTooltip() { // needs to be adjusted with vertical ruler method
 
         const tooltipOffset = 10;
-        let visualContainer = this.svg.node();
-        var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
+        const plotModels = this.viewModel.plotModels;
+        const visualContainer = this.svg.node();
         const margins = this.viewModel.generalPlotSettings.margins;
+        var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
+
         var Tooltip = d3.select(this.element)
             .append('div')
             .style("position", "absolute")
@@ -387,15 +391,14 @@ export class Visual implements IVisual {
             lines.style("opacity", 1);
         };
 
-
-        let plotModels = this.viewModel.plotModels;
-
         let mousemove = function (event, data) {
 
             const height = visualContainer.offsetHeight;
             const width = visualContainer.offsetWidth;
-            let tooltipText = "";
-            tooltipText = "<b> x value </b> : " + data.xValue + " <br> ";
+            const x = event.clientX - margins.left;
+            const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
+            const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
+            let tooltipText = "<b> x value </b> : " + data.xValue + " <br> ";
             for (let plotModel of plotModels) {
                 for (let point of plotModel.dataPoints) {
                     if (point.xValue == data.xValue) {
@@ -404,9 +407,6 @@ export class Visual implements IVisual {
                     }
                 }
             }
-            const x = event.clientX - margins.left;
-            const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
-            const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
             Tooltip
                 .html(tooltipText)
                 .style("left", (tooltipX) + "px")
@@ -443,8 +443,7 @@ export class Visual implements IVisual {
             .enter()
             .append('rect')
             .merge(<any>bar);
-        mergedBars.classed(Constants.barClass, true);
-        mergedBars
+        mergedBars.classed(Constants.barClass, true)
             .attr('width', plotWidth / dataPoints.length - 1)
             .attr('height', (d) => plotHeight - y.yScale(<number>d.yValue))
             .attr('y', (d) => y.yScale(<number>d.yValue))
