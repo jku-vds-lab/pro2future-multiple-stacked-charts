@@ -62,17 +62,6 @@ export class Visual implements IVisual {
     private viewModel: ViewModel;
     private svg: Selection<any>;
 
-    static Config = {
-        xScalePadding: 0.1,
-        solidOpacity: 1,
-        transparentOpacity: 1,
-        margins: {
-            top: 10,
-            right: 30,
-            bottom: 30,
-            left: 50,
-        },
-    };
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -85,77 +74,70 @@ export class Visual implements IVisual {
 
         try {
             this.dataview = options.dataViews[0];
-            this.svg.selectAll('*').remove();
             this.viewModel = visualTransform(options, this.host);
+            this.svg.selectAll('*').remove();
+            this.svg.attr("width", this.viewModel.svgWidth)
+                .attr("height", this.viewModel.svgHeight);
 
-            let plots: D3Plot[] = [];
+
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
-
-
-            for (let plotModel of this.viewModel.plotModels) {
-                const plotType = plotModel.plotSettings.plotSettings.plotType;
-                if (plotType == PlotType.LinePlot) {
-                    const linePlot = this.drawLinePlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
-                    plots.push(linePlot);
-                }
-                else if (plotType == PlotType.ScatterPlot) {
-                    const scatterPlot = this.drawScatterPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
-                   plots.push(scatterPlot);
-                }
-
-                else if (plotType == PlotType.BarPlot) {
-                    this.drawBarPlot(options, plotModel, plotModel.plotId, plotModel.xName, plotModel.yName);
-                }
-            }
-
-        this.zoomCharts(plots, options);
+            this.drawPlots(options);
 
         } catch (error) {
             console.log(error());
         }
     }
 
-    private constructBasicPlot (options: VisualUpdateOptions, plotModel: PlotModel, xLabelDesc: string, yLabelDesc: string) {
+    private drawPlots(options: VisualUpdateOptions) {
+        let plots: D3Plot[] = [];
+        for (let plotModel of this.viewModel.plotModels) {
+            const plotType = plotModel.plotSettings.plotSettings.plotType;
+            if (plotType == PlotType.LinePlot) {
+                const linePlot = this.drawLinePlot(options, plotModel);
+                plots.push(linePlot);
+            }
+            else if (plotType == PlotType.ScatterPlot) {
+                const scatterPlot = this.drawScatterPlot(options, plotModel);
+                plots.push(scatterPlot);
+            }
 
-        let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
-        let height = 50;
-        let top = height + 30 ;
-        const plotType = plotModel.plotSettings.plotSettings.plotType;
+            else if (plotType == PlotType.BarPlot) {
+                this.drawBarPlot(options, plotModel);
+            }
+        }
+
+        this.zoomCharts(plots, options);
+    }
+
+    private constructBasicPlot(options: VisualUpdateOptions, plotModel: PlotModel) {
         const plotNr = plotModel.plotId;
-        const plotTop = top * plotNr ;
-        const colorSettings = this.viewModel.colorSettings;
+        const plotType = plotModel.plotSettings.plotSettings.plotType
+        const plot = this.buildBasicPlot(plotModel);
+        const x = this.buildXAxis(plotModel, plot);
+        const y = this.buildYAxis(plotModel, plot);
+        this.addVerticalRuler(plot);
+        this.drawSlabs(plotModel, plot, x.xScale, y.yScale);
 
-        this.svg
-            .attr("width", width)
-            .attr("height", 1000); // svg container height
-
-        const plot = this.buildBasicPlot(width, height, plotType, plotNr, plotTop);
-        const x  = this.buildXAxis(plotModel, plot, width, height, xLabelDesc);
-        const y = this.buildYAxis(plotModel, plot, width, height, yLabelDesc);
-        this.addVerticalRuler(plot, top, colorSettings);
-
-        this.drawSlabs(plotModel,plot, x.xScale, y.yScale, colorSettings, height);
-
-        return<D3Plot>{type: plotType, plot, points: null, x, y};
+        return <D3Plot>{ type: plotType, plot, points: null, x, y };
 
     }
 
-    private buildBasicPlot(width: number, height: number, plotType: any, plotNr: any, plotTop: any) {
-
+    private buildBasicPlot(plotModel: PlotModel) {
+        const plotType = plotModel.plotSettings.plotSettings.plotType;
+        const generalPlotSettings = this.viewModel.generalPlotSettings;
         const plot = this.svg.append('g')
-                    .classed(plotType + plotNr, true)
-                    .attr('width', width)
-                    .attr('height', height)
-                    .attr('transform', 'translate(' + Visual.Config.margins.left  + ',' + plotTop + ')');
+            .classed(plotType + plotModel.plotId, true)
+            .attr('width', generalPlotSettings.plotWidth)
+            .attr('height', generalPlotSettings.plotHeight)
+            .attr('transform', 'translate(' + generalPlotSettings.margins.left + ',' + plotModel.plotTop + ')');
         return plot;
     }
 
-    private buildXAxis(plotModel: PlotModel, plot: any, width: number, height: number, xLabelDesc: string): D3PlotXAxis{
+    private buildXAxis(plotModel: PlotModel, plot: any): D3PlotXAxis {
 
+        const generalPlotSettings = this.viewModel.generalPlotSettings
         const xAxis = plot.append('g').classed('xAxis', true);
-
-        const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, width]);
-
+        const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, generalPlotSettings.plotWidth]);
         const xAxisValue = axisBottom(xScale);
 
         if (!plotModel.formatSettings.enableAxis.enabled) {
@@ -173,143 +155,89 @@ export class Visual implements IVisual {
         //     .text(xLabelDesc);
 
         xAxis
-            .attr('transform', 'translate(0, ' + height + ')')
+            .attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')')
             .call(xAxisValue);
 
-        return<D3PlotXAxis>{xAxis, xAxisValue, xScale, xLabel: null};
+        return <D3PlotXAxis>{ xAxis, xAxisValue, xScale, xLabel: null };
     }
 
-    private buildYAxis(plotModel: PlotModel, plot: any, width: number, height: number, yLabelDesc: string): D3PlotYAxis {
+    private buildYAxis(plotModel: PlotModel, plot: any): D3PlotYAxis {
 
+        const generalPlotSettings = this.viewModel.generalPlotSettings;
         const yAxis = plot.append('g').classed('yAxis', true);
-
-        const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([height, 0]);
-
-        const yAxisValue = axisLeft(yScale).ticks(height / 20);
-
+        const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
+        const yAxisValue = axisLeft(yScale).ticks(generalPlotSettings.plotHeight / 20);
         const yLabel = plot
             .append('text')
             .attr('class', 'yLabel')
             .attr('text-anchor', 'middle')
-            .attr('y', 0 - Visual.Config.margins.left)
-            .attr('x', 0 - height / 2)
+            .attr('y', 0 - generalPlotSettings.margins.left)
+            .attr('x', 0 - generalPlotSettings.plotHeight / 2)
             .attr('dy', '1em')
             .attr('transform', 'rotate(-90)')
-            .text(yLabelDesc);
+            .text(plotModel.yName);
 
         yAxis.call(yAxisValue);
 
-        return <D3PlotYAxis>{yAxis, yAxisValue, yLabel, yScale};
+        return <D3PlotYAxis>{ yAxis, yAxisValue, yLabel, yScale };
 
 
 
     }
 
 
-    private drawSlabs(plotModel: PlotModel, plot: Selection<any, any>, xScale: d3.ScaleLinear<number, number, never>, yScale: d3.ScaleLinear<number, number, never>, colorSettings: ColorSettings, height: number) {
+    private drawSlabs(plotModel: PlotModel, plot: Selection<any, any>, xScale: d3.ScaleLinear<number, number, never>, yScale: d3.ScaleLinear<number, number, never>) {
 
+        const colorSettings = this.viewModel.colorSettings.colorSettings;
         const slabtype = plotModel.additionalPlotSettings.additionalPlotSettings.slabType;
         const slabRectangles = this.viewModel.slabRectangles;
+        const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
         if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
             if (slabtype == SlabType.Rectangle) {
-                plot.selectAll("slabBars").data(slabRectangles).enter()
+                plot.selectAll(Constants.slabClass).data(slabRectangles).enter()
                     .append("rect")
                     .attr("x", function (d) { return xScale(d.x); })
                     .attr("y", function (d) { return yScale(d.width - d.y); })
                     .attr("width", function (d) { return xScale(d.length); })
                     .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
                     .attr("fill", "transparent")
-                    .attr("stroke", colorSettings.colorSettings.slabColor);
+                    .attr("stroke", colorSettings.slabColor);
             } else if (slabtype == SlabType.Line) {
-                plot.selectAll("slabBars").data(slabRectangles).enter()
+                plot.selectAll(Constants.slabClass).data(slabRectangles).enter()
                     .append("line")
-                    .attr("stroke", colorSettings.colorSettings.slabColor)
+                    .attr("stroke", colorSettings.slabColor)
                     .attr("x1", function (d) { return xScale(d.x); })
                     .attr("x2", function (d) { return xScale(d.x); })
                     .attr("y1", 0)
-                    .attr("y2", height)
+                    .attr("y2", plotHeight)
                     .attr("opacity", 1);
             }
         }
     }
 
-    private addVerticalRuler(plot: any, height: number, colorSettings: ColorSettings) {
-        const verticalRulerSettings = colorSettings.colorSettings.verticalRulerColor;
+    private addVerticalRuler(plot: any) {
+        const verticalRulerSettings = this.viewModel.colorSettings.colorSettings.verticalRulerColor;
         const lineGroup = plot.append("g").attr("class", Constants.verticalRulerClass);
-        let margins = Visual.Config.margins;
-        height -= margins.bottom;
-
+        let generalPlotSettings = this.viewModel.generalPlotSettings;
 
         lineGroup.append("line")
             .attr("stroke", verticalRulerSettings)
             .attr("x1", 10).attr("x2", 10)
-            .attr("y1", 0).attr("y2", height);
+            .attr("y1", 0).attr("y2", generalPlotSettings.plotHeight)
+            .style("opacity", 0);
     }
 
-    private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): D3Plot {
+    private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel): D3Plot {
         try {
 
-            const basicPlot = this.constructBasicPlot(options, plotModel, xLabel, yLabel);
+            const basicPlot = this.constructBasicPlot(options, plotModel);
             const type = plotModel.plotSettings.plotSettings.plotType;
             const plot = basicPlot.plot;
             const x = basicPlot.x;
             const y = basicPlot.y;
-
             const dataPoints = filterNullValues(plotModel.dataPoints);
-
             const points = plot
-                .selectAll('dots')
-                .data(dataPoints)
-                .enter()
-                .append('circle')
-                .attr('fill', plotModel.plotSettings.plotSettings.fill)
-                .attr('stroke', 'none')
-                .attr('cx', (d) => x.xScale(<number>d.xValue))
-                .attr('cy', (d) => y.yScale(<number>d.yValue))
-                .attr('r', 2)
-                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
-
-                let mouseEvents = this.customTooltip();
-                points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-
-               return<D3Plot>{type, plot, points, x, y};
-
-        } catch (error) {
-            console.log('Error in ScatterPlot: ', error);
-        }
-    }
-
-
-    private drawLinePlot(options: VisualUpdateOptions, plotModel: PlotModel, visualNumber: number, xLabel?: string, yLabel?: string): D3Plot {
-
-        try {
-
-            const basicPlot = this.constructBasicPlot(options, plotModel, xLabel, yLabel);
-            const type = plotModel.plotSettings.plotSettings.plotType;
-            const plot = basicPlot.plot;
-            const x = basicPlot.x;
-            const y = basicPlot.y;
-
-            const dataPoints = filterNullValues(plotModel.dataPoints);
-
-            const line =  d3
-            .line<DataPoint>()
-            .x((d) => x.xScale(<number>d.xValue))
-            .y((d) => y.yScale(<number>d.yValue));
-
-            const linePath = plot
-                .append('path')
-                .datum(dataPoints)
-                .attr("class", "path")
-                .attr('d', line)
-                .attr('fill', 'none')
-                .attr('stroke', plotModel.plotSettings.plotSettings.fill)
-                .attr('stroke-width', 1.5)
-                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));;
-
-
-            const points = plot
-                .selectAll('dots')
+                .selectAll(Constants.dotClass)
                 .data(dataPoints)
                 .enter()
                 .append('circle')
@@ -323,23 +251,79 @@ export class Visual implements IVisual {
             let mouseEvents = this.customTooltip();
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
-            return <D3Plot>{type, plot: linePath, points, x, y};
+            return <D3Plot>{ type, plot, points, x, y };
+
+        } catch (error) {
+            console.log('Error in ScatterPlot: ', error);
+        }
+    }
+
+
+    private drawLinePlot(options: VisualUpdateOptions, plotModel: PlotModel): D3Plot {
+
+        try {
+            const basicPlot = this.constructBasicPlot(options, plotModel);
+            const type = plotModel.plotSettings.plotSettings.plotType;
+            const plot = basicPlot.plot;
+            const x = basicPlot.x;
+            const y = basicPlot.y;
+
+            const dataPoints = filterNullValues(plotModel.dataPoints);
+
+            const line = d3
+                .line<DataPoint>()
+                .x((d) => x.xScale(<number>d.xValue))
+                .y((d) => y.yScale(<number>d.yValue));
+
+            const linePath = plot
+                .append('path')
+                .datum(dataPoints)
+                .attr("class", "path")
+                .attr('d', line)
+                .attr('fill', 'none')
+                .attr('stroke', plotModel.plotSettings.plotSettings.fill)
+                .attr('stroke-width', 1.5)
+                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));;
+
+
+            const points = plot
+                .selectAll(Constants.dotClass)
+                .data(dataPoints)
+                .enter()
+                .append('circle')
+                .attr('fill', plotModel.plotSettings.plotSettings.fill)
+                .attr('stroke', 'none')
+                .attr('cx', (d) => x.xScale(<number>d.xValue))
+                .attr('cy', (d) => y.yScale(<number>d.yValue))
+                .attr('r', 2)
+                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
+
+            let mouseEvents = this.customTooltip();
+            points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
+
+            return <D3Plot>{
+                type: type,
+                plot: linePath,
+                points: points,
+                x: x,
+                y: y
+            };
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
         }
     }
 
     private zoomCharts(plots: D3Plot[], options: VisualUpdateOptions) {
-
-        let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
-        let height = 50;
+        const generalPlotSettings = this.viewModel.generalPlotSettings
+        const plotWidth = generalPlotSettings.plotWidth;
+        const plotHeight = generalPlotSettings.plotHeight;
         let defs = this.svg.append('defs').append('clipPath')
-                .attr('id', 'clip')
-                .append('rect')
-                .attr('width', width - Visual.Config.margins.right)
-                .attr('height', height)
+            .attr('id', 'clip')
+            .append('rect')
+            .attr('width', plotWidth - generalPlotSettings.margins.right)
+            .attr('height', plotHeight)
 
-         let zoomed = function(event) {
+        let zoomed = function (event) {
 
             let transform = event.transform;
 
@@ -358,32 +342,34 @@ export class Visual implements IVisual {
 
                 plot.points.attr('clip-path', 'url(#clip)');
 
-                if(plot.type === 'LinePlot') {
+                if (plot.type === 'LinePlot') {
 
                     plot.plot.attr('clip-path', 'url(#clip)');
 
-                    let line =  d3
-                    .line<DataPoint>()
-                    .x((d) => xScaleNew(<number>d.xValue))
-                    .y((d) => plot.y.yScale(<number>d.yValue));
+                    let line = d3
+                        .line<DataPoint>()
+                        .x((d) => xScaleNew(<number>d.xValue))
+                        .y((d) => plot.y.yScale(<number>d.yValue));
 
-                   plot.plot.attr('d', line);
+                    plot.plot.attr('d', line);
                 }
             }
         }
 
         let zoom = d3.zoom().scaleExtent([1, 10]).on('zoom', zoomed); // with scale extent you can control how much you scale
 
-       this.svg.call(zoom);
+        this.svg.call(zoom);
 
     }
 
     private customTooltip() { // needs to be adjusted with vertical ruler method
 
         const tooltipOffset = 10;
-        let visualContainer = this.svg.node();
+        const plotModels = this.viewModel.plotModels;
+        const visualContainer = this.svg.node();
+        const margins = this.viewModel.generalPlotSettings.margins;
         var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
-        const margins = Visual.Config.margins;
+
         var Tooltip = d3.select(this.element)
             .append('div')
             .style("position", "absolute")
@@ -405,15 +391,14 @@ export class Visual implements IVisual {
             lines.style("opacity", 1);
         };
 
-
-        let plotModels = this.viewModel.plotModels;
-
         let mousemove = function (event, data) {
 
             const height = visualContainer.offsetHeight;
             const width = visualContainer.offsetWidth;
-            let tooltipText = "";
-            tooltipText = "<b> x value </b> : " + data.xValue + " <br> ";
+            const x = event.clientX - margins.left;
+            const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
+            const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
+            let tooltipText = "<b> x value </b> : " + data.xValue + " <br> ";
             for (let plotModel of plotModels) {
                 for (let point of plotModel.dataPoints) {
                     if (point.xValue == data.xValue) {
@@ -422,9 +407,6 @@ export class Visual implements IVisual {
                     }
                 }
             }
-            const x = event.clientX - margins.left;
-            const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
-            const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
             Tooltip
                 .html(tooltipText)
                 .style("left", (tooltipX) + "px")
@@ -445,30 +427,25 @@ export class Visual implements IVisual {
         return { mouseover, mousemove, mouseout };
     }
 
-    private drawBarPlot(
-        options: VisualUpdateOptions,
-        plotModel: PlotModel,
-        visualNumber: number,
-        xLabel?: string,
-        yLabel?: string
-    ): d3.Selection<SVGRectElement, DataPoint, any, any> {
-        let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
-        let height = 100;
-        const basicPlot = this.constructBasicPlot(options, plotModel, xLabel, yLabel);
+    //TODO: improve bar plot or remove it
+    private drawBarPlot(options: VisualUpdateOptions, plotModel: PlotModel): d3.Selection<SVGRectElement, DataPoint, any, any> {
+        const generalPlotSettings = this.viewModel.generalPlotSettings;
+        let plotWidth = generalPlotSettings.plotWidth
+        let plotHeight = generalPlotSettings.plotHeight
+        const basicPlot = this.constructBasicPlot(options, plotModel);
         const plot = basicPlot.plot;
         const x = basicPlot.x;
         const y = basicPlot.y;
         const dataPoints = filterNullValues(plotModel.dataPoints);
-        const bar = plot.selectAll('.bar').data(dataPoints);
+        const bar = plot.selectAll(`.${Constants.barClass}`).data(dataPoints);
 
         const mergedBars = bar
             .enter()
             .append('rect')
             .merge(<any>bar);
-        mergedBars.classed('bar', true);
-        mergedBars
-            .attr('width', width / dataPoints.length - 1)
-            .attr('height', (d) => height - y.yScale(<number>d.yValue))
+        mergedBars.classed(Constants.barClass, true)
+            .attr('width', plotWidth / dataPoints.length - 1)
+            .attr('height', (d) => plotHeight - y.yScale(<number>d.yValue))
             .attr('y', (d) => y.yScale(<number>d.yValue))
             .attr('x', (d) => x.xScale(<number>d.xValue))
             .style('fill', (dataPoint: DataPoint) => dataPoint.color);
