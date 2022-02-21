@@ -9,8 +9,7 @@ import { Color } from 'd3';
 import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames, AdditionalPlotSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 
-// TODO #12: Add the param length from the metadata objects
-// TODO #13: Add advanced interface for adding plot type and number
+
 // TODO #n: Allow user to change bars colors
 
 /**

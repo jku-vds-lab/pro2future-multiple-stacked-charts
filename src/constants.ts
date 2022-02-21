@@ -1,4 +1,3 @@
-const TEST = "test";
 export enum Settings {
     plotSettings = "plotSettings",
     enableAxis = "enableAxis",
@@ -25,5 +24,8 @@ export enum ColorSelectorNames {
 }
 
 export enum Constants {
-    verticalRulerClass = "hover-line"
+    verticalRulerClass = "hover-line",
+    slabClass = "slabBars",
+    barClass = "bar",
+    dotClass = "dot"
 }

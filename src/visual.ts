@@ -79,7 +79,7 @@ export class Visual implements IVisual {
             this.svg.attr("width", this.viewModel.svgWidth)
                 .attr("height", this.viewModel.svgHeight);
 
-
+            //TODO: global variable?
             let plots: D3Plot[] = [];
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
 
@@ -108,25 +108,12 @@ export class Visual implements IVisual {
     }
 
     private constructBasicPlot(options: VisualUpdateOptions, plotModel: PlotModel) {
-
-        // let width = options.viewport.width - Visual.Config.margins.left - Visual.Config.margins.right;
-        // let height = 50;
-        // let top = height + 30 ;
-
         const plotNr = plotModel.plotId;
-        // const plotTop = top * plotNr ;
-
         const plotType = plotModel.plotSettings.plotSettings.plotType
-        // this.svg
-        //     .attr("width", width)
-        //     .attr("height", 1000); // svg container height
-
-        // const plot = this.buildBasicPlot(width, height, plotType, plotNr, plotTop);
         const plot = this.buildBasicPlot(plotModel);
         const x = this.buildXAxis(plotModel, plot);
         const y = this.buildYAxis(plotModel, plot);
         this.addVerticalRuler(plot);
-
         this.drawSlabs(plotModel, plot, x.xScale, y.yScale);
 
         return <D3Plot>{ type: plotType, plot, points: null, x, y };
@@ -148,9 +135,7 @@ export class Visual implements IVisual {
 
         const generalPlotSettings = this.viewModel.generalPlotSettings
         const xAxis = plot.append('g').classed('xAxis', true);
-
         const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, generalPlotSettings.plotWidth]);
-
         const xAxisValue = axisBottom(xScale);
 
         if (!plotModel.formatSettings.enableAxis.enabled) {
@@ -178,11 +163,8 @@ export class Visual implements IVisual {
 
         const generalPlotSettings = this.viewModel.generalPlotSettings;
         const yAxis = plot.append('g').classed('yAxis', true);
-
         const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
-
         const yAxisValue = axisLeft(yScale).ticks(generalPlotSettings.plotHeight / 20);
-
         const yLabel = plot
             .append('text')
             .attr('class', 'yLabel')
@@ -210,7 +192,7 @@ export class Visual implements IVisual {
         const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
         if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
             if (slabtype == SlabType.Rectangle) {
-                plot.selectAll("slabBars").data(slabRectangles).enter()
+                plot.selectAll(Constants.slabClass).data(slabRectangles).enter()
                     .append("rect")
                     .attr("x", function (d) { return xScale(d.x); })
                     .attr("y", function (d) { return yScale(d.width - d.y); })
@@ -219,7 +201,7 @@ export class Visual implements IVisual {
                     .attr("fill", "transparent")
                     .attr("stroke", colorSettings.slabColor);
             } else if (slabtype == SlabType.Line) {
-                plot.selectAll("slabBars").data(slabRectangles).enter()
+                plot.selectAll(Constants.slabClass).data(slabRectangles).enter()
                     .append("line")
                     .attr("stroke", colorSettings.slabColor)
                     .attr("x1", function (d) { return xScale(d.x); })
@@ -236,7 +218,6 @@ export class Visual implements IVisual {
         const lineGroup = plot.append("g").attr("class", Constants.verticalRulerClass);
         let generalPlotSettings = this.viewModel.generalPlotSettings;
 
-
         lineGroup.append("line")
             .attr("stroke", verticalRulerSettings)
             .attr("x1", 10).attr("x2", 10)
@@ -252,11 +233,9 @@ export class Visual implements IVisual {
             const plot = basicPlot.plot;
             const x = basicPlot.x;
             const y = basicPlot.y;
-
             const dataPoints = filterNullValues(plotModel.dataPoints);
-
             const points = plot
-                .selectAll('dots')
+                .selectAll(Constants.dotClass)
                 .data(dataPoints)
                 .enter()
                 .append('circle')
@@ -281,7 +260,6 @@ export class Visual implements IVisual {
     private drawLinePlot(options: VisualUpdateOptions, plotModel: PlotModel): D3Plot {
 
         try {
-
             const basicPlot = this.constructBasicPlot(options, plotModel);
             const type = plotModel.plotSettings.plotSettings.plotType;
             const plot = basicPlot.plot;
@@ -307,7 +285,7 @@ export class Visual implements IVisual {
 
 
             const points = plot
-                .selectAll('dots')
+                .selectAll(Constants.dotClass)
                 .data(dataPoints)
                 .enter()
                 .append('circle')
@@ -321,7 +299,13 @@ export class Visual implements IVisual {
             let mouseEvents = this.customTooltip();
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
-            return <D3Plot>{ type, plot: linePath, points, x, y };
+            return <D3Plot>{
+                type: type,
+                plot: linePath,
+                points: points,
+                x: x,
+                y: y
+            };
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
         }
@@ -443,6 +427,7 @@ export class Visual implements IVisual {
         return { mouseover, mousemove, mouseout };
     }
 
+    //TODO: improve bar plot or remove it
     private drawBarPlot(options: VisualUpdateOptions, plotModel: PlotModel): d3.Selection<SVGRectElement, DataPoint, any, any> {
         const generalPlotSettings = this.viewModel.generalPlotSettings;
         let plotWidth = generalPlotSettings.plotWidth
@@ -452,13 +437,13 @@ export class Visual implements IVisual {
         const x = basicPlot.x;
         const y = basicPlot.y;
         const dataPoints = filterNullValues(plotModel.dataPoints);
-        const bar = plot.selectAll('.bar').data(dataPoints);
+        const bar = plot.selectAll(`.${Constants.barClass}`).data(dataPoints);
 
         const mergedBars = bar
             .enter()
             .append('rect')
             .merge(<any>bar);
-        mergedBars.classed('bar', true);
+        mergedBars.classed(Constants.barClass, true);
         mergedBars
             .attr('width', plotWidth / dataPoints.length - 1)
             .attr('height', (d) => plotHeight - y.yScale(<number>d.yValue))
