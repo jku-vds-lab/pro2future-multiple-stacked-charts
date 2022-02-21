@@ -62,17 +62,6 @@ export class Visual implements IVisual {
     private viewModel: ViewModel;
     private svg: Selection<any>;
 
-    // static Config = {
-    //     xScalePadding: 0.1,
-    //     solidOpacity: 1,
-    //     transparentOpacity: 1,
-    //     margins: {
-    //         top: 10,
-    //         right: 30,
-    //         bottom: 30,
-    //         left: 50,
-    //     },
-    // };
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -251,7 +240,8 @@ export class Visual implements IVisual {
         lineGroup.append("line")
             .attr("stroke", verticalRulerSettings)
             .attr("x1", 10).attr("x2", 10)
-            .attr("y1", 0).attr("y2", generalPlotSettings.plotHeight);
+            .attr("y1", 0).attr("y2", generalPlotSettings.plotHeight)
+            .style("opacity", 0);
     }
 
     private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel): D3Plot {

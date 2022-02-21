@@ -7,6 +7,7 @@ import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColo
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins } from './plotInterface';
 import { Color } from 'd3';
 import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames, AdditionalPlotSettingsNames } from './constants';
+import { MarginSettings } from './marginSettings'
 
 // TODO #12: Add the param length from the metadata objects
 // TODO #13: Add advanced interface for adding plot type and number
@@ -51,41 +52,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         let xData = new Array<XAxisData>(xCount);
         let yData = new Array<YAxisData>(yCount);
-        const svgTopPadding = 0
-        const svgBottomPadding = 10
 
-        const margins: Margins = {
-            top: 10,
-            right: 30,
-            bottom: 20,
-            left: 50,
-        }
-        const svgHeight = options.viewport.height
-        const svgWidth = options.viewport.width
-        const plotHeightSpace = (svgHeight - svgTopPadding - svgBottomPadding) / yCount;
-        const plotWidth = svgWidth - margins.left - margins.right;
-        let generalPlotSettings: GeneralPlotSettings = {
-            plotHeight: plotHeightSpace - margins.top - margins.bottom,
-            plotWidth: plotWidth,
-            xScalePadding: 0.1,
-            solidOpacity: 1,
-            transparentOpacity: 1,
-            margins: margins
-        }
 
-        let viewModel: ViewModel = <ViewModel>{
-            plotModels: new Array<PlotModel>(yCount),
-            colorSettings: {
-                colorSettings: {
-                    verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
-                    slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#000000')
-                }
-            },
-            generalPlotSettings: generalPlotSettings,
-            svgHeight: svgHeight,
-            svgTopPadding: svgTopPadding,
-            svgWidth: svgWidth
-        };
+
+        let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette);
         let xDataPoints: number[] = [];
         let yDataPoints: number[] = [];
         let dataPoints: DataPoint[] = [];
@@ -148,29 +118,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 }
             }
         }
-        if (slabLength.length == slabWidth.length && slabWidth.length > 0) {
-            let slabRectangles = new Array<SlabRectangle>(slabLength.length);
-            for (let i = 0; i < slabLength.length; i++) {
-                slabRectangles[i] = {
-                    width: slabWidth[i],
-                    length: 0,
-                    y: 0,
-                    x: slabLength[i]
-                };
-            }
-            slabRectangles = slabRectangles.filter(x => x.x != null && x.x != 0)
-                .sort((a, b) => { return a.x - b.x });
-            let lastX = slabRectangles[0].x;
-            slabRectangles[0].length = lastX;
-            slabRectangles[0].x = 0;
-            for (let i = 1; i < slabRectangles.length; i++) {
-                slabRectangles[i].length = slabRectangles[i].x - lastX;
-                lastX = slabRectangles[i].x;
-                slabRectangles[i].x = lastX - slabRectangles[i].length
-            }
-
-            viewModel.slabRectangles = slabRectangles;
-        }
+        createSlabInformation(slabLength, slabWidth, viewModel);
 
         //create Plotmodels
         for (let plotNr = 0; plotNr < yCount; plotNr++) {
@@ -212,13 +160,13 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             };
 
 
-
+            const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom
             let plotModel: PlotModel = {
                 plotId: plotNr,
                 formatSettings: formatSettings,
                 xName: xAxis.name,
                 yName: yAxis.name,
-                plotTop: svgTopPadding + plotNr * plotHeightSpace + margins.top,
+                plotTop: MarginSettings.svgTopPadding + plotNr * plotHeightIncludingMargins + MarginSettings.margins.top,
                 plotSettings: {
                     plotSettings: {
                         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
@@ -247,4 +195,61 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     } catch (error) {
         console.log('Error in lineVisualTransform: ', error());
     }
+}
+
+function createSlabInformation(slabLength: number[], slabWidth: number[], viewModel: ViewModel) {
+    if (slabLength.length == slabWidth.length && slabWidth.length > 0) {
+        let slabRectangles = new Array<SlabRectangle>(slabLength.length);
+        for (let i = 0; i < slabLength.length; i++) {
+            slabRectangles[i] = {
+                width: slabWidth[i],
+                length: 0,
+                y: 0,
+                x: slabLength[i]
+            };
+        }
+        slabRectangles = slabRectangles.filter(x => x.x != null && x.x != 0)
+            .sort((a, b) => { return a.x - b.x; });
+        let lastX = slabRectangles[0].x;
+        slabRectangles[0].length = lastX;
+        slabRectangles[0].x = 0;
+        for (let i = 1; i < slabRectangles.length; i++) {
+            slabRectangles[i].length = slabRectangles[i].x - lastX;
+            lastX = slabRectangles[i].x;
+            slabRectangles[i].x = lastX - slabRectangles[i].length;
+        }
+
+        viewModel.slabRectangles = slabRectangles;
+    }
+}
+
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette) {
+    const margins = MarginSettings
+    const svgHeight = options.viewport.height;
+    const svgWidth = options.viewport.width;
+    const plotHeightSpace = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding) / yCount;
+    const plotWidth = svgWidth - margins.margins.left - margins.margins.right;
+    let generalPlotSettings: GeneralPlotSettings = {
+        plotHeight: plotHeightSpace - margins.margins.top - margins.margins.bottom,
+        plotWidth: plotWidth,
+        xScalePadding: 0.1,
+        solidOpacity: 1,
+        transparentOpacity: 1,
+        margins: margins.margins
+    };
+
+    let viewModel: ViewModel = <ViewModel>{
+        plotModels: new Array<PlotModel>(yCount),
+        colorSettings: {
+            colorSettings: {
+                verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
+                slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#000000')
+            }
+        },
+        generalPlotSettings: generalPlotSettings,
+        svgHeight: svgHeight,
+        svgTopPadding: margins.svgTopPadding,
+        svgWidth: svgWidth
+    };
+    return viewModel;
 }
