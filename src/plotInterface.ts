@@ -133,6 +133,7 @@ export interface D3Plot {
     type: string;
     plot: any;
     points: any;
+    root: any;
     x: D3PlotXAxis;
     y: D3PlotYAxis;
 }

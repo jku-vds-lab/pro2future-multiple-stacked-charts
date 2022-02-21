@@ -49,7 +49,7 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings } from './plotInterface';
+import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { AdditionalPlotSettingsNames, ColorSettingsNames, Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
 import { data } from 'jquery';
@@ -113,6 +113,7 @@ export class Visual implements IVisual {
         const plotNr = plotModel.plotId;
         const plotType = plotModel.plotSettings.plotSettings.plotType
         const plot = this.buildBasicPlot(plotModel);
+        const slabGroup = plot.append("g").attr("class", Constants.slabClass);
         const x = this.buildXAxis(plotModel, plot);
         const y = this.buildYAxis(plotModel, plot);
         this.addVerticalRuler(plot);
@@ -192,18 +193,24 @@ export class Visual implements IVisual {
         const slabtype = plotModel.additionalPlotSettings.additionalPlotSettings.slabType;
         const slabRectangles = this.viewModel.slabRectangles;
         const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
+        const slabGroup = d3.selectAll(`.${Constants.slabClass}`);
+        //const slabRoot = plot.select(`.${Constants.slabClass}`).data(slabRectangles).enter()
+        //plot.append("g").attr("class",Constants.slabClass).attr("fill", "transparent").data(slabRectangles).enter()
+        // .append("g")
+        // .attr("class", "gbar");
+
         if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
             if (slabtype == SlabType.Rectangle) {
-                plot.selectAll(Constants.slabClass).data(slabRectangles).enter()
+                plot.select(`.${Constants.slabClass}`).selectAll('rect').data(slabRectangles).enter()
                     .append("rect")
                     .attr("x", function (d) { return xScale(d.x); })
                     .attr("y", function (d) { return yScale(d.width - d.y); })
-                    .attr("width", function (d) { return xScale(d.length); })
+                    .attr("width", function (d) { return xScale(d.length + d.x) - xScale(d.length); })
                     .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
                     .attr("fill", "transparent")
                     .attr("stroke", colorSettings.slabColor);
             } else if (slabtype == SlabType.Line) {
-                plot.selectAll(Constants.slabClass).data(slabRectangles).enter()
+                plot.select(`.${Constants.slabClass}`).selectAll('line').data(slabRectangles).enter()
                     .append("line")
                     .attr("stroke", colorSettings.slabColor)
                     .attr("x1", function (d) { return xScale(d.x); })
@@ -212,6 +219,8 @@ export class Visual implements IVisual {
                     .attr("y2", plotHeight)
                     .attr("opacity", 1);
             }
+        } else {
+            plot.select(`.${Constants.slabClass}`).remove()
         }
     }
 
@@ -251,7 +260,7 @@ export class Visual implements IVisual {
             let mouseEvents = this.customTooltip();
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
-            return <D3Plot>{ type, plot, points, x, y };
+            return <D3Plot>{ type, plot, root: plot, points, x, y };
 
         } catch (error) {
             console.log('Error in ScatterPlot: ', error);
@@ -300,10 +309,10 @@ export class Visual implements IVisual {
 
             let mouseEvents = this.customTooltip();
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-
             return <D3Plot>{
                 type: type,
                 plot: linePath,
+                root: plot,
                 points: points,
                 x: x,
                 y: y
@@ -337,13 +346,22 @@ export class Visual implements IVisual {
                 xAxisValue.scale(xScaleNew);
                 plot.x.xAxis.call(xAxisValue);
 
-                plot.points.attr('cx', (d) => xScaleNew(<number>d.xValue))
+                plot.points.attr('cx', (d) => {
+                    console.log(xScaleNew(<number>d.xValue), d.xValue);
+                    return xScaleNew(<number>d.xValue)
+                })
                     .attr('r', 2);
 
                 plot.points.attr('clip-path', 'url(#clip)');
+                var slabBars = plot.root.select(`.${Constants.slabClass}`).attr('clip-path', 'url(#clip)');
+                slabBars.selectAll('rect')
+                    .attr("x", function (d: SlabRectangle) { return xScaleNew(d.x); })
+                    .attr("width", function (d: SlabRectangle) { return xScaleNew(d.length + d.x) - xScaleNew(d.x); });
+                slabBars.selectAll('line')
+                    .attr("x1", function (d: SlabRectangle) { return xScaleNew(d.x); })
+                    .attr("x2", function (d: SlabRectangle) { return xScaleNew(d.x); })
 
                 if (plot.type === 'LinePlot') {
-
                     plot.plot.attr('clip-path', 'url(#clip)');
 
                     let line = d3
@@ -468,7 +486,6 @@ export class Visual implements IVisual {
                 case Settings.colorSelector:
                     break;
                 case Settings.colorSettings:
-                    debugger;
                     let objects = this.dataview.metadata.objects;
                     objectEnumeration.push({
                         objectName: objectName,
