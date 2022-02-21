@@ -4,9 +4,9 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins } from './plotInterface';
 import { Color } from 'd3';
-import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames,AdditionalPlotSettingsNames } from './constants';
+import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames, AdditionalPlotSettingsNames } from './constants';
 
 // TODO #12: Add the param length from the metadata objects
 // TODO #13: Add advanced interface for adding plot type and number
@@ -51,14 +51,40 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         let xData = new Array<XAxisData>(xCount);
         let yData = new Array<YAxisData>(yCount);
+        const svgTopPadding = 0
+        const svgBottomPadding = 10
+
+        const margins: Margins = {
+            top: 10,
+            right: 30,
+            bottom: 20,
+            left: 50,
+        }
+        const svgHeight = options.viewport.height
+        const svgWidth = options.viewport.width
+        const plotHeightSpace = (svgHeight - svgTopPadding - svgBottomPadding) / yCount;
+        const plotWidth = svgWidth - margins.left - margins.right;
+        let generalPlotSettings: GeneralPlotSettings = {
+            plotHeight: plotHeightSpace - margins.top - margins.bottom,
+            plotWidth: plotWidth,
+            xScalePadding: 0.1,
+            solidOpacity: 1,
+            transparentOpacity: 1,
+            margins: margins
+        }
+
         let viewModel: ViewModel = <ViewModel>{
             plotModels: new Array<PlotModel>(yCount),
             colorSettings: {
                 colorSettings: {
-                    verticalRulerColor: getColorSettings(objects,ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
-                    slabColor: getColorSettings(objects,ColorSettingsNames.slabColor, colorPalette, '#000000')
+                    verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
+                    slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#000000')
                 }
-            }
+            },
+            generalPlotSettings: generalPlotSettings,
+            svgHeight: svgHeight,
+            svgTopPadding: svgTopPadding,
+            svgWidth: svgWidth
         };
         let xDataPoints: number[] = [];
         let yDataPoints: number[] = [];
@@ -176,7 +202,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             let yColumnObjects = metadataColumns[yColumnId].objects;
 
             dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
-                return <number>a.xValue-<number>b.xValue;
+                return <number>a.xValue - <number>b.xValue;
             });
 
             let formatSettings: FormatSettings = {
@@ -185,19 +211,22 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 },
             };
 
+
+
             let plotModel: PlotModel = {
                 plotId: plotNr,
                 formatSettings: formatSettings,
                 xName: xAxis.name,
                 yName: yAxis.name,
+                plotTop: svgTopPadding + plotNr * plotHeightSpace + margins.top,
                 plotSettings: {
                     plotSettings: {
                         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
                         plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
                     },
                 },
-                additionalPlotSettings:{
-                    additionalPlotSettings:{
+                additionalPlotSettings: {
+                    additionalPlotSettings: {
                         slabType: SlabType[getValue<string>(yColumnObjects, Settings.additionalPlotSettings, AdditionalPlotSettingsNames.slabType, SlabType.None)]
                     }
                 },

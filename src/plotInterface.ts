@@ -11,28 +11,49 @@ export interface ViewModel {
     plotModels: PlotModel[];
     colorSettings: ColorSettings;
     slabRectangles?: SlabRectangle[];
+    svgHeight: number;
+    svgWidth: number;
+    svgTopPadding: number;
+    generalPlotSettings: GeneralPlotSettings;
 }
 
-export interface ColorSettings{
-    colorSettings:{
+export interface GeneralPlotSettings {
+    plotHeight: number;
+    plotWidth: number;
+    xScalePadding: number;
+    solidOpacity: number;
+    transparentOpacity: number;
+    margins: Margins;
+}
+
+export interface Margins{
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+}
+
+export interface ColorSettings {
+    colorSettings: {
         verticalRulerColor: string;
         slabColor: string;
     }
 }
 
-export enum PlotType{
+export enum PlotType {
     BarPlot = "BarPlot",
     ScatterPlot = "ScatterPlot",
     LinePlot = "LinePlot"
 }
 
-export enum SlabType{
+export enum SlabType {
     Rectangle = "Rectangle",
     Line = "Line",
     None = "None"
 }
-export interface PlotModel{
+export interface PlotModel {
     plotId: number;
+    plotTop: number;
     xName: string;
     yName: string;
     formatSettings: FormatSettings;
@@ -53,8 +74,8 @@ export interface PlotModel{
 export interface SlabRectangle {
     width: number;
     length: number;
-    x:number;
-    y:number;
+    x: number;
+    y: number;
 }
 
 export interface DataPoint extends SelectableDataPoint {
@@ -71,8 +92,8 @@ export interface FormatSettings {
     };
 }
 
-export interface ColorSettings{
-    colorSettings:{
+export interface ColorSettings {
+    colorSettings: {
         verticalRulerColor: string;
         slabColor: string;
     }
@@ -98,12 +119,12 @@ export interface Legend {
     dy?: string;
 }
 
-export interface XAxisData{
+export interface XAxisData {
     values: number[];
     name?: string;
 }
 
-export interface YAxisData{
+export interface YAxisData {
     values: number[];
     name?: string;
     columnId: number;
