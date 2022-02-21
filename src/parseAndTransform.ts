@@ -4,9 +4,9 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface } from './plotInterface';
 import { Color } from 'd3';
-import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 
 
@@ -151,10 +151,14 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
                 return <number>a.xValue - <number>b.xValue;
             });
-
+            const xInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
+            const yInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
+        
             let formatSettings: FormatSettings = {
-                enableAxis: {
-                    enabled: getValue<boolean>(yColumnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
+                axisSettings: {
+                    enabled: getValue<boolean>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.enabled, true),
+                    xAxis: getAxisInformation(xInformation),
+                    yAxis: getAxisInformation(yInformation)
                 },
             };
 
@@ -251,4 +255,29 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         svgWidth: svgWidth
     };
     return viewModel;
+}
+
+function getAxisInformation(axisInformation: AxisInformation) {
+    switch (axisInformation) {
+        case AxisInformation.None:
+            return <AxisInformationInterface>{
+                lables: false,
+                ticks: false
+            };
+        case AxisInformation.Ticks:
+            return <AxisInformationInterface>{
+                lables: false,
+                ticks: true
+            };
+        case AxisInformation.Labels:
+            return <AxisInformationInterface>{
+                lables: true,
+                ticks: false
+            };
+        case AxisInformation.TicksLabels:
+            return <AxisInformationInterface>{
+                lables: true,
+                ticks: true
+            };
+    }
 }

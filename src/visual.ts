@@ -49,9 +49,9 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle } from './plotInterface';
+import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings } from './constants';
 import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -141,19 +141,21 @@ export class Visual implements IVisual {
         const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, generalPlotSettings.plotWidth]);
         const xAxisValue = axisBottom(xScale);
 
-        if (!plotModel.formatSettings.enableAxis.enabled) {
+        if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
             xAxisValue.tickValues([]);
         }
 
         // can be uncommented later
 
-        // const xLabel = plot
-        //     .append('text')
-        //     .attr('class', 'xLabel')
-        //     .attr('text-anchor', 'end')
-        //     .attr('x', width / 2)
-        //     .attr('y', height + 20)
-        //     .text(xLabelDesc);
+        if (plotModel.formatSettings.axisSettings.xAxis.lables) {
+            const xLabel = plot
+                .append('text')
+                .attr('class', 'xLabel')
+                .attr('text-anchor', 'end')
+                .attr('x', generalPlotSettings.plotWidth / 2)
+                .attr('y', generalPlotSettings.plotHeight + 20)
+                .text(plotModel.xName);
+        }
 
         xAxis
             .attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')')
@@ -168,15 +170,21 @@ export class Visual implements IVisual {
         const yAxis = plot.append('g').classed('yAxis', true);
         const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
         const yAxisValue = axisLeft(yScale).ticks(generalPlotSettings.plotHeight / 20);
-        const yLabel = plot
-            .append('text')
-            .attr('class', 'yLabel')
-            .attr('text-anchor', 'middle')
-            .attr('y', 0 - generalPlotSettings.margins.left)
-            .attr('x', 0 - generalPlotSettings.plotHeight / 2)
-            .attr('dy', '1em')
-            .attr('transform', 'rotate(-90)')
-            .text(plotModel.yName);
+        var yLabel = null;
+        if (plotModel.formatSettings.axisSettings.yAxis.lables) {
+            yLabel = plot
+                .append('text')
+                .attr('class', 'yLabel')
+                .attr('text-anchor', 'middle')
+                .attr('y', 0 - generalPlotSettings.margins.left)
+                .attr('x', 0 - generalPlotSettings.plotHeight / 2)
+                .attr('dy', '1em')
+                .attr('transform', 'rotate(-90)')
+                .text(plotModel.yName);
+        }
+        if (!plotModel.formatSettings.axisSettings.yAxis.ticks) {
+            yAxisValue.tickValues([]);
+        }
 
         yAxis.call(yAxisValue);
 
@@ -193,7 +201,7 @@ export class Visual implements IVisual {
         const slabtype = plotModel.overlayPlotSettings.overlayPlotSettings.slabType;
         const slabRectangles = this.viewModel.slabRectangles;
         const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
-  
+
         if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
             if (slabtype == SlabType.Rectangle) {
                 plot.select(`.${Constants.slabClass}`).selectAll('rect').data(slabRectangles).enter()
@@ -473,7 +481,7 @@ export class Visual implements IVisual {
             let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
                 case Settings.plotSettings:
-                case Settings.enableAxis:
+                case Settings.axisSettings:
                 case Settings.overlayPlotSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
@@ -501,6 +509,7 @@ export class Visual implements IVisual {
             for (let column of metadataColumns) {
                 if (column.roles.y_axis) {
                     const columnObjects = column.objects;
+                    var displayName = column.displayName
                     //index that the column has in the plot (differs from index in metadata) and is used to have the same order in settings
                     const yIndex: number = column['rolesIndex']['y_axis'][0];
                     let properties;
@@ -509,9 +518,14 @@ export class Visual implements IVisual {
                             plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
                             fill: getPlotFillColor(columnObjects, colorPalette, '#000000')
                         }
-                    } else if (objectName === Settings.enableAxis) {
+                    } else if (objectName === Settings.axisSettings) {
+                        displayName = displayName + " x-Axis and y-Axis"
+                        const xInformation = AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
+                        const yInformation = AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
                         properties = {
-                            enabled: getValue<boolean>(columnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
+                            enabled: getValue<boolean>(columnObjects, Settings.axisSettings, AxisSettingsNames.enabled, true),
+                            xAxis: xInformation,
+                            yAxis: yInformation
                         };
                     } else if (objectName === Settings.overlayPlotSettings) {
                         properties = {
@@ -520,7 +534,7 @@ export class Visual implements IVisual {
                     }
                     objectEnumeration[yIndex] = {
                         objectName: objectName,
-                        displayName: column.displayName,
+                        displayName: displayName,
                         properties: properties,
                         selector: { metadata: column.queryName },
                     };
@@ -529,6 +543,8 @@ export class Visual implements IVisual {
         }
     }
 }
+
+
 function filterNullValues(dataPoints: DataPoint[]) {
     dataPoints = dataPoints.filter(d => { return d.yValue != null; });
     return dataPoints;

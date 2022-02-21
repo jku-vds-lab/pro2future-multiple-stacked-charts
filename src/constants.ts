@@ -1,6 +1,6 @@
 export enum Settings {
     plotSettings = "plotSettings",
-    enableAxis = "enableAxis",
+    axisSettings = "axisSettings",
     colorSelector = "colorSelector",
     colorSettings = "colorSettings",
     overlayPlotSettings = "overlayPlotSettings"
@@ -16,8 +16,10 @@ export enum ColorSettingsNames {
     verticalRulerColor = "verticalRulerColor",
     slabColor = "slabColor"
 }
-export enum EnableAxisNames {
-    enabled = "enabled"
+export enum AxisSettingsNames {
+    enabled = "enabled",
+    xAxis = "xAxis",
+    yAxis = "yAxis"
 }
 export enum ColorSelectorNames {
     fill = "fill"

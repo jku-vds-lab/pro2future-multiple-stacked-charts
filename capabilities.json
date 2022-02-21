@@ -205,13 +205,59 @@
                 }
             }
         },
-        "enableAxis": {
-            "displayName": "Enable x-Axis",
+        "axisSettings": {
+            "displayName": "Axis Settings",
             "properties": {
                 "enabled": {
                     "displayName": "Enable x-Axis",
                     "type": {
                         "bool": true
+                    }
+                },
+                "xAxis": {
+                    "displayName": "X-Axis",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
+                            }
+                        ]
+                    }
+                },
+                "yAxis": {
+                    "displayName": "Y-Axis",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
+                            }
+                        ]
                     }
                 }
             }

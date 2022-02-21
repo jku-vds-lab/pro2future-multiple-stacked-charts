@@ -25,7 +25,7 @@ export interface GeneralPlotSettings {
     margins: Margins;
 }
 
-export interface Margins{
+export interface Margins {
     top: number;
     right: number;
     bottom: number;
@@ -50,6 +50,14 @@ export enum SlabType {
     Line = "Line",
     None = "None"
 }
+
+export enum AxisInformation {
+    None = "None",
+    Labels = "Labels",
+    Ticks = "Ticks",
+    TicksLabels = "TicksLabels"
+}
+
 export interface PlotModel {
     plotId: number;
     plotTop: number;
@@ -86,10 +94,18 @@ export interface DataPoint extends SelectableDataPoint {
 }
 
 export interface FormatSettings {
-    enableAxis: {
+    axisSettings: {
+        xAxis: AxisInformationInterface;
+        yAxis: AxisInformationInterface;
         enabled: boolean;
     };
 }
+
+export interface AxisInformationInterface{
+    lables: boolean;
+    ticks: boolean;
+}
+
 
 export interface ColorSettings {
     colorSettings: {
