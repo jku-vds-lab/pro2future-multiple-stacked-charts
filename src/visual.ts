@@ -193,15 +193,9 @@ export class Visual implements IVisual {
         const slabtype = plotModel.additionalPlotSettings.additionalPlotSettings.slabType;
         const slabRectangles = this.viewModel.slabRectangles;
         const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
-        const slabGroup = d3.selectAll(`.${Constants.slabClass}`);
-        //const slabRoot = plot.select(`.${Constants.slabClass}`).data(slabRectangles).enter()
-        //plot.append("g").attr("class",Constants.slabClass).attr("fill", "transparent").data(slabRectangles).enter()
-        // .append("g")
-        // .attr("class", "gbar");
-
+  
         if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
             if (slabtype == SlabType.Rectangle) {
-                console.log(slabRectangles);
                 plot.select(`.${Constants.slabClass}`).selectAll('rect').data(slabRectangles).enter()
                     .append("rect")
                     .attr("x", function (d) { return xScale(d.x); })
@@ -336,7 +330,9 @@ export class Visual implements IVisual {
         let zoomed = function (event) {
 
             let transform = event.transform;
-
+            if (transform.k == 1) {
+                transform.x = 0
+            }
             for (let plot of plots) {
 
                 plot.x.xAxis.attr('clip-path', 'url(#clip)')
@@ -347,10 +343,7 @@ export class Visual implements IVisual {
                 xAxisValue.scale(xScaleNew);
                 plot.x.xAxis.call(xAxisValue);
 
-                plot.points.attr('cx', (d) => {
-                    console.log(xScaleNew(<number>d.xValue), d.xValue);
-                    return xScaleNew(<number>d.xValue)
-                })
+                plot.points.attr('cx', (d) => { return xScaleNew(<number>d.xValue) })
                     .attr('r', 2);
 
                 plot.points.attr('clip-path', 'url(#clip)');
@@ -414,7 +407,6 @@ export class Visual implements IVisual {
 
             const height = visualContainer.clientHeight;
             const width = visualContainer.clientWidth;
-            console.log(height,width,event.clientY,event.clientX);
             const x = event.clientX - margins.left;
             const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
             const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
