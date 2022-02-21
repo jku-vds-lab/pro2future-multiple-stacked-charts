@@ -412,8 +412,9 @@ export class Visual implements IVisual {
 
         let mousemove = function (event, data) {
 
-            const height = visualContainer.offsetHeight;
-            const width = visualContainer.offsetWidth;
+            const height = visualContainer.clientHeight;
+            const width = visualContainer.clientWidth;
+            console.log(height,width,event.clientY,event.clientX);
             const x = event.clientX - margins.left;
             const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
             const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
