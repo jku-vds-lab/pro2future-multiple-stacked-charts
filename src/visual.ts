@@ -315,13 +315,13 @@ export class Visual implements IVisual {
 
     private zoomCharts(plots: D3Plot[], options: VisualUpdateOptions) {
         const generalPlotSettings = this.viewModel.generalPlotSettings
-        let plotWidth = generalPlotSettings.plotWidth
-        let height = 50;
+        const plotWidth = generalPlotSettings.plotWidth;
+        const plotHeight = generalPlotSettings.plotHeight;
         let defs = this.svg.append('defs').append('clipPath')
             .attr('id', 'clip')
             .append('rect')
             .attr('width', plotWidth - generalPlotSettings.margins.right)
-            .attr('height', height)
+            .attr('height', plotHeight)
 
         let zoomed = function (event) {
 
