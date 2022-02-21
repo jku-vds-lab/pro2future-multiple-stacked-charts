@@ -3,13 +3,13 @@ export enum Settings {
     enableAxis = "enableAxis",
     colorSelector = "colorSelector",
     colorSettings = "colorSettings",
-    additionalPlotSettings = "additionalPlotSettings"
+    overlayPlotSettings = "overlayPlotSettings"
 }
 export enum PlotSettingsNames {
     plotType = "plotType",
     fill = "fill"
 }
-export enum AdditionalPlotSettingsNames {
+export enum OverlayPlotSettingsNames {
     slabType = "slabType"
 }
 export enum ColorSettingsNames {

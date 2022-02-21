@@ -171,8 +171,8 @@
                     }
                 }
             }
-        },"additionalPlotSettings": {
-            "displayName": "Additional Plot Settings",
+        },"overlayPlotSettings": {
+            "displayName": "Overlay Plot Settings",
             "properties": {
                 "slabType": {
                     "displayName": "Choose Type",

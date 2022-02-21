@@ -56,7 +56,7 @@ export interface PlotModel {
     xName: string;
     yName: string;
     formatSettings: FormatSettings;
-    additionalPlotSettings: AdditionalPlotSettings;
+    overlayPlotSettings: OverlayPlotSettings;
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
 
@@ -105,8 +105,8 @@ export interface PlotSettings {
     };
 }
 
-export interface AdditionalPlotSettings {
-    additionalPlotSettings: {
+export interface OverlayPlotSettings {
+    overlayPlotSettings: {
         slabType: SlabType;
     };
 }

@@ -51,7 +51,7 @@ import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } fr
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { AdditionalPlotSettingsNames, ColorSettingsNames, Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
 import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -190,7 +190,7 @@ export class Visual implements IVisual {
     private drawSlabs(plotModel: PlotModel, plot: Selection<any, any>, xScale: d3.ScaleLinear<number, number, never>, yScale: d3.ScaleLinear<number, number, never>) {
 
         const colorSettings = this.viewModel.colorSettings.colorSettings;
-        const slabtype = plotModel.additionalPlotSettings.additionalPlotSettings.slabType;
+        const slabtype = plotModel.overlayPlotSettings.overlayPlotSettings.slabType;
         const slabRectangles = this.viewModel.slabRectangles;
         const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
   
@@ -474,7 +474,7 @@ export class Visual implements IVisual {
             switch (objectName) {
                 case Settings.plotSettings:
                 case Settings.enableAxis:
-                case Settings.additionalPlotSettings:
+                case Settings.overlayPlotSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
                 case Settings.colorSelector:
@@ -513,9 +513,9 @@ export class Visual implements IVisual {
                         properties = {
                             enabled: getValue<boolean>(columnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
                         };
-                    } else if (objectName === Settings.additionalPlotSettings) {
+                    } else if (objectName === Settings.overlayPlotSettings) {
                         properties = {
-                            slabType: SlabType[getValue<string>(columnObjects, Settings.additionalPlotSettings, AdditionalPlotSettingsNames.slabType, SlabType.None)]
+                            slabType: SlabType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
                         };
                     }
                     objectEnumeration[yIndex] = {

@@ -6,7 +6,7 @@ import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColo
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins } from './plotInterface';
 import { Color } from 'd3';
-import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames, AdditionalPlotSettingsNames } from './constants';
+import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 
 
@@ -172,9 +172,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                         plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
                     },
                 },
-                additionalPlotSettings: {
-                    additionalPlotSettings: {
-                        slabType: SlabType[getValue<string>(yColumnObjects, Settings.additionalPlotSettings, AdditionalPlotSettingsNames.slabType, SlabType.None)]
+                overlayPlotSettings: {
+                    overlayPlotSettings: {
+                        slabType: SlabType[getValue<string>(yColumnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
                     }
                 },
                 xRange: {
