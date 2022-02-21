@@ -201,11 +201,12 @@ export class Visual implements IVisual {
 
         if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
             if (slabtype == SlabType.Rectangle) {
+                console.log(slabRectangles);
                 plot.select(`.${Constants.slabClass}`).selectAll('rect').data(slabRectangles).enter()
                     .append("rect")
                     .attr("x", function (d) { return xScale(d.x); })
                     .attr("y", function (d) { return yScale(d.width - d.y); })
-                    .attr("width", function (d) { return xScale(d.length + d.x) - xScale(d.length); })
+                    .attr("width", function (d) { return xScale(d.length + d.x) - xScale(d.x); })
                     .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
                     .attr("fill", "transparent")
                     .attr("stroke", colorSettings.slabColor);
