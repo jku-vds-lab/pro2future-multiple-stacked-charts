@@ -97,7 +97,6 @@ export interface FormatSettings {
     axisSettings: {
         xAxis: AxisInformationInterface;
         yAxis: AxisInformationInterface;
-        enabled: boolean;
     };
 }
 

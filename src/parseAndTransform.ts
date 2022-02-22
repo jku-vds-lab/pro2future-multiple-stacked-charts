@@ -156,7 +156,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         
             let formatSettings: FormatSettings = {
                 axisSettings: {
-                    enabled: getValue<boolean>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.enabled, true),
                     xAxis: getAxisInformation(xInformation),
                     yAxis: getAxisInformation(yInformation)
                 },

@@ -208,12 +208,6 @@
         "axisSettings": {
             "displayName": "Axis Settings",
             "properties": {
-                "enabled": {
-                    "displayName": "Enable x-Axis",
-                    "type": {
-                        "bool": true
-                    }
-                },
                 "xAxis": {
                     "displayName": "X-Axis",
                     "type": {

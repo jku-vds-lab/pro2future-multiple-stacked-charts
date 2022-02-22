@@ -17,7 +17,6 @@ export enum ColorSettingsNames {
     slabColor = "slabColor"
 }
 export enum AxisSettingsNames {
-    enabled = "enabled",
     xAxis = "xAxis",
     yAxis = "yAxis"
 }

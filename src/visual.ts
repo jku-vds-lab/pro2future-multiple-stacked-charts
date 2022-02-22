@@ -201,7 +201,6 @@ export class Visual implements IVisual {
         const slabtype = plotModel.overlayPlotSettings.overlayPlotSettings.slabType;
         const slabRectangles = this.viewModel.slabRectangles;
         const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
-        console.log(slabtype);
         if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
             if (slabtype == SlabType.Rectangle) {
                 plot.select(`.${Constants.slabClass}`).selectAll('rect').data(slabRectangles).enter()
@@ -482,6 +481,8 @@ export class Visual implements IVisual {
             switch (objectName) {
                 case Settings.plotSettings:
                 case Settings.axisSettings:
+                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 2);
+                    break;
                 case Settings.overlayPlotSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
@@ -504,74 +505,70 @@ export class Visual implements IVisual {
         }
         return objectEnumeration;
 
-        function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[]) {
-            objectEnumeration = new Array<VisualObjectInstance>(yCount);
+        function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], settingsCount: number = 1) {
+            objectEnumeration = new Array<VisualObjectInstance>(yCount * settingsCount);
 
-            if (objectName == Settings.axisSettings || objectName == Settings.plotSettings) {
-                objectEnumeration = new Array<VisualObjectInstance>(2 * yCount);
-            }
+            // if (objectName == Settings.axisSettings || objectName == Settings.plotSettings) {
+            //     objectEnumeration = new Array<VisualObjectInstance>(2 * yCount);
+            // }
 
             for (let column of metadataColumns) {
                 if (column.roles.y_axis) {
                     const columnObjects = column.objects;
-                    var displayName = column.displayName
+                    var displayNames = {}
+                    var properties = {}
                     //index that the column has in the plot (differs from index in metadata) and is used to have the same order in settings
                     const yIndex: number = column['rolesIndex']['y_axis'][0];
-
                     switch (objectName) {
                         case Settings.plotSettings:
+                            displayNames = {
+                                plotType: column.displayName + " Plot Type",
+                                fill: column.displayName + " Plot Color"
+                            };
+                            properties = {
+                                plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+                                fill: getPlotFillColor(columnObjects, colorPalette, '#000000')
+                            };
 
-                            objectEnumeration[2 * yIndex] = {
-                                objectName: objectName,
-                                displayName: displayName + " Plot Type",
-                                properties: {
-                                    plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                                },
-                                selector: { metadata: column.queryName },
-                            };
-                            objectEnumeration[2 * yIndex + 1] = {
-                                objectName: objectName,
-                                displayName: displayName + " Plot Color",
-                                properties: {
-                                    fill: getPlotFillColor(columnObjects, colorPalette, '#000000')
-                                },
-                                selector: { metadata: column.queryName },
-                            };
                             break;
-                            
+
                         case Settings.axisSettings:
                             const xInformation = AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
                             const yInformation = AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
 
-                            objectEnumeration[2 * yIndex] = {
-                                objectName: objectName,
-                                displayName: displayName + " X-Axis",
-                                properties: { xAxis: xInformation },
-                                selector: { metadata: column.queryName },
+                            displayNames = {
+                                xInformation: column.displayName + " X-Axis",
+                                yInformation: column.displayName + " Y-Axis",
                             };
-                            objectEnumeration[2 * yIndex + 1] = {
-                                objectName: objectName,
-                                displayName: displayName + " Y-Axis",
-                                properties: {
-                                    yAxis: yInformation
-                                },
-                                selector: { metadata: column.queryName },
+                            properties = {
+                                xAxis: xInformation,
+                                yAxis: yInformation
                             };
                             break;
 
                         case Settings.overlayPlotSettings:
-                            objectEnumeration[yIndex] = {
-                                objectName: objectName,
-                                displayName: displayName + " Slab Overlay Type",
-                                properties: {
-                                    slabType: SlabType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
-                                },
-                                selector: { metadata: column.queryName },
+                            displayNames = {
+                                overlayType: column.displayName + " Slab Overlay Type"
+                            };
+                            properties = {
+                                slabType: SlabType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
                             };
                             break;
                     }
+                    const propertyEntries = Object.entries(properties);
+                    const displayNamesEntries = Object.entries(displayNames);
+                    for (let i = 0; i < propertyEntries.length; i++) {
+                        const [key, value] = propertyEntries[i];
+                        var props = {};
+                        props[key] = value;
+                        objectEnumeration[yIndex * settingsCount + i] = {
+                            objectName: objectName,
+                            displayName: <string>displayNamesEntries[i][1],
+                            properties: props,
+                            selector: { metadata: column.queryName },
+                        };
 
-
+                    }
 
                 }
             }
