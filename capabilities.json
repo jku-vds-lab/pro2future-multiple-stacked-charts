@@ -241,6 +241,23 @@
                 }
             }
         },
+        "yRangeSettings": {
+            "displayName": "Y-Axis Range Settings",
+            "properties": {
+                "min": {
+                    "displayName": "Minimum Value",
+                    "type": {
+                        "numeric":true
+                    }
+                },
+                "max": {
+                    "displayName": "Maximum Value",
+                    "type": {
+                        "numeric":true
+                    }
+                }
+            }
+        },
         "axisSettings": {
             "displayName": "Axis Settings",
             "properties": {

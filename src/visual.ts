@@ -51,7 +51,7 @@ import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } fr
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface, TooltipModel, TooltipDataPoint, TooltipData } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames } from './constants';
 import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -92,6 +92,7 @@ export class Visual implements IVisual {
         let plots: D3Plot[] = [];
         for (let plotModel of this.viewModel.plotModels) {
             const plotType = plotModel.plotSettings.plotSettings.plotType;
+            //TODO: don't draw datapoints that are out of y-range?
             if (plotType == PlotType.LinePlot) {
                 const linePlot = this.drawLinePlot(options, plotModel);
                 plots.push(linePlot);
@@ -197,7 +198,7 @@ export class Visual implements IVisual {
 
         const generalPlotSettings = this.viewModel.generalPlotSettings;
         const yAxis = plot.append('g').classed('yAxis', true);
-        const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
+        const yScale = scaleLinear().domain([plotModel.yRange.min, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
         const yAxisValue = axisLeft(yScale).ticks(generalPlotSettings.plotHeight / 20);
         var yLabel = null;
         if (plotModel.formatSettings.axisSettings.yAxis.lables) {
@@ -468,7 +469,7 @@ export class Visual implements IVisual {
             for (const tooltip of tooltipData) {
                 tooltipText += "<b> " + tooltip.title + "</b> : " + tooltip.yValue + " <br> ";
             }
-
+            //TODO: check if there is a performance difference
             // for (let plotModel of plotModels) {
             //     for (let point of plotModel.dataPoints) {
             //         if (point.xValue == data.xValue) {
@@ -527,12 +528,14 @@ export class Visual implements IVisual {
         const objectName = options.objectName;
         const colorPalette = this.host.colorPalette;
         let objectEnumeration: VisualObjectInstance[] = [];
+        const plotmodles: PlotModel[] = this.viewModel.plotModels;
         try {
             let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
             let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
                 case Settings.plotSettings:
                 case Settings.axisSettings:
+                case Settings.yRangeSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns, 2);
                     break;
                 case Settings.overlayPlotSettings:
@@ -577,10 +580,6 @@ export class Visual implements IVisual {
         function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], settingsCount: number = 1) {
             objectEnumeration = new Array<VisualObjectInstance>(yCount * settingsCount);
 
-            // if (objectName == Settings.axisSettings || objectName == Settings.plotSettings) {
-            //     objectEnumeration = new Array<VisualObjectInstance>(2 * yCount);
-            // }
-
             for (let column of metadataColumns) {
                 if (column.roles.y_axis) {
                     const columnObjects = column.objects;
@@ -614,7 +613,18 @@ export class Visual implements IVisual {
                                 yAxis: yInformation
                             };
                             break;
+                        case Settings.yRangeSettings:
+                            const yRange = plotmodles.filter(x => { return x.plotId == yIndex })[0].yRange
+                            displayNames = {
+                                min: column.displayName + " Minimum Value",
+                                yInformation: column.displayName + " Maximum Value",
+                            };
+                            properties = {
+                                min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),//TODO: change to yRange.min?
+                                max: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, yRange.max)
+                            };
 
+                            break;
                         case Settings.overlayPlotSettings:
                             displayNames = {
                                 overlayType: column.displayName + " Slab Overlay Type"
