@@ -251,6 +251,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
     const plotWidth = svgWidth - margins.margins.left - margins.margins.right;
     let generalPlotSettings: GeneralPlotSettings = {
         plotTitleHeight: margins.plotTitleHeight,
+        dotMargin: margins.dotMargin,
         plotHeight: plotHeightSpace - margins.margins.top - margins.margins.bottom,
         plotWidth: plotWidth,
         xScalePadding: 0.1,

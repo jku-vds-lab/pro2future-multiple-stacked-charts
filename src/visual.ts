@@ -116,12 +116,26 @@ export class Visual implements IVisual {
         const slabGroup = plot.append("g").attr("class", Constants.slabClass);
         const x = this.buildXAxis(plotModel, plot);
         const y = this.buildYAxis(plotModel, plot);
+        this.addClipPath();
         this.addPlotTitles(plotModel, plot);
         this.addVerticalRuler(plot);
         this.drawSlabs(plotModel, plot, x.xScale, y.yScale);
 
         return <D3Plot>{ type: plotType, plot, points: null, x, y };
 
+    }
+
+    private addClipPath() {
+        const generalPlotSettings = this.viewModel.generalPlotSettings;
+        const plotWidth = generalPlotSettings.plotWidth;
+        const plotHeight = generalPlotSettings.plotHeight;
+        let defs = this.svg.append('defs').append('clipPath')
+            .attr('id', 'clip')
+            .append('rect')
+            .attr('y', -generalPlotSettings.dotMargin)
+            .attr('x', -generalPlotSettings.dotMargin)
+            .attr('width', plotWidth - generalPlotSettings.margins.right + 2 * generalPlotSettings.dotMargin)
+            .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
     }
 
     private addPlotTitles(plotModel: PlotModel, plot: d3.Selection<SVGGElement, any, any, any>) {
@@ -273,6 +287,7 @@ export class Visual implements IVisual {
                 .attr('cx', (d) => x.xScale(<number>d.xValue))
                 .attr('cy', (d) => y.yScale(<number>d.yValue))
                 .attr('r', 2)
+                .attr('clip-path', 'url(#clip)')
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
             let mouseEvents = this.customTooltip();
@@ -310,7 +325,8 @@ export class Visual implements IVisual {
                 .attr('fill', 'none')
                 .attr('stroke', plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke-width', 1.5)
-                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));;
+                .attr('clip-path', 'url(#clip)')
+                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
 
             const points = plot
@@ -323,6 +339,7 @@ export class Visual implements IVisual {
                 .attr('cx', (d) => x.xScale(<number>d.xValue))
                 .attr('cy', (d) => y.yScale(<number>d.yValue))
                 .attr('r', 2)
+                .attr('clip-path', 'url(#clip)')
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
             let mouseEvents = this.customTooltip();
@@ -341,14 +358,7 @@ export class Visual implements IVisual {
     }
 
     private zoomCharts(plots: D3Plot[], options: VisualUpdateOptions) {
-        const generalPlotSettings = this.viewModel.generalPlotSettings
-        const plotWidth = generalPlotSettings.plotWidth;
-        const plotHeight = generalPlotSettings.plotHeight;
-        let defs = this.svg.append('defs').append('clipPath')
-            .attr('id', 'clip')
-            .append('rect')
-            .attr('width', plotWidth - generalPlotSettings.margins.right)
-            .attr('height', plotHeight)
+        
 
         let zoomed = function (event) {
 

@@ -4,6 +4,7 @@ export class MarginSettings {
     static readonly svgTopPadding = 0;
     static readonly svgBottomPadding = 0
     static readonly plotTitleHeight = 10;
+    static readonly dotMargin = 4;
     static readonly margins: Margins = {
         top: 10,
         right: 30,
