@@ -3,6 +3,7 @@ import { Margins } from './plotInterface';
 export class MarginSettings {
     static readonly svgTopPadding = 0;
     static readonly svgBottomPadding = 0
+    static readonly plotTitleHeight = 10;
     static readonly margins: Margins = {
         top: 10,
         right: 30,

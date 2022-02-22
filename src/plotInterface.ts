@@ -19,6 +19,7 @@ export interface ViewModel {
 export interface GeneralPlotSettings {
     plotHeight: number;
     plotWidth: number;
+    plotTitleHeight: number;
     xScalePadding: number;
     solidOpacity: number;
     transparentOpacity: number;

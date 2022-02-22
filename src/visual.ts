@@ -116,11 +116,26 @@ export class Visual implements IVisual {
         const slabGroup = plot.append("g").attr("class", Constants.slabClass);
         const x = this.buildXAxis(plotModel, plot);
         const y = this.buildYAxis(plotModel, plot);
+        this.addPlotTitles(plotModel, plot);
         this.addVerticalRuler(plot);
         this.drawSlabs(plotModel, plot, x.xScale, y.yScale);
 
         return <D3Plot>{ type: plotType, plot, points: null, x, y };
 
+    }
+
+    private addPlotTitles(plotModel: PlotModel, plot: d3.Selection<SVGGElement, any, any, any>) {
+        const generalPlotSettings = this.viewModel.generalPlotSettings;
+        if (plotModel.plotTitleSettings.title.length > 0) {
+            let title = plot
+                .append('text')
+                .attr('class', 'plotTitle')
+                .attr('text-anchor', 'left')
+                .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top)
+                .attr('x', 0)
+                .attr('dy', '1em')
+                .text(plotModel.plotTitleSettings.title);
+        }
     }
 
     private buildBasicPlot(plotModel: PlotModel) {
@@ -182,6 +197,7 @@ export class Visual implements IVisual {
                 .attr('transform', 'rotate(-90)')
                 .text(plotModel.yName);
         }
+
         if (!plotModel.formatSettings.axisSettings.yAxis.ticks) {
             yAxisValue.tickValues([]);
         }

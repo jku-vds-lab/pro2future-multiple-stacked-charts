@@ -54,7 +54,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
 
-        let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette);
+
         let xDataPoints: number[] = [];
         let yDataPoints: number[] = [];
         let dataPoints: DataPoint[] = [];
@@ -117,8 +117,20 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 }
             }
         }
+
+        let plotTitles: string[] = [];
+        for (let plotNr = 0; plotNr < yCount; plotNr++) {
+            let yAxis: YAxisData = yData[plotNr]
+            let yColumnId = yData[plotNr].columnId;
+            let yColumnObjects = metadataColumns[yColumnId].objects;
+            plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name))
+        }
+        let plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
+        let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount);
+
         createSlabInformation(slabLength, slabWidth, viewModel);
 
+        let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
         //create Plotmodels
         for (let plotNr = 0; plotNr < yCount; plotNr++) {
             //get x- and y-data for plotnumber
@@ -161,14 +173,16 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 },
             };
 
-
+            let plotTitle = plotTitles[plotNr]
+            plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
+            
             const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
             let plotModel: PlotModel = {
                 plotId: plotNr,
                 formatSettings: formatSettings,
                 xName: xAxis.name,
                 yName: yAxis.name,
-                plotTop: MarginSettings.svgTopPadding + plotNr * plotHeightIncludingMargins + MarginSettings.margins.top,
+                plotTop: plotTop,
                 plotSettings: {
                     plotSettings: {
                         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
@@ -176,7 +190,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     },
                 },
                 plotTitleSettings: {
-                    title: getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name)
+                    title: plotTitle//getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name)
                 },
                 overlayPlotSettings: {
                     overlayPlotSettings: {
@@ -194,6 +208,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 dataPoints: dataPoints
             };
             viewModel.plotModels[plotNr] = plotModel;
+            plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
         }
 
         return viewModel;
@@ -228,13 +243,14 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], viewMo
     }
 }
 
-function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette) {
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number) {
     const margins = MarginSettings
     const svgHeight = options.viewport.height;
     const svgWidth = options.viewport.width;
-    const plotHeightSpace = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding) / yCount;
+    const plotHeightSpace = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - margins.plotTitleHeight * plotTitlesCount) / yCount;
     const plotWidth = svgWidth - margins.margins.left - margins.margins.right;
     let generalPlotSettings: GeneralPlotSettings = {
+        plotTitleHeight: margins.plotTitleHeight,
         plotHeight: plotHeightSpace - margins.margins.top - margins.margins.bottom,
         plotWidth: plotWidth,
         xScalePadding: 0.1,
