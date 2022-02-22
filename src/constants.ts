@@ -4,11 +4,15 @@ export enum Settings {
     colorSelector = "colorSelector",
     colorSettings = "colorSettings",
     overlayPlotSettings = "overlayPlotSettings",
-    plotTitleSettings = "plotTitleSettings"
+    plotTitleSettings = "plotTitleSettings",
+    tooltipTitleSettings = "tooltipTitleSettings"
 }
 export enum PlotSettingsNames {
     plotType = "plotType",
     fill = "fill"
+}
+export enum TooltipTitleSettingsNames {
+    title = "title"
 }
 export enum OverlayPlotSettingsNames {
     slabType = "slabType"

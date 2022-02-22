@@ -230,6 +230,17 @@
                 }
             }
         },
+        "tooltipTitleSettings": {
+            "displayName": "Tooltip Title Settings",
+            "properties": {
+                "title": {
+                    "displayName": "Tooltip Title",
+                    "type": {
+                        "text": true
+                    }
+                }
+            }
+        },
         "axisSettings": {
             "displayName": "Axis Settings",
             "properties": {

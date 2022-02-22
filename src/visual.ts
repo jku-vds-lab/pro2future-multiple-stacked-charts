@@ -51,7 +51,7 @@ import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } fr
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface, TooltipModel, TooltipDataPoint, TooltipData } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames } from './constants';
 import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -419,7 +419,7 @@ export class Visual implements IVisual {
             .append('div')
             .style("position", "absolute")
             .style("visibility", "hidden")
-            .style("background-color", "white")
+            .style("background-color", "#484848")
             .style("border", "solid")
             .style("border-width", "1px")
             .style("border-radius", "5px")
@@ -480,7 +480,8 @@ export class Visual implements IVisual {
             Tooltip
                 .html(tooltipText)
                 .style("left", (tooltipX) + "px")
-                .style("top", (tooltipY) + "px");
+                .style("top", (tooltipY) + "px")
+                .style("color", "#F0F0F0");
 
             lines.attr("x1", x).attr("x2", x);
 
@@ -539,6 +540,22 @@ export class Visual implements IVisual {
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
                 case Settings.colorSelector:
+                    break;
+                case Settings.tooltipTitleSettings:
+                    const tooltipModels = this.viewModel.tooltipModels;
+                    const tooltipCount = tooltipModels.length;
+                    objectEnumeration = new Array<VisualObjectInstance>(tooltipCount);
+                    for (const column of metadataColumns) {
+                        if (column.roles.tooltip) {
+                            const yIndex: number = column['rolesIndex']['tooltip'][0];
+                            objectEnumeration[yIndex] = {
+                                objectName: objectName,
+                                displayName: column.displayName,
+                                properties: { title: getValue<string>(column.objects, Settings.tooltipTitleSettings, TooltipTitleSettingsNames.title, column.displayName) },
+                                selector: { metadata: column.queryName }
+                            };
+                        }
+                    }
                     break;
                 case Settings.colorSettings:
                     let objects = this.dataview.metadata.objects;

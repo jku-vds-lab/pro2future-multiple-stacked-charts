@@ -6,7 +6,7 @@ import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColo
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel } from './plotInterface';
 import { Color } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 
 
@@ -64,7 +64,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         let slabWidth: number[] = [];
         let slabLength: number[] = [];
 
-        
+
         //aquire all categorical values
         if (categorical.categories !== undefined) {
             for (let category of categorical.categories) {
@@ -148,7 +148,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         }
         let plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
         let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount);
-        createTooltipModels(sharedXAxis, xData, tooltipData, viewModel);
+        createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
         createSlabInformation(slabLength, slabWidth, viewModel);
 
         let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
@@ -238,10 +238,11 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
 }
 
-function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipData: YAxisData[], viewModel: ViewModel) {
+function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipData: YAxisData[], viewModel: ViewModel, metadataColumns: powerbi.DataViewMetadataColumn[]) {
     if (sharedXAxis) {
         const xAxis: XAxisData = xData[0];
         for (const tooltip of tooltipData) {
+            const column = metadataColumns[tooltip.columnId];
             const maxLengthAttributes = Math.max(xAxis.values.length, tooltip.values.length);
 
             let tooltipPoints: TooltipDataPoint[] = <TooltipDataPoint[]>[];
@@ -256,7 +257,7 @@ function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipDa
                 tooltipPoints.push(dataPoint);
             }
             let tooltipModel: TooltipModel = {
-                tooltipName: tooltip.name,
+                tooltipName: getValue<string>(column.objects, Settings.tooltipTitleSettings, TooltipTitleSettingsNames.title, column.displayName),
                 tooltipId: tooltip.columnId,
                 tooltipData: tooltipPoints
             };
