@@ -67,7 +67,7 @@ export interface PlotModel {
     overlayPlotSettings: OverlayPlotSettings;
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
-
+    plotTitleSettings: PlotTitleSettings;
     xRange: {
         min: number;
         max: number;
@@ -76,6 +76,10 @@ export interface PlotModel {
         min: number;
         max: number;
     };
+}
+
+export interface PlotTitleSettings {
+    title: string;
 }
 
 export interface SlabRectangle {
@@ -100,7 +104,7 @@ export interface FormatSettings {
     };
 }
 
-export interface AxisInformationInterface{
+export interface AxisInformationInterface {
     lables: boolean;
     ticks: boolean;
 }

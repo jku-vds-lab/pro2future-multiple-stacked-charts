@@ -51,7 +51,7 @@ import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } fr
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames } from './constants';
 import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -484,6 +484,7 @@ export class Visual implements IVisual {
                     setObjectEnumerationColumnSettings(yCount, metadataColumns, 2);
                     break;
                 case Settings.overlayPlotSettings:
+                case Settings.plotTitleSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
                 case Settings.colorSelector:
@@ -552,6 +553,14 @@ export class Visual implements IVisual {
                             };
                             properties = {
                                 slabType: SlabType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
+                            };
+                            break;
+                        case Settings.plotTitleSettings:
+                            displayNames = {
+                                overlayType: column.displayName + " Plot Title"
+                            };
+                            properties = {
+                                title: getValue<string>(columnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, column.displayName)
                             };
                             break;
                     }

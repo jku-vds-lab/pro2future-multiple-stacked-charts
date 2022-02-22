@@ -3,7 +3,8 @@ export enum Settings {
     axisSettings = "axisSettings",
     colorSelector = "colorSelector",
     colorSettings = "colorSettings",
-    overlayPlotSettings = "overlayPlotSettings"
+    overlayPlotSettings = "overlayPlotSettings",
+    plotTitleSettings = "plotTitleSettings"
 }
 export enum PlotSettingsNames {
     plotType = "plotType",
@@ -20,6 +21,11 @@ export enum AxisSettingsNames {
     xAxis = "xAxis",
     yAxis = "yAxis"
 }
+
+export enum PlotTitleSettingsNames {
+    title = "title"
+}
+
 export enum ColorSelectorNames {
     fill = "fill"
 }

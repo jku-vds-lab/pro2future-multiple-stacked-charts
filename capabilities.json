@@ -171,7 +171,8 @@
                     }
                 }
             }
-        },"overlayPlotSettings": {
+        },
+        "overlayPlotSettings": {
             "displayName": "Overlay Plot Settings",
             "properties": {
                 "slabType": {
@@ -201,6 +202,17 @@
                                 "color": true
                             }
                         }
+                    }
+                }
+            }
+        },
+        "plotTitleSettings": {
+            "displayName": "Plot Title Settings",
+            "properties": {
+                "title": {
+                    "displayName": "Plot Title",
+                    "type": {
+                        "text": true
                     }
                 }
             }
@@ -272,6 +284,7 @@
             }
         }
     },
+  
     "tooltips": {
         "supportedTypes": {
             "default": true,

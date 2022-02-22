@@ -6,7 +6,7 @@ import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColo
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface } from './plotInterface';
 import { Color } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 
 
@@ -153,7 +153,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             });
             const xInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
             const yInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
-        
+
             let formatSettings: FormatSettings = {
                 axisSettings: {
                     xAxis: getAxisInformation(xInformation),
@@ -162,7 +162,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             };
 
 
-            const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom
+            const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
             let plotModel: PlotModel = {
                 plotId: plotNr,
                 formatSettings: formatSettings,
@@ -174,6 +174,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
                         plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
                     },
+                },
+                plotTitleSettings: {
+                    title: getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name)
                 },
                 overlayPlotSettings: {
                     overlayPlotSettings: {
