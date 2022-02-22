@@ -171,8 +171,9 @@
                     }
                 }
             }
-        },"additionalPlotSettings": {
-            "displayName": "Additional Plot Settings",
+        },
+        "overlayPlotSettings": {
+            "displayName": "Overlay Plot Settings",
             "properties": {
                 "slabType": {
                     "displayName": "Choose Type",
@@ -205,13 +206,64 @@
                 }
             }
         },
-        "enableAxis": {
-            "displayName": "Enable x-Axis",
+        "plotTitleSettings": {
+            "displayName": "Plot Title Settings",
             "properties": {
-                "enabled": {
-                    "displayName": "Enable x-Axis",
+                "title": {
+                    "displayName": "Plot Title",
                     "type": {
-                        "bool": true
+                        "text": true
+                    }
+                }
+            }
+        },
+        "axisSettings": {
+            "displayName": "Axis Settings",
+            "properties": {
+                "xAxis": {
+                    "displayName": "X-Axis",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
+                            }
+                        ]
+                    }
+                },
+                "yAxis": {
+                    "displayName": "Y-Axis",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
+                            }
+                        ]
                     }
                 }
             }
@@ -232,6 +284,7 @@
             }
         }
     },
+  
     "tooltips": {
         "supportedTypes": {
             "default": true,

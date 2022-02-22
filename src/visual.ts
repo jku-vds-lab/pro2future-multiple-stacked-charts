@@ -49,9 +49,9 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle } from './plotInterface';
+import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { AdditionalPlotSettingsNames, ColorSettingsNames, Constants, EnableAxisNames, PlotSettingsNames, Settings } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames } from './constants';
 import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
@@ -116,11 +116,40 @@ export class Visual implements IVisual {
         const slabGroup = plot.append("g").attr("class", Constants.slabClass);
         const x = this.buildXAxis(plotModel, plot);
         const y = this.buildYAxis(plotModel, plot);
+        this.addClipPath();
+        this.addPlotTitles(plotModel, plot);
         this.addVerticalRuler(plot);
         this.drawSlabs(plotModel, plot, x.xScale, y.yScale);
 
         return <D3Plot>{ type: plotType, plot, points: null, x, y };
 
+    }
+
+    private addClipPath() {
+        const generalPlotSettings = this.viewModel.generalPlotSettings;
+        const plotWidth = generalPlotSettings.plotWidth;
+        const plotHeight = generalPlotSettings.plotHeight;
+        let defs = this.svg.append('defs').append('clipPath')
+            .attr('id', 'clip')
+            .append('rect')
+            .attr('y', -generalPlotSettings.dotMargin)
+            .attr('x', -generalPlotSettings.dotMargin)
+            .attr('width', plotWidth - generalPlotSettings.margins.right + 2 * generalPlotSettings.dotMargin)
+            .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
+    }
+
+    private addPlotTitles(plotModel: PlotModel, plot: d3.Selection<SVGGElement, any, any, any>) {
+        const generalPlotSettings = this.viewModel.generalPlotSettings;
+        if (plotModel.plotTitleSettings.title.length > 0) {
+            let title = plot
+                .append('text')
+                .attr('class', 'plotTitle')
+                .attr('text-anchor', 'left')
+                .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top)
+                .attr('x', 0)
+                .attr('dy', '1em')
+                .text(plotModel.plotTitleSettings.title);
+        }
     }
 
     private buildBasicPlot(plotModel: PlotModel) {
@@ -141,19 +170,21 @@ export class Visual implements IVisual {
         const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, generalPlotSettings.plotWidth]);
         const xAxisValue = axisBottom(xScale);
 
-        if (!plotModel.formatSettings.enableAxis.enabled) {
+        if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
             xAxisValue.tickValues([]);
         }
 
         // can be uncommented later
 
-        // const xLabel = plot
-        //     .append('text')
-        //     .attr('class', 'xLabel')
-        //     .attr('text-anchor', 'end')
-        //     .attr('x', width / 2)
-        //     .attr('y', height + 20)
-        //     .text(xLabelDesc);
+        if (plotModel.formatSettings.axisSettings.xAxis.lables) {
+            const xLabel = plot
+                .append('text')
+                .attr('class', 'xLabel')
+                .attr('text-anchor', 'end')
+                .attr('x', generalPlotSettings.plotWidth / 2)
+                .attr('y', generalPlotSettings.plotHeight + 20)
+                .text(plotModel.xName);
+        }
 
         xAxis
             .attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')')
@@ -168,15 +199,22 @@ export class Visual implements IVisual {
         const yAxis = plot.append('g').classed('yAxis', true);
         const yScale = scaleLinear().domain([0, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
         const yAxisValue = axisLeft(yScale).ticks(generalPlotSettings.plotHeight / 20);
-        const yLabel = plot
-            .append('text')
-            .attr('class', 'yLabel')
-            .attr('text-anchor', 'middle')
-            .attr('y', 0 - generalPlotSettings.margins.left)
-            .attr('x', 0 - generalPlotSettings.plotHeight / 2)
-            .attr('dy', '1em')
-            .attr('transform', 'rotate(-90)')
-            .text(plotModel.yName);
+        var yLabel = null;
+        if (plotModel.formatSettings.axisSettings.yAxis.lables) {
+            yLabel = plot
+                .append('text')
+                .attr('class', 'yLabel')
+                .attr('text-anchor', 'middle')
+                .attr('y', 0 - generalPlotSettings.margins.left)
+                .attr('x', 0 - generalPlotSettings.plotHeight / 2)
+                .attr('dy', '1em')
+                .attr('transform', 'rotate(-90)')
+                .text(plotModel.yName);
+        }
+
+        if (!plotModel.formatSettings.axisSettings.yAxis.ticks) {
+            yAxisValue.tickValues([]);
+        }
 
         yAxis.call(yAxisValue);
 
@@ -190,10 +228,9 @@ export class Visual implements IVisual {
     private drawSlabs(plotModel: PlotModel, plot: Selection<any, any>, xScale: d3.ScaleLinear<number, number, never>, yScale: d3.ScaleLinear<number, number, never>) {
 
         const colorSettings = this.viewModel.colorSettings.colorSettings;
-        const slabtype = plotModel.additionalPlotSettings.additionalPlotSettings.slabType;
+        const slabtype = plotModel.overlayPlotSettings.overlayPlotSettings.slabType;
         const slabRectangles = this.viewModel.slabRectangles;
         const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
-  
         if (slabtype != SlabType.None && slabRectangles != null && slabRectangles.length > 0) {
             if (slabtype == SlabType.Rectangle) {
                 plot.select(`.${Constants.slabClass}`).selectAll('rect').data(slabRectangles).enter()
@@ -250,6 +287,7 @@ export class Visual implements IVisual {
                 .attr('cx', (d) => x.xScale(<number>d.xValue))
                 .attr('cy', (d) => y.yScale(<number>d.yValue))
                 .attr('r', 2)
+                .attr('clip-path', 'url(#clip)')
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
             let mouseEvents = this.customTooltip();
@@ -287,7 +325,8 @@ export class Visual implements IVisual {
                 .attr('fill', 'none')
                 .attr('stroke', plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke-width', 1.5)
-                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));;
+                .attr('clip-path', 'url(#clip)')
+                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
 
             const points = plot
@@ -300,6 +339,7 @@ export class Visual implements IVisual {
                 .attr('cx', (d) => x.xScale(<number>d.xValue))
                 .attr('cy', (d) => y.yScale(<number>d.yValue))
                 .attr('r', 2)
+                .attr('clip-path', 'url(#clip)')
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
             let mouseEvents = this.customTooltip();
@@ -318,14 +358,7 @@ export class Visual implements IVisual {
     }
 
     private zoomCharts(plots: D3Plot[], options: VisualUpdateOptions) {
-        const generalPlotSettings = this.viewModel.generalPlotSettings
-        const plotWidth = generalPlotSettings.plotWidth;
-        const plotHeight = generalPlotSettings.plotHeight;
-        let defs = this.svg.append('defs').append('clipPath')
-            .attr('id', 'clip')
-            .append('rect')
-            .attr('width', plotWidth - generalPlotSettings.margins.right)
-            .attr('height', plotHeight)
+        
 
         let zoomed = function (event) {
 
@@ -473,8 +506,11 @@ export class Visual implements IVisual {
             let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
                 case Settings.plotSettings:
-                case Settings.enableAxis:
-                case Settings.additionalPlotSettings:
+                case Settings.axisSettings:
+                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 2);
+                    break;
+                case Settings.overlayPlotSettings:
+                case Settings.plotTitleSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns);
                     break;
                 case Settings.colorSelector:
@@ -496,39 +532,86 @@ export class Visual implements IVisual {
         }
         return objectEnumeration;
 
-        function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[]) {
-            objectEnumeration = new Array<VisualObjectInstance>(yCount);
+        function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], settingsCount: number = 1) {
+            objectEnumeration = new Array<VisualObjectInstance>(yCount * settingsCount);
+
+            // if (objectName == Settings.axisSettings || objectName == Settings.plotSettings) {
+            //     objectEnumeration = new Array<VisualObjectInstance>(2 * yCount);
+            // }
+
             for (let column of metadataColumns) {
                 if (column.roles.y_axis) {
                     const columnObjects = column.objects;
+                    var displayNames = {}
+                    var properties = {}
                     //index that the column has in the plot (differs from index in metadata) and is used to have the same order in settings
                     const yIndex: number = column['rolesIndex']['y_axis'][0];
-                    let properties;
-                    if (objectName === Settings.plotSettings) {
-                        properties = {
-                            plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                            fill: getPlotFillColor(columnObjects, colorPalette, '#000000')
-                        }
-                    } else if (objectName === Settings.enableAxis) {
-                        properties = {
-                            enabled: getValue<boolean>(columnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
-                        };
-                    } else if (objectName === Settings.additionalPlotSettings) {
-                        properties = {
-                            slabType: SlabType[getValue<string>(columnObjects, Settings.additionalPlotSettings, AdditionalPlotSettingsNames.slabType, SlabType.None)]
-                        };
+                    switch (objectName) {
+                        case Settings.plotSettings:
+                            displayNames = {
+                                plotType: column.displayName + " Plot Type",
+                                fill: column.displayName + " Plot Color"
+                            };
+                            properties = {
+                                plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+                                fill: getPlotFillColor(columnObjects, colorPalette, '#000000')
+                            };
+
+                            break;
+
+                        case Settings.axisSettings:
+                            const xInformation = AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
+                            const yInformation = AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
+
+                            displayNames = {
+                                xInformation: column.displayName + " X-Axis",
+                                yInformation: column.displayName + " Y-Axis",
+                            };
+                            properties = {
+                                xAxis: xInformation,
+                                yAxis: yInformation
+                            };
+                            break;
+
+                        case Settings.overlayPlotSettings:
+                            displayNames = {
+                                overlayType: column.displayName + " Slab Overlay Type"
+                            };
+                            properties = {
+                                slabType: SlabType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
+                            };
+                            break;
+                        case Settings.plotTitleSettings:
+                            displayNames = {
+                                overlayType: column.displayName + " Plot Title"
+                            };
+                            properties = {
+                                title: getValue<string>(columnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, column.displayName)
+                            };
+                            break;
                     }
-                    objectEnumeration[yIndex] = {
-                        objectName: objectName,
-                        displayName: column.displayName,
-                        properties: properties,
-                        selector: { metadata: column.queryName },
-                    };
+                    const propertyEntries = Object.entries(properties);
+                    const displayNamesEntries = Object.entries(displayNames);
+                    for (let i = 0; i < propertyEntries.length; i++) {
+                        const [key, value] = propertyEntries[i];
+                        var props = {};
+                        props[key] = value;
+                        objectEnumeration[yIndex * settingsCount + i] = {
+                            objectName: objectName,
+                            displayName: <string>displayNamesEntries[i][1],
+                            properties: props,
+                            selector: { metadata: column.queryName },
+                        };
+
+                    }
+
                 }
             }
         }
     }
 }
+
+
 function filterNullValues(dataPoints: DataPoint[]) {
     dataPoints = dataPoints.filter(d => { return d.yValue != null; });
     return dataPoints;

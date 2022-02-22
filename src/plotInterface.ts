@@ -19,13 +19,15 @@ export interface ViewModel {
 export interface GeneralPlotSettings {
     plotHeight: number;
     plotWidth: number;
+    plotTitleHeight: number;
+    dotMargin: number;
     xScalePadding: number;
     solidOpacity: number;
     transparentOpacity: number;
     margins: Margins;
 }
 
-export interface Margins{
+export interface Margins {
     top: number;
     right: number;
     bottom: number;
@@ -50,16 +52,24 @@ export enum SlabType {
     Line = "Line",
     None = "None"
 }
+
+export enum AxisInformation {
+    None = "None",
+    Labels = "Labels",
+    Ticks = "Ticks",
+    TicksLabels = "TicksLabels"
+}
+
 export interface PlotModel {
     plotId: number;
     plotTop: number;
     xName: string;
     yName: string;
     formatSettings: FormatSettings;
-    additionalPlotSettings: AdditionalPlotSettings;
+    overlayPlotSettings: OverlayPlotSettings;
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
-
+    plotTitleSettings: PlotTitleSettings;
     xRange: {
         min: number;
         max: number;
@@ -68,6 +78,10 @@ export interface PlotModel {
         min: number;
         max: number;
     };
+}
+
+export interface PlotTitleSettings {
+    title: string;
 }
 
 export interface SlabRectangle {
@@ -86,10 +100,17 @@ export interface DataPoint extends SelectableDataPoint {
 }
 
 export interface FormatSettings {
-    enableAxis: {
-        enabled: boolean;
+    axisSettings: {
+        xAxis: AxisInformationInterface;
+        yAxis: AxisInformationInterface;
     };
 }
+
+export interface AxisInformationInterface {
+    lables: boolean;
+    ticks: boolean;
+}
+
 
 export interface ColorSettings {
     colorSettings: {
@@ -105,8 +126,8 @@ export interface PlotSettings {
     };
 }
 
-export interface AdditionalPlotSettings {
-    additionalPlotSettings: {
+export interface OverlayPlotSettings {
+    overlayPlotSettings: {
         slabType: SlabType;
     };
 }

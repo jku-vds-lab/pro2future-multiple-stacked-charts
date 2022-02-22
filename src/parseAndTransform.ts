@@ -4,9 +4,9 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface } from './plotInterface';
 import { Color } from 'd3';
-import { EnableAxisNames, PlotSettingsNames, Settings, ColorSettingsNames, AdditionalPlotSettingsNames } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 
 
@@ -54,7 +54,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
 
-        let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette);
+
         let xDataPoints: number[] = [];
         let yDataPoints: number[] = [];
         let dataPoints: DataPoint[] = [];
@@ -117,8 +117,20 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 }
             }
         }
+
+        let plotTitles: string[] = [];
+        for (let plotNr = 0; plotNr < yCount; plotNr++) {
+            let yAxis: YAxisData = yData[plotNr]
+            let yColumnId = yData[plotNr].columnId;
+            let yColumnObjects = metadataColumns[yColumnId].objects;
+            plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name))
+        }
+        let plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
+        let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount);
+
         createSlabInformation(slabLength, slabWidth, viewModel);
 
+        let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
         //create Plotmodels
         for (let plotNr = 0; plotNr < yCount; plotNr++) {
             //get x- and y-data for plotnumber
@@ -151,30 +163,38 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
                 return <number>a.xValue - <number>b.xValue;
             });
+            const xInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
+            const yInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
 
             let formatSettings: FormatSettings = {
-                enableAxis: {
-                    enabled: getValue<boolean>(yColumnObjects, Settings.enableAxis, EnableAxisNames.enabled, true)
+                axisSettings: {
+                    xAxis: getAxisInformation(xInformation),
+                    yAxis: getAxisInformation(yInformation)
                 },
             };
 
-
-            const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom
+            let plotTitle = plotTitles[plotNr]
+            plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
+            
+            const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
             let plotModel: PlotModel = {
                 plotId: plotNr,
                 formatSettings: formatSettings,
                 xName: xAxis.name,
                 yName: yAxis.name,
-                plotTop: MarginSettings.svgTopPadding + plotNr * plotHeightIncludingMargins + MarginSettings.margins.top,
+                plotTop: plotTop,
                 plotSettings: {
                     plotSettings: {
                         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
                         plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
                     },
                 },
-                additionalPlotSettings: {
-                    additionalPlotSettings: {
-                        slabType: SlabType[getValue<string>(yColumnObjects, Settings.additionalPlotSettings, AdditionalPlotSettingsNames.slabType, SlabType.None)]
+                plotTitleSettings: {
+                    title: plotTitle//getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name)
+                },
+                overlayPlotSettings: {
+                    overlayPlotSettings: {
+                        slabType: SlabType[getValue<string>(yColumnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
                     }
                 },
                 xRange: {
@@ -188,6 +208,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 dataPoints: dataPoints
             };
             viewModel.plotModels[plotNr] = plotModel;
+            plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
         }
 
         return viewModel;
@@ -222,13 +243,15 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], viewMo
     }
 }
 
-function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette) {
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number) {
     const margins = MarginSettings
     const svgHeight = options.viewport.height;
     const svgWidth = options.viewport.width;
-    const plotHeightSpace = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding) / yCount;
+    const plotHeightSpace = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - margins.plotTitleHeight * plotTitlesCount) / yCount;
     const plotWidth = svgWidth - margins.margins.left - margins.margins.right;
     let generalPlotSettings: GeneralPlotSettings = {
+        plotTitleHeight: margins.plotTitleHeight,
+        dotMargin: margins.dotMargin,
         plotHeight: plotHeightSpace - margins.margins.top - margins.margins.bottom,
         plotWidth: plotWidth,
         xScalePadding: 0.1,
@@ -251,4 +274,29 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         svgWidth: svgWidth
     };
     return viewModel;
+}
+
+function getAxisInformation(axisInformation: AxisInformation) {
+    switch (axisInformation) {
+        case AxisInformation.None:
+            return <AxisInformationInterface>{
+                lables: false,
+                ticks: false
+            };
+        case AxisInformation.Ticks:
+            return <AxisInformationInterface>{
+                lables: false,
+                ticks: true
+            };
+        case AxisInformation.Labels:
+            return <AxisInformationInterface>{
+                lables: true,
+                ticks: false
+            };
+        case AxisInformation.TicksLabels:
+            return <AxisInformationInterface>{
+                lables: true,
+                ticks: true
+            };
+    }
 }

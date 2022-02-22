@@ -1,24 +1,31 @@
 export enum Settings {
     plotSettings = "plotSettings",
-    enableAxis = "enableAxis",
+    axisSettings = "axisSettings",
     colorSelector = "colorSelector",
     colorSettings = "colorSettings",
-    additionalPlotSettings = "additionalPlotSettings"
+    overlayPlotSettings = "overlayPlotSettings",
+    plotTitleSettings = "plotTitleSettings"
 }
 export enum PlotSettingsNames {
     plotType = "plotType",
     fill = "fill"
 }
-export enum AdditionalPlotSettingsNames {
+export enum OverlayPlotSettingsNames {
     slabType = "slabType"
 }
 export enum ColorSettingsNames {
     verticalRulerColor = "verticalRulerColor",
     slabColor = "slabColor"
 }
-export enum EnableAxisNames {
-    enabled = "enabled"
+export enum AxisSettingsNames {
+    xAxis = "xAxis",
+    yAxis = "yAxis"
 }
+
+export enum PlotTitleSettingsNames {
+    title = "title"
+}
+
 export enum ColorSelectorNames {
     fill = "fill"
 }
