@@ -54,8 +54,16 @@
         },
         {
             "displayName": "Tooltips",
-            "name": "Tooltips",
-            "kind": "Measure"
+            "name": "tooltip",
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
         }
     ],
     "dataViewMappings": [
@@ -103,6 +111,11 @@
                         {
                             "for": {
                                 "in": "slabY"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "tooltip"
                             }
                         }
                     ]
@@ -283,16 +296,6 @@
                 }
             }
         }
-    },
-  
-    "tooltips": {
-        "supportedTypes": {
-            "default": true,
-            "canvas": true
-        },
-        "roles": [
-            "Tooltips"
-        ]
     },
     "supportsLandingPage": false,
     "drilldown": {

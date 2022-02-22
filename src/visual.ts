@@ -49,7 +49,7 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface } from './plotInterface';
+import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface, TooltipModel, TooltipDataPoint, TooltipData } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames } from './constants';
 import { data } from 'jquery';
@@ -358,7 +358,7 @@ export class Visual implements IVisual {
     }
 
     private zoomCharts(plots: D3Plot[], options: VisualUpdateOptions) {
-        
+
 
         let zoomed = function (event) {
 
@@ -413,8 +413,8 @@ export class Visual implements IVisual {
         const plotModels = this.viewModel.plotModels;
         const visualContainer = this.svg.node();
         const margins = this.viewModel.generalPlotSettings.margins;
+        const tooltipModels = this.viewModel.tooltipModels;
         var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
-
         var Tooltip = d3.select(this.element)
             .append('div')
             .style("position", "absolute")
@@ -444,14 +444,39 @@ export class Visual implements IVisual {
             const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
             const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
             let tooltipText = "<b> x value </b> : " + data.xValue + " <br> ";
-            for (let plotModel of plotModels) {
-                for (let point of plotModel.dataPoints) {
-                    if (point.xValue == data.xValue) {
-                        tooltipText += "<b> " + plotModel.yName + "</b> : " + point.yValue + " <br> ";
-                        break;
+            let tooltipData: TooltipData[] = [];
+            plotModels.filter((model: PlotModel) => {
+                model.dataPoints.filter(modelData => {
+                    if (modelData.xValue == data.xValue) {
+                        tooltipData.push({
+                            yValue: modelData.yValue,
+                            title: model.plotTitleSettings.title
+                        });
                     }
-                }
+                });
+            });
+            tooltipModels.filter((model: TooltipModel) => {
+                model.tooltipData.filter(modelData => {
+                    if (modelData.xValue == data.xValue) {
+                        tooltipData.push({
+                            yValue: modelData.yValue,
+                            title: model.tooltipName
+                        });
+                    }
+                })
+            });
+            for (const tooltip of tooltipData) {
+                tooltipText += "<b> " + tooltip.title + "</b> : " + tooltip.yValue + " <br> ";
             }
+
+            // for (let plotModel of plotModels) {
+            //     for (let point of plotModel.dataPoints) {
+            //         if (point.xValue == data.xValue) {
+            //             tooltipText += "<b> " + plotModel.yName + "</b> : " + point.yValue + " <br> ";
+            //             break;
+            //         }
+            //     }
+            // }
             Tooltip
                 .html(tooltipText)
                 .style("left", (tooltipX) + "px")

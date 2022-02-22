@@ -14,6 +14,7 @@ export interface ViewModel {
     svgWidth: number;
     svgTopPadding: number;
     generalPlotSettings: GeneralPlotSettings;
+    tooltipModels: TooltipModel[];
 }
 
 export interface GeneralPlotSettings {
@@ -80,6 +81,12 @@ export interface PlotModel {
     };
 }
 
+export interface TooltipModel {
+    tooltipId: number;
+    tooltipName: string;
+    tooltipData: TooltipDataPoint[];
+}
+
 export interface PlotTitleSettings {
     title: string;
 }
@@ -90,6 +97,17 @@ export interface SlabRectangle {
     x: number;
     y: number;
 }
+
+export interface TooltipData{
+    yValue: PrimitiveValue;
+    title: string;
+}
+
+export interface TooltipDataPoint {
+    xValue: PrimitiveValue;
+    yValue: PrimitiveValue;
+}
+
 
 export interface DataPoint extends SelectableDataPoint {
     xValue: PrimitiveValue;
