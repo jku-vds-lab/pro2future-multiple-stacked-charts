@@ -54,8 +54,16 @@
         },
         {
             "displayName": "Tooltips",
-            "name": "Tooltips",
-            "kind": "Measure"
+            "name": "tooltip",
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
         }
     ],
     "dataViewMappings": [
@@ -103,6 +111,11 @@
                         {
                             "for": {
                                 "in": "slabY"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "tooltip"
                             }
                         }
                     ]
@@ -217,6 +230,17 @@
                 }
             }
         },
+        "tooltipTitleSettings": {
+            "displayName": "Tooltip Title Settings",
+            "properties": {
+                "title": {
+                    "displayName": "Tooltip Title",
+                    "type": {
+                        "text": true
+                    }
+                }
+            }
+        },
         "axisSettings": {
             "displayName": "Axis Settings",
             "properties": {
@@ -283,16 +307,6 @@
                 }
             }
         }
-    },
-  
-    "tooltips": {
-        "supportedTypes": {
-            "default": true,
-            "canvas": true
-        },
-        "roles": [
-            "Tooltips"
-        ]
     },
     "supportsLandingPage": false,
     "drilldown": {

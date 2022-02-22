@@ -4,9 +4,9 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel } from './plotInterface';
 import { Color } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 
 
@@ -37,13 +37,16 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const metadataColumns = dataViews[0].metadata.columns;
         const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
 
-        //count numbers of x-axis and y-axis
+        //count numbers of x-axis, y-axis and tooltipdata
         const yCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.y_axis }).length;
         const yValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.y_axis }).length;
         const yCount = yCategoriesCount + yValuesCount;
         const xCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.x_axis }).length;
         const xValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.x_axis }).length;
         const xCount = xCategoriesCount + xValuesCount;
+        const tooltipCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.tooltip }).length;
+        const tooltipValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.tooltip }).length;
+        const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
         const sharedXAxis = xCount == 1
         if (!sharedXAxis && xCount != yCount) {
             return null;
@@ -51,7 +54,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         let xData = new Array<XAxisData>(xCount);
         let yData = new Array<YAxisData>(yCount);
-
+        let tooltipData = new Array<YAxisData>(tooltipCount);
 
 
 
@@ -65,34 +68,44 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         //aquire all categorical values
         if (categorical.categories !== undefined) {
             for (let category of categorical.categories) {
-                if (category.source.roles.x_axis) {
-                    let xId = category.source['rolesIndex']['x_axis'][0]
+                const roles = category.source.roles;
+                if (roles.x_axis) {
+                    let xId = category.source['rolesIndex']['x_axis'][0];
                     let xAxis: XAxisData = {
                         name: category.source.displayName,
                         values: <number[]>category.values
-                    }
+                    };
                     xData[xId] = xAxis;
-                } else if (category.source.roles.y_axis) {
-                    let yId = category.source['rolesIndex']['y_axis'][0]
+                } else if (roles.y_axis) {
+                    let yId = category.source['rolesIndex']['y_axis'][0];
                     let yAxis: YAxisData = {
                         name: category.source.displayName,
                         values: <number[]>category.values,
                         columnId: category.source.index
-                    }
+                    };
                     yData[yId] = yAxis;
                 }
-                else if (category.source.roles.slabX) {
+                else if (roles.slabX) {
                     slabLength = <number[]>category.values;
                 }
                 else if (category.source.roles.slabY) {
                     slabWidth = <number[]>category.values;
+                } else if (roles.tooltip) {
+                    const tooltipId = category.source['rolesIndex']['tooltip'][0];
+                    let data: YAxisData = {
+                        name: category.source.displayName,
+                        values: <number[]>category.values,
+                        columnId: category.source.index
+                    };
+                    tooltipData[tooltipId] = data;
                 }
             }
         }
         //aquire all measure values
         if (categorical.values !== undefined) {
             for (let value of categorical.values) {
-                if (value.source.roles.x_axis) {
+                const roles = value.source.roles
+                if (roles.x_axis) {
                     const xId = value.source['rolesIndex']['x_axis'][0]
                     let xAxis: XAxisData = {
                         name: value.source.displayName,
@@ -100,7 +113,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     }
                     xData[xId] = xAxis;
 
-                } else if (value.source.roles.y_axis) {
+                } else if (roles.y_axis) {
                     const yId = value.source['rolesIndex']['y_axis'][0]
                     let yAxis: YAxisData = {
                         name: value.source.displayName,
@@ -109,11 +122,19 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     }
                     yData[yId] = yAxis;
                 }
-                else if (value.source.roles.slabX) {
+                else if (roles.slabX) {
                     slabLength = <number[]>value.values;
                 }
-                else if (value.source.roles.slabY) {
+                else if (roles.slabY) {
                     slabWidth = <number[]>value.values;
+                } else if (roles.tooltip) {
+                    const tooltipId = value.source['rolesIndex']['tooltip'][0];
+                    let data: YAxisData = {
+                        name: value.source.displayName,
+                        values: <number[]>value.values,
+                        columnId: value.source.index
+                    };
+                    tooltipData[tooltipId] = data;
                 }
             }
         }
@@ -127,7 +148,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         }
         let plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
         let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount);
-
+        createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
         createSlabInformation(slabLength, slabWidth, viewModel);
 
         let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
@@ -175,7 +196,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
             let plotTitle = plotTitles[plotNr]
             plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
-            
+
             const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
             let plotModel: PlotModel = {
                 plotId: plotNr,
@@ -214,6 +235,34 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         return viewModel;
     } catch (error) {
         console.log('Error in lineVisualTransform: ', error());
+    }
+}
+
+function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipData: YAxisData[], viewModel: ViewModel, metadataColumns: powerbi.DataViewMetadataColumn[]) {
+    if (sharedXAxis) {
+        const xAxis: XAxisData = xData[0];
+        for (const tooltip of tooltipData) {
+            const column = metadataColumns[tooltip.columnId];
+            const maxLengthAttributes = Math.max(xAxis.values.length, tooltip.values.length);
+
+            let tooltipPoints: TooltipDataPoint[] = <TooltipDataPoint[]>[];
+
+            //create datapoints
+            for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
+
+                let dataPoint: TooltipDataPoint = {
+                    xValue: xAxis.values[pointNr],
+                    yValue: tooltip.values[pointNr]
+                };
+                tooltipPoints.push(dataPoint);
+            }
+            let tooltipModel: TooltipModel = {
+                tooltipName: getValue<string>(column.objects, Settings.tooltipTitleSettings, TooltipTitleSettingsNames.title, column.displayName),
+                tooltipId: tooltip.columnId,
+                tooltipData: tooltipPoints
+            };
+            viewModel.tooltipModels.push(tooltipModel);
+        }
     }
 }
 
@@ -268,6 +317,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
                 slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#000000')
             }
         },
+        tooltipModels: [],
         generalPlotSettings: generalPlotSettings,
         svgHeight: svgHeight,
         svgTopPadding: margins.svgTopPadding,
