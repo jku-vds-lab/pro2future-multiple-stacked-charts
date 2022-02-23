@@ -5,8 +5,14 @@ export enum Settings {
     colorSettings = "colorSettings",
     overlayPlotSettings = "overlayPlotSettings",
     plotTitleSettings = "plotTitleSettings",
-    tooltipTitleSettings = "tooltipTitleSettings"
+    tooltipTitleSettings = "tooltipTitleSettings",
+    yRangeSettings = "yRangeSettings"
 }
+export enum YRangeSettingsNames{
+    min = "min",
+    max = "max"
+}
+
 export enum PlotSettingsNames {
     plotType = "plotType",
     fill = "fill"
