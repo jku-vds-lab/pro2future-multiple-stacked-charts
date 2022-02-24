@@ -55,6 +55,11 @@ import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNa
 import { data } from 'jquery';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
+
+function myError(message: string) {
+    this.message = message;
+}
+
 export class Visual implements IVisual {
     private host: IVisualHost;
     private element: HTMLElement;
@@ -70,20 +75,40 @@ export class Visual implements IVisual {
     }
 
 
+    public throwError(error: Error) {
+        this.svg
+            .append("text")
+            .attr("width", this.element.clientWidth)
+            .attr("x", 0)
+            .attr("y", 20)
+            .text("ERROR: " + error.message);
+        this.svg
+            .append("foreignObject")
+            .attr("width", this.element.clientWidth)
+            .attr("height", this.element.clientHeight - 40)
+            .attr("x", 0)
+            .attr("y", 30)
+            .html("<p style='font-size:12px;'>" + error.stack + "</p>");
+    }
+
     public update(options: VisualUpdateOptions) {
 
         try {
+
             this.dataview = options.dataViews[0];
             this.viewModel = visualTransform(options, this.host);
             this.svg.selectAll('*').remove();
             this.svg.attr("width", this.viewModel.svgWidth)
                 .attr("height", this.viewModel.svgHeight);
-
+            // myError("test");
 
             let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
             this.drawPlots(options);
 
         } catch (error) {
+            this.throwError(error);
+            console.log("error");
+            console.log(error.message);
             console.log(error());
         }
     }

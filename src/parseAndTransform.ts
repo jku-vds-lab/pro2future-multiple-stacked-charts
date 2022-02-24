@@ -29,9 +29,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const dataViews = options.dataViews;
 
         if (!dataViews || !dataViews[0] || !dataViews[0].categorical || !dataViews[0].metadata) {
+            console.log("no defined");
             return null;
         }
-
+        console.log(dataViews[0].categorical);
         const objects = dataViews[0].metadata.objects;
         const categorical = dataViews[0].categorical;
         const metadataColumns = dataViews[0].metadata.columns;
