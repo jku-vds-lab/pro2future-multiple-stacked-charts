@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "author": {
         "name": "Jakob Zethofer",
         "email": "jakob.zethofer@pro2future.at"
@@ -13,10 +13,10 @@
     ],
     "visual": {
         "name": "slabprojection",
-        "displayName": "slab_projection",
+        "displayName": "Defect Projection on Slab",
         "guid": "slabprojection3A8101158FC14988B45B304F265A2202",
         "visualClassName": "Visual",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "description": "Custom Visual for displaying multiple stacked charts for defect projection on slab",
         "supportUrl": "https://github.com/jku-vds-lab/pro2future-voest-multiple-stacked-charts",
         "gitHubUrl": "https://github.com/jku-vds-lab/pro2future-voest-multiple-stacked-charts"
