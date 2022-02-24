@@ -8,7 +8,8 @@ import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipD
 import { Color } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
-
+import { ok, err, Result } from 'neverthrow'
+import { AxisError, AxisNullValuesError, NoAxisError, NoValuesError, ParseAndTransformError } from './errors'
 
 // TODO #n: Allow user to change bars colors
 
@@ -22,221 +23,234 @@ import { MarginSettings } from './marginSettings'
  * @param {IVisualHost} host            - Contains references to the host which contains services
  */
 
+function f(): number {
+    return 2;
+}
 
+export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Result<ViewModel, ParseAndTransformError> {
 
-export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): ViewModel {
-    try {
-        const dataViews = options.dataViews;
+    // try {
+    const dataViews = options.dataViews;
+    if (!dataViews || !dataViews[0] || !dataViews[0].categorical || !dataViews[0].metadata) {
+        return err(new ParseAndTransformError("No categorical data in Axis or Values"));
+    };
+    const objects = dataViews[0].metadata.objects;
+    const categorical = dataViews[0].categorical;
+    const metadataColumns = dataViews[0].metadata.columns;
+    const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
 
-        if (!dataViews || !dataViews[0] || !dataViews[0].categorical || !dataViews[0].metadata) {
-            console.log("no defined");
-            return null;
-        }
-        console.log(dataViews[0].categorical);
-        const objects = dataViews[0].metadata.objects;
-        const categorical = dataViews[0].categorical;
-        const metadataColumns = dataViews[0].metadata.columns;
-        const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
+    //count numbers of x-axis, y-axis and tooltipdata
+    const yCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.y_axis }).length;
+    const yValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.y_axis }).length;
+    const yCount = yCategoriesCount + yValuesCount;
+    const xCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.x_axis }).length;
+    const xValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.x_axis }).length;
+    const xCount = xCategoriesCount + xValuesCount;
+    const tooltipCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.tooltip }).length;
+    const tooltipValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.tooltip }).length;
+    const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
+    const sharedXAxis = xCount == 1
 
-        //count numbers of x-axis, y-axis and tooltipdata
-        const yCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.y_axis }).length;
-        const yValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.y_axis }).length;
-        const yCount = yCategoriesCount + yValuesCount;
-        const xCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.x_axis }).length;
-        const xValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.x_axis }).length;
-        const xCount = xCategoriesCount + xValuesCount;
-        const tooltipCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.tooltip }).length;
-        const tooltipValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.tooltip }).length;
-        const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
-        const sharedXAxis = xCount == 1
-        if (!sharedXAxis && xCount != yCount) {
-            return null;
-        }
-
-        let xData = new Array<XAxisData>(xCount);
-        let yData = new Array<YAxisData>(yCount);
-        let tooltipData = new Array<YAxisData>(tooltipCount);
-
-
-
-        let xDataPoints: number[] = [];
-        let yDataPoints: number[] = [];
-        let dataPoints: DataPoint[] = [];
-        let slabWidth: number[] = [];
-        let slabLength: number[] = [];
-
-
-        //aquire all categorical values
-        if (categorical.categories !== undefined) {
-            for (let category of categorical.categories) {
-                const roles = category.source.roles;
-                if (roles.x_axis) {
-                    let xId = category.source['rolesIndex']['x_axis'][0];
-                    let xAxis: XAxisData = {
-                        name: category.source.displayName,
-                        values: <number[]>category.values
-                    };
-                    xData[xId] = xAxis;
-                } else if (roles.y_axis) {
-                    let yId = category.source['rolesIndex']['y_axis'][0];
-                    let yAxis: YAxisData = {
-                        name: category.source.displayName,
-                        values: <number[]>category.values,
-                        columnId: category.source.index
-                    };
-                    yData[yId] = yAxis;
-                }
-                else if (roles.slabX) {
-                    slabLength = <number[]>category.values;
-                }
-                else if (category.source.roles.slabY) {
-                    slabWidth = <number[]>category.values;
-                } else if (roles.tooltip) {
-                    const tooltipId = category.source['rolesIndex']['tooltip'][0];
-                    let data: YAxisData = {
-                        name: category.source.displayName,
-                        values: <number[]>category.values,
-                        columnId: category.source.index
-                    };
-                    tooltipData[tooltipId] = data;
-                }
-            }
-        }
-        //aquire all measure values
-        if (categorical.values !== undefined) {
-            for (let value of categorical.values) {
-                const roles = value.source.roles
-                if (roles.x_axis) {
-                    const xId = value.source['rolesIndex']['x_axis'][0]
-                    let xAxis: XAxisData = {
-                        name: value.source.displayName,
-                        values: <number[]>value.values
-                    }
-                    xData[xId] = xAxis;
-
-                } else if (roles.y_axis) {
-                    const yId = value.source['rolesIndex']['y_axis'][0]
-                    let yAxis: YAxisData = {
-                        name: value.source.displayName,
-                        values: <number[]>value.values,
-                        columnId: value.source.index
-                    }
-                    yData[yId] = yAxis;
-                }
-                else if (roles.slabX) {
-                    slabLength = <number[]>value.values;
-                }
-                else if (roles.slabY) {
-                    slabWidth = <number[]>value.values;
-                } else if (roles.tooltip) {
-                    const tooltipId = value.source['rolesIndex']['tooltip'][0];
-                    let data: YAxisData = {
-                        name: value.source.displayName,
-                        values: <number[]>value.values,
-                        columnId: value.source.index
-                    };
-                    tooltipData[tooltipId] = data;
-                }
-            }
-        }
-
-        let plotTitles: string[] = [];
-        for (let plotNr = 0; plotNr < yCount; plotNr++) {
-            let yAxis: YAxisData = yData[plotNr]
-            let yColumnId = yData[plotNr].columnId;
-            let yColumnObjects = metadataColumns[yColumnId].objects;
-            plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name))
-        }
-        let plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
-        let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount);
-        createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
-        createSlabInformation(slabLength, slabWidth, viewModel);
-
-        let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
-        //create Plotmodels
-        for (let plotNr = 0; plotNr < yCount; plotNr++) {
-            //get x- and y-data for plotnumber
-            let xAxis: XAxisData = sharedXAxis ? xData[0] : xData[plotNr];
-            let yAxis: YAxisData = yData[plotNr]
-            xDataPoints = xAxis.values
-            yDataPoints = yAxis.values;
-            const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
-            dataPoints = [];
-
-            //create datapoints
-            for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
-                const color: string = '#0f0f0f'; //getColumnnColorByIndex(xDataPoints, i, colorPalette); // TODO Add colors only if required
-
-                const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
-
-                let dataPoint: DataPoint = {
-                    xValue: xDataPoints[pointNr],
-                    yValue: yDataPoints[pointNr],
-                    identity: selectionId,
-                    selected: false,
-                    color: color,
-                };
-                dataPoints.push(dataPoint);
-            }
-            //get index of y-column in metadata
-            let yColumnId = yData[plotNr].columnId;
-            let yColumnObjects = metadataColumns[yColumnId].objects;
-
-            dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
-                return <number>a.xValue - <number>b.xValue;
-            });
-            const xInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
-            const yInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
-
-            let formatSettings: FormatSettings = {
-                axisSettings: {
-                    xAxis: getAxisInformation(xInformation),
-                    yAxis: getAxisInformation(yInformation)
-                },
-            };
-
-            let plotTitle = plotTitles[plotNr]
-            plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
-
-            const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
-            let plotModel: PlotModel = {
-                plotId: plotNr,
-                formatSettings: formatSettings,
-                xName: xAxis.name,
-                yName: yAxis.name,
-                plotTop: plotTop,
-                plotSettings: {
-                    plotSettings: {
-                        fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
-                        plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
-                    },
-                },
-                plotTitleSettings: {
-                    title: plotTitle//getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name)
-                },
-                overlayPlotSettings: {
-                    overlayPlotSettings: {
-                        slabType: SlabType[getValue<string>(yColumnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
-                    }
-                },
-                xRange: {
-                    min: Math.min(...xDataPoints),
-                    max: Math.max(...xDataPoints),
-                },
-                yRange: {
-                    min: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),//TODO: default Math.min(...yDataPoints)?
-                    max: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, Math.max(...yDataPoints)),
-                },
-                dataPoints: dataPoints
-            };
-            viewModel.plotModels[plotNr] = plotModel;
-            plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
-        }
-
-        return viewModel;
-    } catch (error) {
-        console.log('Error in lineVisualTransform: ', error());
+    //check if input data count is ok
+    if (yCount == 0) {
+        return err(new NoValuesError());
     }
+    if (xCount == 0) {
+        return err(new NoAxisError());
+    }
+    if (xCount != yCount && !sharedXAxis) {
+        return err(new AxisError());
+    }
+
+    let xData = new Array<XAxisData>(xCount);
+    let yData = new Array<YAxisData>(yCount);
+    let tooltipData = new Array<YAxisData>(tooltipCount);
+
+
+
+    let xDataPoints: number[] = [];
+    let yDataPoints: number[] = [];
+    let dataPoints: DataPoint[] = [];
+    let slabWidth: number[] = [];
+    let slabLength: number[] = [];
+
+
+    //aquire all categorical values
+    if (categorical.categories !== undefined) {
+        for (let category of categorical.categories) {
+            const roles = category.source.roles;
+            if (roles.x_axis) {
+                let xId = category.source['rolesIndex']['x_axis'][0];
+                let xAxis: XAxisData = {
+                    name: category.source.displayName,
+                    values: <number[]>category.values
+                };
+                xData[xId] = xAxis;
+            } else if (roles.y_axis) {
+                let yId = category.source['rolesIndex']['y_axis'][0];
+                let yAxis: YAxisData = {
+                    name: category.source.displayName,
+                    values: <number[]>category.values,
+                    columnId: category.source.index
+                };
+                yData[yId] = yAxis;
+            }
+            else if (roles.slabX) {
+                slabLength = <number[]>category.values;
+            }
+            else if (category.source.roles.slabY) {
+                slabWidth = <number[]>category.values;
+            } else if (roles.tooltip) {
+                const tooltipId = category.source['rolesIndex']['tooltip'][0];
+                let data: YAxisData = {
+                    name: category.source.displayName,
+                    values: <number[]>category.values,
+                    columnId: category.source.index
+                };
+                tooltipData[tooltipId] = data;
+            }
+        }
+    }
+    //aquire all measure values
+    if (categorical.values !== undefined) {
+        for (let value of categorical.values) {
+            const roles = value.source.roles
+            if (roles.x_axis) {
+                const xId = value.source['rolesIndex']['x_axis'][0]
+                let xAxis: XAxisData = {
+                    name: value.source.displayName,
+                    values: <number[]>value.values
+                }
+                xData[xId] = xAxis;
+
+            } else if (roles.y_axis) {
+                const yId = value.source['rolesIndex']['y_axis'][0]
+                let yAxis: YAxisData = {
+                    name: value.source.displayName,
+                    values: <number[]>value.values,
+                    columnId: value.source.index
+                }
+                yData[yId] = yAxis;
+            }
+            else if (roles.slabX) {
+                slabLength = <number[]>value.values;
+            }
+            else if (roles.slabY) {
+                slabWidth = <number[]>value.values;
+            } else if (roles.tooltip) {
+                const tooltipId = value.source['rolesIndex']['tooltip'][0];
+                let data: YAxisData = {
+                    name: value.source.displayName,
+                    values: <number[]>value.values,
+                    columnId: value.source.index
+                };
+                tooltipData[tooltipId] = data;
+            }
+        }
+    }
+
+    const possibleNullValues: XAxisData[] = xData.filter(x => { return x.values.filter(y => { return y === null || y === undefined }) })
+    if (possibleNullValues.length > 0) {
+        return err(new AxisNullValuesError(possibleNullValues[0].name));
+    }
+
+    let plotTitles: string[] = [];
+    for (let plotNr = 0; plotNr < yCount; plotNr++) {
+        let yAxis: YAxisData = yData[plotNr]
+        let yColumnId = yData[plotNr].columnId;
+        let yColumnObjects = metadataColumns[yColumnId].objects;
+        plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name))
+    }
+    let plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
+    let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount);
+    createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
+    createSlabInformation(slabLength, slabWidth, viewModel);
+    debugger;
+    let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
+    //create Plotmodels
+    for (let plotNr = 0; plotNr < yCount; plotNr++) {
+        //get x- and y-data for plotnumber
+        let xAxis: XAxisData = sharedXAxis ? xData[0] : xData[plotNr];
+        let yAxis: YAxisData = yData[plotNr]
+        xDataPoints = xAxis.values
+        yDataPoints = yAxis.values;
+        const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
+        dataPoints = [];
+
+        //create datapoints
+        for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
+            const color: string = '#0f0f0f'; //getColumnnColorByIndex(xDataPoints, i, colorPalette); // TODO Add colors only if required
+
+            const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
+
+            let dataPoint: DataPoint = {
+                xValue: xDataPoints[pointNr],
+                yValue: yDataPoints[pointNr],
+                identity: selectionId,
+                selected: false,
+                color: color,
+            };
+            dataPoints.push(dataPoint);
+        }
+        //get index of y-column in metadata
+        let yColumnId = yData[plotNr].columnId;
+        let yColumnObjects = metadataColumns[yColumnId].objects;
+
+        dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
+            return <number>a.xValue - <number>b.xValue;
+        });
+        const xInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
+        const yInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
+
+        let formatSettings: FormatSettings = {
+            axisSettings: {
+                xAxis: getAxisInformation(xInformation),
+                yAxis: getAxisInformation(yInformation)
+            },
+        };
+
+        let plotTitle = plotTitles[plotNr]
+        plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
+
+        const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
+        let plotModel: PlotModel = {
+            plotId: plotNr,
+            formatSettings: formatSettings,
+            xName: xAxis.name,
+            yName: yAxis.name,
+            plotTop: plotTop,
+            plotSettings: {
+                plotSettings: {
+                    fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
+                    plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
+                },
+            },
+            plotTitleSettings: {
+                title: plotTitle//getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name)
+            },
+            overlayPlotSettings: {
+                overlayPlotSettings: {
+                    slabType: SlabType[getValue<string>(yColumnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
+                }
+            },
+            xRange: {
+                min: Math.min(...xDataPoints),
+                max: Math.max(...xDataPoints),
+            },
+            yRange: {
+                min: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),//TODO: default Math.min(...yDataPoints)?
+                max: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, Math.max(...yDataPoints)),
+            },
+            dataPoints: dataPoints
+        };
+        viewModel.plotModels[plotNr] = plotModel;
+        plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
+    }
+
+    return ok(viewModel);
+    // } catch (error) {
+    //     console.log('Error in lineVisualTransform: ', error());
+    // }
 }
 
 function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipData: YAxisData[], viewModel: ViewModel, metadataColumns: powerbi.DataViewMetadataColumn[]) {

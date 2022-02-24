@@ -71,24 +71,31 @@ export class Visual implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.element = options.element;
-        this.svg = d3.select(this.element).append('svg').classed('visualContainer', true);
+        this.svg = d3.select(this.element).append('svg').classed('visualContainer', true)
+            .attr("width", this.element.clientWidth)
+            .attr("height", this.element.clientHeight);
     }
 
 
     public throwError(error: Error) {
+        this.svg.selectAll('*').remove();
         this.svg
             .append("text")
             .attr("width", this.element.clientWidth)
             .attr("x", 0)
             .attr("y", 20)
-            .text("ERROR: " + error.message);
+            .text("ERROR: " + error.name);
         this.svg
             .append("foreignObject")
             .attr("width", this.element.clientWidth)
             .attr("height", this.element.clientHeight - 40)
             .attr("x", 0)
             .attr("y", 30)
-            .html("<p style='font-size:12px;'>" + error.stack + "</p>");
+            .html("<p style='font-size:12px;'>" + error.message + "</p>");
+
+        console.log("error: ", error.name);
+        console.log(error.message);
+        console.log(error.stack);
     }
 
     public update(options: VisualUpdateOptions) {
@@ -96,20 +103,20 @@ export class Visual implements IVisual {
         try {
 
             this.dataview = options.dataViews[0];
-            this.viewModel = visualTransform(options, this.host);
-            this.svg.selectAll('*').remove();
-            this.svg.attr("width", this.viewModel.svgWidth)
-                .attr("height", this.viewModel.svgHeight);
-            // myError("test");
+            visualTransform(options, this.host).map(model => {
+                this.viewModel = model
+                this.svg.selectAll('*').remove();
+                this.svg.attr("width", this.viewModel.svgWidth)
+                    .attr("height", this.viewModel.svgHeight);
+                let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
+                this.drawPlots(options);
+            }).mapErr(err => this.throwError(err));
 
-            let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
-            this.drawPlots(options);
+
+
 
         } catch (error) {
-            this.throwError(error);
-            console.log("error");
-            console.log(error.message);
-            console.log(error());
+            console.log(error);
         }
     }
 
