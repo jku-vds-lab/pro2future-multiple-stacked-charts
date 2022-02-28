@@ -43,7 +43,7 @@ export interface ColorSettings {
 }
 
 export enum PlotType {
-    BarPlot = "BarPlot",
+    //BarPlot = "BarPlot",
     ScatterPlot = "ScatterPlot",
     LinePlot = "LinePlot"
 }
@@ -190,4 +190,10 @@ export interface D3PlotYAxis {
     yAxisValue: any;
     yScale: any;
     yLabel: any;
+}
+
+export interface TooltipInterface{
+     mouseover: () => void; 
+     mousemove: (event: any, data: any) => void; 
+     mouseout: () => void;
 }
