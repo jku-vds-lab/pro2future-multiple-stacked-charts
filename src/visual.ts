@@ -506,6 +506,7 @@ export class Visual implements IVisual {
                         }
                     }
                 } catch (error) {
+                    error.message = "error in zoom function: " + error.message;
                     errorFunction(error);
                 }
             }
@@ -550,6 +551,7 @@ export class Visual implements IVisual {
                         .style("opacity", 1);
                     lines.style("opacity", 1);
                 } catch (error) {
+                    error.message = "error in tooltip mouseover: " + error.message;
                     errorFunction(error);
                 }
             };
@@ -604,6 +606,7 @@ export class Visual implements IVisual {
                     lines.attr("x1", x).attr("x2", x);
 
                 } catch (error) {
+                    error.message = "error in tooltip mousemove: " + error.message;
                     errorFunction(error);
                 }
             };
@@ -618,13 +621,12 @@ export class Visual implements IVisual {
                     lines.style("opacity", 0);
 
                 } catch (error) {
+                    error.message = "error in tooltip mouseout: " + error.message;
                     errorFunction(error);
                 }
             }
             //TODO: check if this is needed
             return ok(<TooltipInterface>{ mouseover, mousemove, mouseout });
-
-            return ok(null);
         } catch (error) {
             return err(new CustomTooltipError(error.stack));
         }
@@ -720,6 +722,7 @@ export class Visual implements IVisual {
                     break;
             }
         } catch (error) {
+            error.message = "error in enumerate objects: " + error.message;
             this.displayError(error);
         }
         return objectEnumeration;
