@@ -302,9 +302,7 @@ export class Visual implements IVisual {
             const slabtype = plotModel.overlayPlotSettings.overlayPlotSettings.slabType;
             const slabRectangles = this.viewModel.slabRectangles;
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
-            debugger;
             if (slabtype != SlabType.None && slabRectangles != null) {
-                debugger;
                 if (slabRectangles.length == 0) {
                     return err(new SlabInformationError());
                 }
