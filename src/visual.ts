@@ -632,46 +632,46 @@ export class Visual implements IVisual {
         }
     }
 
-    //TODO: improve bar plot or remove it
-    private drawBarPlot(options: VisualUpdateOptions, plotModel: PlotModel): Result<d3.Selection<SVGRectElement, DataPoint, any, any>, PlotError> {
-        const generalPlotSettings = this.viewModel.generalPlotSettings;
-        let plotWidth = generalPlotSettings.plotWidth;
-        let plotHeight = generalPlotSettings.plotHeight;
-        let basicPlot: D3Plot;
-        let plotError: PlotError;
-        let x: D3PlotXAxis;
-        let y: D3PlotYAxis;
-        let type: PlotType;
-        let plot: any;
-        this.constructBasicPlot(plotModel)
-            .map(plt => {
-                basicPlot = plt;
-                x = basicPlot.x;
-                y = basicPlot.y;
-                type = plotModel.plotSettings.plotSettings.plotType;
-                plot = basicPlot.plot;
-            }).mapErr(err => plotError = err);
-        if (plotError) return err(plotError);
+    // //TODO: improve bar plot or remove it
+    // private drawBarPlot(options: VisualUpdateOptions, plotModel: PlotModel): Result<d3.Selection<SVGRectElement, DataPoint, any, any>, PlotError> {
+    //     const generalPlotSettings = this.viewModel.generalPlotSettings;
+    //     let plotWidth = generalPlotSettings.plotWidth;
+    //     let plotHeight = generalPlotSettings.plotHeight;
+    //     let basicPlot: D3Plot;
+    //     let plotError: PlotError;
+    //     let x: D3PlotXAxis;
+    //     let y: D3PlotYAxis;
+    //     let type: PlotType;
+    //     let plot: any;
+    //     this.constructBasicPlot(plotModel)
+    //         .map(plt => {
+    //             basicPlot = plt;
+    //             x = basicPlot.x;
+    //             y = basicPlot.y;
+    //             type = plotModel.plotSettings.plotSettings.plotType;
+    //             plot = basicPlot.plot;
+    //         }).mapErr(err => plotError = err);
+    //     if (plotError) return err(plotError);
 
-        try {
-            const dataPoints = filterNullValues(plotModel.dataPoints);
-            const bar = plot.selectAll(`.${Constants.barClass}`).data(dataPoints);
+    //     try {
+    //         const dataPoints = filterNullValues(plotModel.dataPoints);
+    //         const bar = plot.selectAll(`.${Constants.barClass}`).data(dataPoints);
 
-            const mergedBars: d3.Selection<SVGRectElement, DataPoint, any, any> = bar
-                .enter()
-                .append('rect')
-                .merge(<any>bar);
-            mergedBars.classed(Constants.barClass, true)
-                .attr('width', plotWidth / dataPoints.length - 1)
-                .attr('height', (d) => plotHeight - y.yScale(<number>d.yValue))
-                .attr('y', (d) => y.yScale(<number>d.yValue))
-                .attr('x', (d) => x.xScale(<number>d.xValue))
-                .style('fill', (dataPoint: DataPoint) => dataPoint.color);
-            return ok(mergedBars);
-        } catch (error) {
-            return err(new DrawBarPlotError(error.stack));
-        }
-    }
+    //         const mergedBars: d3.Selection<SVGRectElement, DataPoint, any, any> = bar
+    //             .enter()
+    //             .append('rect')
+    //             .merge(<any>bar);
+    //         mergedBars.classed(Constants.barClass, true)
+    //             .attr('width', plotWidth / dataPoints.length - 1)
+    //             .attr('height', (d) => plotHeight - y.yScale(<number>d.yValue))
+    //             .attr('y', (d) => y.yScale(<number>d.yValue))
+    //             .attr('x', (d) => x.xScale(<number>d.xValue))
+    //             .style('fill', (dataPoint: DataPoint) => dataPoint.color);
+    //         return ok(mergedBars);
+    //     } catch (error) {
+    //         return err(new DrawBarPlotError(error.stack));
+    //     }
+    // }
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;

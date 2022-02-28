@@ -4,7 +4,7 @@ export class ParseAndTransformError implements Error {
     stack?: string;
 
     constructor(message: string, name?: string) {
-        this.message = message;
+        this.message = message + "<br><br> If you are not sure why this error occurs, please contact the authors.";
         if (name !== undefined && name) {
             this.name = name;
         } else {
@@ -103,7 +103,7 @@ export class PlotError implements Error {
     stack?: string;
 
     constructor(message: string, name?: string) {
-        this.message = message;
+        this.message = message + "<br><br> If you are not sure why this error occurs, please contact the authors.";;
         if (name !== undefined && name) {
             this.name = name;
         } else {
@@ -158,7 +158,7 @@ export class SlabInformationError extends PlotError {
      */
     constructor() {
         const name = "Slab Information Error";
-        const message = "Error on drawing slab overlays: there is no slab information provided. Please drag correct data into the slab length and slab width field";
+        const message = "Error on drawing slab overlays: no slab information is provided. <br/> Please drag correct data into the slab length and slab width field";
         super(message, name);
     }
 }
