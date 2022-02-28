@@ -53,12 +53,11 @@ import { ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxi
 import { visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames } from './constants';
 import { data } from 'jquery';
+import { ok, Result } from 'neverthrow';
+import { PlotError } from './errors';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 
-function myError(message: string) {
-    this.message = message;
-}
 
 export class Visual implements IVisual {
     private host: IVisualHost;
@@ -77,7 +76,7 @@ export class Visual implements IVisual {
     }
 
 
-    public throwError(error: Error) {
+    public displayError(error: Error) {
         this.svg.selectAll('*').remove();
         this.svg
             .append("text")
@@ -95,7 +94,9 @@ export class Visual implements IVisual {
 
         console.log("error: ", error.name);
         console.log(error.message);
-        console.log(error.stack);
+        if (error.stack) {
+            console.log(error.stack);
+        }
     }
 
     public update(options: VisualUpdateOptions) {
@@ -109,13 +110,16 @@ export class Visual implements IVisual {
                 this.svg.attr("width", this.viewModel.svgWidth)
                     .attr("height", this.viewModel.svgHeight);
                 let bars: d3.Selection<SVGRectElement, DataPoint, any, any>;
+                // this.displayError(new Error("this is a test"));
                 this.drawPlots(options);
-            }).mapErr(err => this.throwError(err));
+
+            }).mapErr(err => this.displayError(err));
 
 
 
 
         } catch (error) {
+            //can be removed in the end, should not display any errors
             console.log(error);
         }
     }
@@ -126,16 +130,22 @@ export class Visual implements IVisual {
             const plotType = plotModel.plotSettings.plotSettings.plotType;
             //TODO: don't draw datapoints that are out of y-range?
             if (plotType == PlotType.LinePlot) {
-                const linePlot = this.drawLinePlot(options, plotModel);
-                plots.push(linePlot);
+                this.drawLinePlot(options, plotModel)
+                    .map(linePlot => plots.push(linePlot))
+                    .mapErr(err => this.displayError(err));
+
             }
             else if (plotType == PlotType.ScatterPlot) {
-                const scatterPlot = this.drawScatterPlot(options, plotModel);
-                plots.push(scatterPlot);
+                this.drawScatterPlot(options, plotModel)
+                    .map(scatterPlot => plots.push(scatterPlot))
+                    .mapErr(err => this.displayError(err));
+                // const scatterPlot = this.drawScatterPlot(options, plotModel);
+                // plots.push(scatterPlot);
             }
 
             else if (plotType == PlotType.BarPlot) {
-                this.drawBarPlot(options, plotModel);
+                this.drawBarPlot(options, plotModel)
+                    .mapErr(err => this.displayError(err));
             }
         }
 
@@ -301,7 +311,7 @@ export class Visual implements IVisual {
             .style("opacity", 0);
     }
 
-    private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel): D3Plot {
+    private drawScatterPlot(options: VisualUpdateOptions, plotModel: PlotModel): Result<D3Plot, PlotError> {
         try {
 
             const basicPlot = this.constructBasicPlot(options, plotModel);
@@ -326,7 +336,7 @@ export class Visual implements IVisual {
             let mouseEvents = this.customTooltip();
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
-            return <D3Plot>{ type, plot, root: plot, points, x, y };
+            return ok(<D3Plot>{ type, plot, root: plot, points, x, y });
 
         } catch (error) {
             console.log('Error in ScatterPlot: ', error);
@@ -334,7 +344,7 @@ export class Visual implements IVisual {
     }
 
 
-    private drawLinePlot(options: VisualUpdateOptions, plotModel: PlotModel): D3Plot {
+    private drawLinePlot(options: VisualUpdateOptions, plotModel: PlotModel): Result<D3Plot, PlotError> {
 
         try {
             const basicPlot = this.constructBasicPlot(options, plotModel);
@@ -377,14 +387,14 @@ export class Visual implements IVisual {
 
             let mouseEvents = this.customTooltip();
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-            return <D3Plot>{
+            return ok(<D3Plot>{
                 type: type,
                 plot: linePath,
                 root: plot,
                 points: points,
                 x: x,
                 y: y
-            };
+            });
         } catch (error) {
             console.log('Error in Draw Line Chart: ', error);
         }
@@ -532,10 +542,10 @@ export class Visual implements IVisual {
     }
 
     //TODO: improve bar plot or remove it
-    private drawBarPlot(options: VisualUpdateOptions, plotModel: PlotModel): d3.Selection<SVGRectElement, DataPoint, any, any> {
+    private drawBarPlot(options: VisualUpdateOptions, plotModel: PlotModel): Result<d3.Selection<SVGRectElement, DataPoint, any, any>, PlotError> {
         const generalPlotSettings = this.viewModel.generalPlotSettings;
-        let plotWidth = generalPlotSettings.plotWidth
-        let plotHeight = generalPlotSettings.plotHeight
+        let plotWidth = generalPlotSettings.plotWidth;
+        let plotHeight = generalPlotSettings.plotHeight;
         const basicPlot = this.constructBasicPlot(options, plotModel);
         const plot = basicPlot.plot;
         const x = basicPlot.x;
@@ -543,7 +553,7 @@ export class Visual implements IVisual {
         const dataPoints = filterNullValues(plotModel.dataPoints);
         const bar = plot.selectAll(`.${Constants.barClass}`).data(dataPoints);
 
-        const mergedBars = bar
+        const mergedBars: d3.Selection<SVGRectElement, DataPoint, any, any> = bar
             .enter()
             .append('rect')
             .merge(<any>bar);
@@ -553,7 +563,7 @@ export class Visual implements IVisual {
             .attr('y', (d) => y.yScale(<number>d.yValue))
             .attr('x', (d) => x.xScale(<number>d.xValue))
             .style('fill', (dataPoint: DataPoint) => dataPoint.color);
-        return mergedBars;
+        return ok(mergedBars);
     }
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {

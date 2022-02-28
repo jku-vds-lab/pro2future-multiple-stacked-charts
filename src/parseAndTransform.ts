@@ -9,7 +9,7 @@ import { Color } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
-import { AxisError, AxisNullValuesError, NoAxisError, NoValuesError, ParseAndTransformError } from './errors'
+import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotSizeError, SVGSizeError } from './errors'
 
 // TODO #n: Allow user to change bars colors
 
@@ -149,7 +149,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         }
     }
 
-    const possibleNullValues: XAxisData[] = xData.filter(x => { return x.values.filter(y => { return y === null || y === undefined }) })
+    const possibleNullValues: XAxisData[] = xData.filter(x => x.values.filter(y => y === null || y === undefined).length > 0)
     if (possibleNullValues.length > 0) {
         return err(new AxisNullValuesError(possibleNullValues[0].name));
     }
@@ -162,10 +162,16 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name))
     }
     let plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
-    let viewModel: ViewModel = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount);
+    let viewModel: ViewModel;
+    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount)
+        .map(vm => viewModel = vm)
+    if (viewModelResult.isErr()) {
+        return viewModelResult.mapErr(err => { return err; });
+    }
+
     createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
     createSlabInformation(slabLength, slabWidth, viewModel);
-    debugger;
+
     let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
     //create Plotmodels
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
@@ -199,20 +205,29 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
             return <number>a.xValue - <number>b.xValue;
         });
-        const xInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
-        const yInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
-
+        const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
+        const yInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
+        let xAxisInformation: AxisInformationInterface, yAxisInformation: AxisInformationInterface;
+        let axisInformationError: ParseAndTransformError;
+        getAxisInformation(xInformation)
+            .map(inf => xAxisInformation = inf)
+            .mapErr(err => axisInformationError = err);
+        getAxisInformation(yInformation)
+            .map(inf => yAxisInformation = inf)
+            .mapErr(err => axisInformationError = err);
+        if (axisInformationError) {
+            return err(axisInformationError);
+        }
         let formatSettings: FormatSettings = {
             axisSettings: {
-                xAxis: getAxisInformation(xInformation),
-                yAxis: getAxisInformation(yInformation)
+                xAxis: xAxisInformation,
+                yAxis: yAxisInformation
             },
         };
 
         let plotTitle = plotTitles[plotNr]
         plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
 
-        const plotHeightIncludingMargins = viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
         let plotModel: PlotModel = {
             plotId: plotNr,
             formatSettings: formatSettings,
@@ -248,17 +263,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
 
     return ok(viewModel);
-    // } catch (error) {
-    //     console.log('Error in lineVisualTransform: ', error());
-    // }
+
 }
 
-function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipData: YAxisData[], viewModel: ViewModel, metadataColumns: powerbi.DataViewMetadataColumn[]) {
+function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipData: YAxisData[], viewModel: ViewModel, metadataColumns: powerbi.DataViewMetadataColumn[]): void {
     if (sharedXAxis) {
         const xAxis: XAxisData = xData[0];
         for (const tooltip of tooltipData) {
-            const column = metadataColumns[tooltip.columnId];
-            const maxLengthAttributes = Math.max(xAxis.values.length, tooltip.values.length);
+            const column: powerbi.DataViewMetadataColumn = metadataColumns[tooltip.columnId];
+            const maxLengthAttributes: number = Math.min(xAxis.values.length, tooltip.values.length);
 
             let tooltipPoints: TooltipDataPoint[] = <TooltipDataPoint[]>[];
 
@@ -281,9 +294,10 @@ function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipDa
     }
 }
 
-function createSlabInformation(slabLength: number[], slabWidth: number[], viewModel: ViewModel) {
+function createSlabInformation(slabLength: number[], slabWidth: number[], viewModel: ViewModel): void {
+
     if (slabLength.length == slabWidth.length && slabWidth.length > 0) {
-        let slabRectangles = new Array<SlabRectangle>(slabLength.length);
+        let slabRectangles: SlabRectangle[] = new Array<SlabRectangle>(slabLength.length);
         for (let i = 0; i < slabLength.length; i++) {
             slabRectangles[i] = {
                 width: slabWidth[i],
@@ -292,8 +306,13 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], viewMo
                 x: slabLength[i]
             };
         }
-        slabRectangles = slabRectangles.filter(x => x.x != null && x.x != 0)
+        debugger;
+        slabRectangles = slabRectangles.filter(x => x.x != null && x.x > 0 && x.width != null && x.width > 0)
             .sort((a, b) => { return a.x - b.x; });
+        if (slabRectangles.length == 0) {
+            //TODO: create error on wrong data?
+            return;
+        }
         let lastX = slabRectangles[0].x;
         slabRectangles[0].length = lastX;
         slabRectangles[0].x = 0;
@@ -302,17 +321,25 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], viewMo
             lastX = slabRectangles[i].x;
             slabRectangles[i].x = lastX - slabRectangles[i].length;
         }
-
         viewModel.slabRectangles = slabRectangles;
     }
 }
 
-function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number) {
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings
-    const svgHeight = options.viewport.height;
-    const svgWidth = options.viewport.width;
-    const plotHeightSpace = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - margins.plotTitleHeight * plotTitlesCount) / yCount;
-    const plotWidth = svgWidth - margins.margins.left - margins.margins.right;
+    const svgHeight: number = options.viewport.height;
+    const svgWidth: number = options.viewport.width;
+    if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
+        return err(new SVGSizeError());
+    }
+    const plotHeightSpace: number = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - margins.plotTitleHeight * plotTitlesCount) / yCount;
+    if (plotHeightSpace < margins.miniumumPlotHeight) {
+        return err(new PlotSizeError("vertical"));
+    }
+    const plotWidth: number = svgWidth - margins.margins.left - margins.margins.right;
+    if (plotWidth < margins.miniumumPlotWidth) {
+        return err(new PlotSizeError("horizontal"));
+    }
     let generalPlotSettings: GeneralPlotSettings = {
         plotTitleHeight: margins.plotTitleHeight,
         dotMargin: margins.dotMargin,
@@ -338,30 +365,33 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth
     };
-    return viewModel;
+    return ok(viewModel);
 }
 
-function getAxisInformation(axisInformation: AxisInformation) {
+function getAxisInformation(axisInformation: AxisInformation): Result<AxisInformationInterface, ParseAndTransformError> {
     switch (axisInformation) {
         case AxisInformation.None:
-            return <AxisInformationInterface>{
+            return ok(<AxisInformationInterface>{
                 lables: false,
                 ticks: false
-            };
+            });
         case AxisInformation.Ticks:
-            return <AxisInformationInterface>{
+            return ok(<AxisInformationInterface>{
                 lables: false,
                 ticks: true
-            };
+            });
         case AxisInformation.Labels:
-            return <AxisInformationInterface>{
+            return ok(<AxisInformationInterface>{
                 lables: true,
                 ticks: false
-            };
+            });
         case AxisInformation.TicksLabels:
-            return <AxisInformationInterface>{
+            return ok(<AxisInformationInterface>{
                 lables: true,
                 ticks: true
-            };
+            });
+        default:
+            return err(new GetAxisInformationError());
     }
+    return err(new GetAxisInformationError());
 }
