@@ -165,10 +165,6 @@
                             {
                                 "displayName": "Scatter Plot",
                                 "value": "ScatterPlot"
-                            },
-                            {
-                                "displayName": "Bar Plot",
-                                "value": "BarPlot"
                             }
                         ]
                     }
@@ -247,13 +243,13 @@
                 "min": {
                     "displayName": "Minimum Value",
                     "type": {
-                        "numeric":true
+                        "numeric": true
                     }
                 },
                 "max": {
                     "displayName": "Maximum Value",
                     "type": {
-                        "numeric":true
+                        "numeric": true
                     }
                 }
             }

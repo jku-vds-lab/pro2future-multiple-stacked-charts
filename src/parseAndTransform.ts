@@ -306,7 +306,6 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], viewMo
                 x: slabLength[i]
             };
         }
-        debugger;
         slabRectangles = slabRectangles.filter(x => x.x != null && x.x > 0 && x.width != null && x.width > 0)
             .sort((a, b) => { return a.x - b.x; });
         if (slabRectangles.length == 0) {
@@ -361,6 +360,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         },
         tooltipModels: [],
         generalPlotSettings: generalPlotSettings,
+        slabRectangles: [],
         svgHeight: svgHeight,
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth
