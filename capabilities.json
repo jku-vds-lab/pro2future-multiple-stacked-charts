@@ -27,7 +27,7 @@
             ]
         },
         {
-            "displayName": "Overlay length",
+            "displayName": "Overlay Length",
             "name": "slabX",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -40,7 +40,7 @@
             ]
         },
         {
-            "displayName": "Overlay width",
+            "displayName": "Overlay Width",
             "name": "slabY",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
