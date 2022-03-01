@@ -125,7 +125,7 @@
     ],
     "objects": {
         "axisSettings": {
-            "displayName": "Axis Information Settings",
+            "displayName": "Axis Settings",
             "properties": {
                 "xAxis": {
                     "displayName": "X-Axis",
@@ -179,7 +179,7 @@
             "displayName": "Color Settings",
             "properties": {
                 "verticalRulerColor": {
-                    "displayName": "Vertical ruler color",
+                    "displayName": "Vertical Ruler Color",
                     "description": "The stroke color of the vertical ruler.",
                     "type": {
                         "fill": {
@@ -190,7 +190,7 @@
                     }
                 },
                 "slabColor": {
-                    "displayName": "Plot Overlay color",
+                    "displayName": "Plot Overlay Color",
                     "description": "The stroke color of the plot overlay lines.",
                     "type": {
                         "fill": {
@@ -299,6 +299,21 @@
                 },
                 "max": {
                     "displayName": "Maximum Value",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
+        "zoomingSettings": {
+            "displayName": "Zooming Settings",
+            "properties": {
+                "show": {
+                    "displayName": "Enable Zooming",
+                    "type": {"bool": true}
+                },
+                "maximum": {
+                    "displayName": "Maximum Zoom Factor",
                     "type": {
                         "numeric": true
                     }

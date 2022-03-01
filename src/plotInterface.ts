@@ -15,6 +15,7 @@ export interface ViewModel {
     svgTopPadding: number;
     generalPlotSettings: GeneralPlotSettings;
     tooltipModels: TooltipModel[];
+    zoomingSettings: ZoomingSettings;
 }
 
 export interface GeneralPlotSettings {
@@ -40,6 +41,11 @@ export interface ColorSettings {
         verticalRulerColor: string;
         slabColor: string;
     }
+}
+
+export interface ZoomingSettings{
+    enableZoom: boolean;
+    maximumZoom: number;
 }
 
 export enum PlotType {

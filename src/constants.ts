@@ -6,7 +6,8 @@ export enum Settings {
     overlayPlotSettings = "overlayPlotSettings",
     plotTitleSettings = "plotTitleSettings",
     tooltipTitleSettings = "tooltipTitleSettings",
-    yRangeSettings = "yRangeSettings"
+    yRangeSettings = "yRangeSettings",
+    zoomingSettings = "zoomingSettings"
 }
 export enum YRangeSettingsNames{
     min = "min",
@@ -30,6 +31,10 @@ export enum ColorSettingsNames {
 export enum AxisSettingsNames {
     xAxis = "xAxis",
     yAxis = "yAxis"
+}
+export enum ZoomingSettingsNames{
+    show = "show",
+    maximum = "maximum"
 }
 
 export enum PlotTitleSettingsNames {

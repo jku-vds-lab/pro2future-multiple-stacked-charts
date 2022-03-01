@@ -49,9 +49,9 @@ import * as d3 from 'd3';
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface, TooltipModel, TooltipDataPoint, TooltipData } from './plotInterface';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface, TooltipModel, TooltipDataPoint, TooltipData, ZoomingSettings } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames } from './constants';
 import { data } from 'jquery';
 import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawBarPlotError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
@@ -145,7 +145,10 @@ export class Visual implements IVisual {
             // }
         }
 
-        this.addZoom(plots, options).mapErr(err => this.displayError(err));
+        const zoomingSettings = this.viewModel.zoomingSettings;
+        if (zoomingSettings.enableZoom) {
+            this.addZoom(plots, zoomingSettings).mapErr(err => this.displayError(err));
+        }
     }
 
     private constructBasicPlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
@@ -460,7 +463,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private addZoom(plots: D3Plot[], options: VisualUpdateOptions): Result<void, PlotError> {
+    private addZoom(plots: D3Plot[], zoomingSettings: ZoomingSettings): Result<void, PlotError> {
         try {
             let errorFunction = this.displayError;
             let zoomed = function (event) {
@@ -509,7 +512,7 @@ export class Visual implements IVisual {
                 }
             }
 
-            let zoom = d3.zoom().scaleExtent([1, 10]).on('zoom', zoomed); // with scale extent you can control how much you scale
+            let zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed); // with scale extent you can control how much you scale
 
             this.svg.call(zoom);
             return ok(null);
@@ -674,7 +677,9 @@ export class Visual implements IVisual {
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
         const colorPalette = this.host.colorPalette;
+        const objects = this.dataview.metadata.objects;
         let objectEnumeration: VisualObjectInstance[] = [];
+        const zoomingSettings = this.viewModel.zoomingSettings;
         const plotmodles: PlotModel[] = this.viewModel.plotModels;
         try {
             let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
@@ -708,12 +713,22 @@ export class Visual implements IVisual {
                     }
                     break;
                 case Settings.colorSettings:
-                    let objects = this.dataview.metadata.objects;
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
                             verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
                             slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#0000FF')
+                        },
+                        selector: null
+                    });
+                    break;
+                case Settings.zoomingSettings:
+
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            show: <boolean>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.show, zoomingSettings.enableZoom),
+                            maximum: <number>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.maximum, zoomingSettings.maximumZoom)
                         },
                         selector: null
                     });
@@ -775,7 +790,7 @@ export class Visual implements IVisual {
                             break;
                         case Settings.overlayPlotSettings:
                             displayNames = {
-                                overlayType: column.displayName + " Slab Overlay Type"
+                                overlayType: column.displayName + " Overlay Type"
                             };
                             properties = {
                                 slabType: SlabType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
