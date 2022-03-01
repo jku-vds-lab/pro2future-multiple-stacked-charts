@@ -38,23 +38,16 @@ import VisualObjectInstance = powerbi.VisualObjectInstance;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
-import VisualEnumerationInstanceKinds = powerbi.VisualEnumerationInstanceKinds;
-import ISelectionId = powerbi.visuals.ISelectionId;
-import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import DataView = powerbi.DataView;
-import { select as d3Select } from 'd3-selection';
-import { scaleBand, scaleLinear } from 'd3-scale';
-import { axisBottom, axisLeft, axisRight } from 'd3-axis';
+import { scaleLinear } from 'd3-scale';
+import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
-import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
-import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
-import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface, TooltipModel, TooltipDataPoint, TooltipData } from './plotInterface';
+import { getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames } from './constants';
-import { data } from 'jquery';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
-import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawBarPlotError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
+import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 
@@ -145,7 +138,10 @@ export class Visual implements IVisual {
             // }
         }
 
-        this.addZoom(plots, options).mapErr(err => this.displayError(err));
+        const zoomingSettings = this.viewModel.zoomingSettings;
+        if (zoomingSettings.enableZoom) {
+            this.addZoom(plots, zoomingSettings).mapErr(err => this.displayError(err));
+        }
     }
 
     private constructBasicPlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
@@ -180,13 +176,6 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plotWidth = generalPlotSettings.plotWidth;
             const plotHeight = generalPlotSettings.plotHeight;
-            let defs = this.svg.append('defs').append('clipPath')
-                .attr('id', 'clip')
-                .append('rect')
-                .attr('y', -generalPlotSettings.dotMargin)
-                .attr('x', -generalPlotSettings.dotMargin)
-                .attr('width', plotWidth - generalPlotSettings.margins.right + 2 * generalPlotSettings.dotMargin)
-                .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
             return ok(null);
         } catch (error) {
             return err(new AddClipPathError(error.stack))
@@ -197,14 +186,6 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             if (plotModel.plotTitleSettings.title.length > 0) {
-                let title = plot
-                    .append('text')
-                    .attr('class', 'plotTitle')
-                    .attr('text-anchor', 'left')
-                    .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top)
-                    .attr('x', 0)
-                    .attr('dy', '1em')
-                    .text(plotModel.plotTitleSettings.title);
             }
             return ok(null);
         } catch (error) {
@@ -242,13 +223,6 @@ export class Visual implements IVisual {
 
 
             if (plotModel.formatSettings.axisSettings.xAxis.lables) {
-                const xLabel = plot
-                    .append('text')
-                    .attr('class', 'xLabel')
-                    .attr('text-anchor', 'end')
-                    .attr('x', generalPlotSettings.plotWidth / 2)
-                    .attr('y', generalPlotSettings.plotHeight + 20)
-                    .text(plotModel.xName);
             }
 
             xAxis
@@ -460,7 +434,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private addZoom(plots: D3Plot[], options: VisualUpdateOptions): Result<void, PlotError> {
+    private addZoom(plots: D3Plot[], zoomingSettings: ZoomingSettings): Result<void, PlotError> {
         try {
             let errorFunction = this.displayError;
             let zoomed = function (event) {
@@ -509,7 +483,7 @@ export class Visual implements IVisual {
                 }
             }
 
-            let zoom = d3.zoom().scaleExtent([1, 10]).on('zoom', zoomed); // with scale extent you can control how much you scale
+            let zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed); // with scale extent you can control how much you scale
 
             this.svg.call(zoom);
             return ok(null);
@@ -561,7 +535,7 @@ export class Visual implements IVisual {
                     const x = event.clientX - margins.left;
                     const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
                     const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
-                    let tooltipText = "<b> x value </b> : " + data.xValue + " <br> ";
+                    let tooltipText = "<b>" + plotModels[0].xName + "</b> : " + data.xValue + " <br> ";
                     let tooltipData: TooltipData[] = [];
                     plotModels.filter((model: PlotModel) => {
                         model.dataPoints.filter(modelData => {
@@ -674,7 +648,9 @@ export class Visual implements IVisual {
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
         const colorPalette = this.host.colorPalette;
+        const objects = this.dataview.metadata.objects;
         let objectEnumeration: VisualObjectInstance[] = [];
+        const zoomingSettings = this.viewModel.zoomingSettings;
         const plotmodles: PlotModel[] = this.viewModel.plotModels;
         try {
             let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
@@ -708,12 +684,22 @@ export class Visual implements IVisual {
                     }
                     break;
                 case Settings.colorSettings:
-                    let objects = this.dataview.metadata.objects;
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
                             verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
                             slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#0000FF')
+                        },
+                        selector: null
+                    });
+                    break;
+                case Settings.zoomingSettings:
+
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            show: <boolean>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.show, zoomingSettings.enableZoom),
+                            maximum: <number>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.maximum, zoomingSettings.maximumZoom)
                         },
                         selector: null
                     });
@@ -775,7 +761,7 @@ export class Visual implements IVisual {
                             break;
                         case Settings.overlayPlotSettings:
                             displayNames = {
-                                overlayType: column.displayName + " Slab Overlay Type"
+                                overlayType: column.displayName + " Overlay Type"
                             };
                             properties = {
                                 slabType: SlabType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]

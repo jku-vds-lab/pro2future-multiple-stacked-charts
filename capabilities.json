@@ -27,7 +27,7 @@
             ]
         },
         {
-            "displayName": "Slab length",
+            "displayName": "Overlay Length",
             "name": "slabX",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -40,7 +40,7 @@
             ]
         },
         {
-            "displayName": "Slab width",
+            "displayName": "Overlay Width",
             "name": "slabY",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -124,11 +124,62 @@
         }
     ],
     "objects": {
+        "axisSettings": {
+            "displayName": "Axis Settings",
+            "properties": {
+                "xAxis": {
+                    "displayName": "X-Axis",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
+                            }
+                        ]
+                    }
+                },
+                "yAxis": {
+                    "displayName": "Y-Axis",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
         "colorSettings": {
             "displayName": "Color Settings",
             "properties": {
                 "verticalRulerColor": {
-                    "displayName": "Vertical ruler color",
+                    "displayName": "Vertical Ruler Color",
                     "description": "The stroke color of the vertical ruler.",
                     "type": {
                         "fill": {
@@ -139,8 +190,8 @@
                     }
                 },
                 "slabColor": {
-                    "displayName": "Slab color",
-                    "description": "The stroke color of the slab lines.",
+                    "displayName": "Plot Overlay Color",
+                    "description": "The stroke color of the plot overlay lines.",
                     "type": {
                         "fill": {
                             "solid": {
@@ -182,7 +233,7 @@
             }
         },
         "overlayPlotSettings": {
-            "displayName": "Overlay Plot Settings",
+            "displayName": "Plot Overlay Settings",
             "properties": {
                 "slabType": {
                     "displayName": "Choose Type",
@@ -254,53 +305,17 @@
                 }
             }
         },
-        "axisSettings": {
-            "displayName": "Axis Settings",
+        "zoomingSettings": {
+            "displayName": "Zooming Settings",
             "properties": {
-                "xAxis": {
-                    "displayName": "X-Axis",
-                    "type": {
-                        "enumeration": [
-                            {
-                                "displayName": "None",
-                                "value": "None"
-                            },
-                            {
-                                "displayName": "Labels",
-                                "value": "Labels"
-                            },
-                            {
-                                "displayName": "Ticks",
-                                "value": "Ticks"
-                            },
-                            {
-                                "displayName": "Ticks and Labels",
-                                "value": "TicksLabels"
-                            }
-                        ]
-                    }
+                "show": {
+                    "displayName": "Enable Zooming",
+                    "type": {"bool": true}
                 },
-                "yAxis": {
-                    "displayName": "Y-Axis",
+                "maximum": {
+                    "displayName": "Maximum Zoom Factor",
                     "type": {
-                        "enumeration": [
-                            {
-                                "displayName": "None",
-                                "value": "None"
-                            },
-                            {
-                                "displayName": "Labels",
-                                "value": "Labels"
-                            },
-                            {
-                                "displayName": "Ticks",
-                                "value": "Ticks"
-                            },
-                            {
-                                "displayName": "Ticks and Labels",
-                                "value": "TicksLabels"
-                            }
-                        ]
+                        "numeric": true
                     }
                 }
             }
