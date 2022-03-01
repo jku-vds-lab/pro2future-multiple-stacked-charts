@@ -38,23 +38,16 @@ import VisualObjectInstance = powerbi.VisualObjectInstance;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
-import VisualEnumerationInstanceKinds = powerbi.VisualEnumerationInstanceKinds;
-import ISelectionId = powerbi.visuals.ISelectionId;
-import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import DataView = powerbi.DataView;
-import { select as d3Select } from 'd3-selection';
-import { scaleBand, scaleLinear } from 'd3-scale';
-import { axisBottom, axisLeft, axisRight } from 'd3-axis';
+import { scaleLinear } from 'd3-scale';
+import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
-import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
-import { getAxisTextFillColor, getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
-import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, ColorSettings, SlabRectangle, AxisInformation, AxisInformationInterface, TooltipModel, TooltipDataPoint, TooltipData, ZoomingSettings } from './plotInterface';
+import { getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames } from './constants';
-import { data } from 'jquery';
 import { err, ok, Result } from 'neverthrow';
-import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawBarPlotError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
+import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 
@@ -183,13 +176,6 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plotWidth = generalPlotSettings.plotWidth;
             const plotHeight = generalPlotSettings.plotHeight;
-            let defs = this.svg.append('defs').append('clipPath')
-                .attr('id', 'clip')
-                .append('rect')
-                .attr('y', -generalPlotSettings.dotMargin)
-                .attr('x', -generalPlotSettings.dotMargin)
-                .attr('width', plotWidth - generalPlotSettings.margins.right + 2 * generalPlotSettings.dotMargin)
-                .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
             return ok(null);
         } catch (error) {
             return err(new AddClipPathError(error.stack))
@@ -200,14 +186,6 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             if (plotModel.plotTitleSettings.title.length > 0) {
-                let title = plot
-                    .append('text')
-                    .attr('class', 'plotTitle')
-                    .attr('text-anchor', 'left')
-                    .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top)
-                    .attr('x', 0)
-                    .attr('dy', '1em')
-                    .text(plotModel.plotTitleSettings.title);
             }
             return ok(null);
         } catch (error) {
@@ -245,13 +223,6 @@ export class Visual implements IVisual {
 
 
             if (plotModel.formatSettings.axisSettings.xAxis.lables) {
-                const xLabel = plot
-                    .append('text')
-                    .attr('class', 'xLabel')
-                    .attr('text-anchor', 'end')
-                    .attr('x', generalPlotSettings.plotWidth / 2)
-                    .attr('y', generalPlotSettings.plotHeight + 20)
-                    .text(plotModel.xName);
             }
 
             xAxis
