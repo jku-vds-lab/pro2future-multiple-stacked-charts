@@ -564,7 +564,7 @@ export class Visual implements IVisual {
                     const x = event.clientX - margins.left;
                     const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
                     const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
-                    let tooltipText = "<b> x value </b> : " + data.xValue + " <br> ";
+                    let tooltipText = "<b>" + plotModels[0].xName + "</b> : " + data.xValue + " <br> ";
                     let tooltipData: TooltipData[] = [];
                     plotModels.filter((model: PlotModel) => {
                         model.dataPoints.filter(modelData => {
