@@ -208,7 +208,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
     }
 
-
+    debugger;
 
     let plotTitles: string[] = [];
     for (let plotNr = 0; plotNr < yCount; plotNr++) {

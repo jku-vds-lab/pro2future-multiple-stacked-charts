@@ -131,7 +131,11 @@
                                 "in": "legend"
                             }
                         }
-                    ]
+                    ], "dataReductionAlgorithm": {
+                        "top": {
+                            "count": 2000
+                        }
+                    }
                 }
             }
         }
