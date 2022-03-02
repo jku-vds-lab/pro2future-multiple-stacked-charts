@@ -16,12 +16,15 @@ export interface ViewModel {
     generalPlotSettings: GeneralPlotSettings;
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
+    legend: Legend;
 }
 
 export interface GeneralPlotSettings {
     plotHeight: number;
     plotWidth: number;
     plotTitleHeight: number;
+    legendHeight: number;
+    legendYPostion: number;
     dotMargin: number;
     xScalePadding: number;
     solidOpacity: number;
@@ -115,6 +118,21 @@ export interface TooltipDataPoint {
 }
 
 
+export interface LegendDataPoint {
+    xValue: PrimitiveValue;
+    yValue: PrimitiveValue;
+}
+
+export interface LegendValue  extends SelectableDataPoint {
+    color?: string;
+    value: PrimitiveValue;
+}
+
+export interface Legend{
+    legendDataPoints: LegendDataPoint[];
+    legendValues: LegendValue[];
+}
+
 export interface DataPoint extends SelectableDataPoint {
     xValue: PrimitiveValue;
     yValue: PrimitiveValue;
@@ -147,6 +165,7 @@ export interface PlotSettings {
     plotSettings: {
         fill: string;
         plotType: PlotType;
+        useLegendColor: boolean;
     };
 }
 
@@ -156,12 +175,12 @@ export interface OverlayPlotSettings {
     };
 }
 
-export interface Legend {
-    text: string;
-    transform?: string;
-    dx?: string;
-    dy?: string;
-}
+// export interface Legend {
+//     text: string;
+//     transform?: string;
+//     dx?: string;
+//     dy?: string;
+// }
 
 export interface XAxisData {
     values: number[];
@@ -170,6 +189,12 @@ export interface XAxisData {
 
 export interface YAxisData {
     values: number[];
+    name?: string;
+    columnId: number;
+}
+
+export interface LegendData {
+    values: string[];
     name?: string;
     columnId: number;
 }

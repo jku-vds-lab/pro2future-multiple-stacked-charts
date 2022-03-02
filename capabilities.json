@@ -64,6 +64,11 @@
                     "integer": true
                 }
             ]
+        },
+        {
+            "displayName": "Legend",
+            "name": "legend",
+            "kind": "Grouping"
         }
     ],
     "dataViewMappings": [
@@ -80,6 +85,9 @@
                         "max": 1
                     },
                     "slabY": {
+                        "max": 1
+                    },
+                    "legend": {
                         "max": 1
                     },
                     "category": {
@@ -117,8 +125,17 @@
                             "for": {
                                 "in": "tooltip"
                             }
+                        },
+                        {
+                            "for": {
+                                "in": "legend"
+                            }
                         }
-                    ]
+                    ], "dataReductionAlgorithm": {
+                        "top": {
+                            "count": 2000
+                        }
+                    }
                 }
             }
         }
@@ -202,6 +219,28 @@
                 }
             }
         },
+        "legendSettings": {
+            "displayName": "Legend Settings",
+            "properties": {
+                "legendTitle": {
+                    "displayName": "Legend Title",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "legendColor": {
+                    "displayName": "Legend Color",
+                    "description": "The color of this legend type.",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "plotSettings": {
             "displayName": "Plot Settings",
             "properties": {
@@ -228,6 +267,12 @@
                                 "color": true
                             }
                         }
+                    }
+                },
+                "useLegendColor": {
+                    "displayName": "Use Legend Color",
+                    "type": {
+                        "bool": true
                     }
                 }
             }
@@ -310,7 +355,9 @@
             "properties": {
                 "show": {
                     "displayName": "Enable Zooming",
-                    "type": {"bool": true}
+                    "type": {
+                        "bool": true
+                    }
                 },
                 "maximum": {
                     "displayName": "Maximum Zoom Factor",

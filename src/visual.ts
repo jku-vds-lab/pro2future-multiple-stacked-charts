@@ -45,9 +45,10 @@ import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
+import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 
@@ -69,7 +70,38 @@ export class Visual implements IVisual {
     }
 
 
+    private drawLegend() {
+        const margins = this.viewModel.generalPlotSettings;
+        const yPosition = margins.legendYPostion;
+        const legendData = this.viewModel.legend.legendValues;
+        let widths = [];
+        let width = margins.margins.left;
 
+        this.svg.selectAll("legendText")
+            .data(legendData)
+            .enter()
+            .append("text")
+            .text(function (d) { return String(d.value) })
+            .attr("x", function (d, i) {
+                let x = width
+                widths.push(width);
+                width = width + 25 + this.getComputedTextLength();
+                return 10 + x;
+            })
+            .attr("y", yPosition) // 100 is where the first dot appears. 25 is the distance between dots
+            // .style("fill", function (d) { return color(d) })
+
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+        this.svg.selectAll("legendDots")
+            .data(legendData)
+            .enter()
+            .append("circle")
+            .attr("cx", function (d, i) { return widths[i] })
+            .attr("cy", yPosition) // 100 is where the first dot appears. 25 is the distance between dots
+            .attr("r", 7)
+            .style("fill", function (d) { return d.color })
+    }
 
     public update(options: VisualUpdateOptions) {
 
@@ -82,7 +114,11 @@ export class Visual implements IVisual {
                 this.svg.attr("width", this.viewModel.svgWidth)
                     .attr("height", this.viewModel.svgHeight);
                 // this.displayError(new Error("this is a test"));
+                if (this.viewModel.legend != null) {
+                    this.drawLegend();
+                }
                 this.drawPlots(options);
+
 
             }).mapErr(err => this.displayError(err));
 
@@ -176,6 +212,13 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plotWidth = generalPlotSettings.plotWidth;
             const plotHeight = generalPlotSettings.plotHeight;
+            this.svg.append('defs').append('clipPath')
+                .attr('id', 'clip')
+                .append('rect')
+                .attr('y', -generalPlotSettings.dotMargin)
+                .attr('x', -generalPlotSettings.dotMargin)
+                .attr('width', plotWidth - generalPlotSettings.margins.right + 2 * generalPlotSettings.dotMargin)
+                .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
             return ok(null);
         } catch (error) {
             return err(new AddClipPathError(error.stack))
@@ -186,6 +229,14 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             if (plotModel.plotTitleSettings.title.length > 0) {
+                plot
+                    .append('text')
+                    .attr('class', 'plotTitle')
+                    .attr('text-anchor', 'left')
+                    .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top)
+                    .attr('x', 0)
+                    .attr('dy', '1em')
+                    .text(plotModel.plotTitleSettings.title);
             }
             return ok(null);
         } catch (error) {
@@ -216,20 +267,27 @@ export class Visual implements IVisual {
             const xAxis = plot.append('g').classed('xAxis', true);
             const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, generalPlotSettings.plotWidth]);
             const xAxisValue = axisBottom(xScale);
-
+            let xLabel = null;
             if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
                 xAxisValue.tickValues([]);
             }
 
 
             if (plotModel.formatSettings.axisSettings.xAxis.lables) {
+                xLabel = plot
+                    .append('text')
+                    .attr('class', 'xLabel')
+                    .attr('text-anchor', 'end')
+                    .attr('x', generalPlotSettings.plotWidth / 2)
+                    .attr('y', generalPlotSettings.plotHeight + 20)
+                    .text(plotModel.xName);
             }
 
             xAxis
                 .attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')')
                 .call(xAxisValue);
 
-            return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xScale, xLabel: null });
+            return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xScale, xLabel: xLabel });
         } catch (error) {
             return err(new BuildXAxisError(error.stack))
         }
@@ -348,7 +406,7 @@ export class Visual implements IVisual {
                 .data(dataPoints)
                 .enter()
                 .append('circle')
-                .attr('fill', plotModel.plotSettings.plotSettings.fill)
+                .attr('fill', (d: DataPoint) => d.color)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => x.xScale(<number>d.xValue))
                 .attr('cy', (d) => y.yScale(<number>d.yValue))
@@ -409,7 +467,7 @@ export class Visual implements IVisual {
                 .data(dataPoints)
                 .enter()
                 .append('circle')
-                .attr('fill', plotModel.plotSettings.plotSettings.fill)
+                .attr('fill', (d: DataPoint) => d.color)//plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => x.xScale(<number>d.xValue))
                 .attr('cy', (d) => y.yScale(<number>d.yValue))
@@ -646,6 +704,7 @@ export class Visual implements IVisual {
     // }
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
+        debugger;
         const objectName = options.objectName;
         const colorPalette = this.host.colorPalette;
         const objects = this.dataview.metadata.objects;
@@ -657,6 +716,8 @@ export class Visual implements IVisual {
             let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
                 case Settings.plotSettings:
+                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 3);
+                    break;
                 case Settings.axisSettings:
                 case Settings.yRangeSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns, 2);
@@ -693,6 +754,33 @@ export class Visual implements IVisual {
                         selector: null
                     });
                     break;
+                case Settings.legendSettings:
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, "Legend"),
+                        },
+                        selector: null
+                    });
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        displayName: "testing",
+                        properties: {
+                            legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
+
+                        },
+                        selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
+                    });
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        displayName: "testi2ng",
+                        properties: {
+                            legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
+
+                        },
+                        selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
+                    });
+                    break;
                 case Settings.zoomingSettings:
 
                     objectEnumeration.push({
@@ -725,11 +813,14 @@ export class Visual implements IVisual {
                         case Settings.plotSettings:
                             displayNames = {
                                 plotType: column.displayName + " Plot Type",
-                                fill: column.displayName + " Plot Color"
+                                fill: column.displayName + " Plot Color",
+                                useLegendColor: column.displayName + " Use Legend Color"
                             };
                             properties = {
                                 plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                                fill: getPlotFillColor(columnObjects, colorPalette, '#000000')
+                                fill: getPlotFillColor(columnObjects, colorPalette, '#000000'),
+                                useLegendColor: getValue<boolean>(columnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false)
+
                             };
 
                             break;

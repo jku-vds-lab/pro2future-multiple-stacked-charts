@@ -4,12 +4,12 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue } from './plotInterface';
 import { Color } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
-import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotSizeError, SVGSizeError } from './errors'
+import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
 
 // TODO #n: Allow user to change bars colors
 
@@ -65,7 +65,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let xData = new Array<XAxisData>(xCount);
     let yData = new Array<YAxisData>(yCount);
     let tooltipData = new Array<YAxisData>(tooltipCount);
-
+    let legendData: LegendData = null;
 
 
     let xDataPoints: number[] = [];
@@ -73,7 +73,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let dataPoints: DataPoint[] = [];
     let slabWidth: number[] = [];
     let slabLength: number[] = [];
-
+    let legend: Legend = null;
 
     //aquire all categorical values
     if (categorical.categories !== undefined) {
@@ -108,6 +108,13 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     columnId: category.source.index
                 };
                 tooltipData[tooltipId] = data;
+            }
+            else if (roles.legend) {
+                legendData = {
+                    name: category.source.displayName,
+                    values: <string[]>category.values,
+                    columnId: category.source.index
+                };
             }
         }
     }
@@ -146,13 +153,62 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 };
                 tooltipData[tooltipId] = data;
             }
+            else if (roles.legend) {
+                legendData = {
+                    name: value.source.displayName,
+                    values: <string[]>value.values,
+                    columnId: value.source.index
+                };
+            }
         }
     }
+
+
 
     const possibleNullValues: XAxisData[] = xData.filter(x => x.values.filter(y => y === null || y === undefined).length > 0)
     if (possibleNullValues.length > 0) {
         return err(new AxisNullValuesError(possibleNullValues[0].name));
     }
+
+    const legendColors = {
+        OZE: "#e41a1c",
+        GZE: "#377eb8",
+        RAS: "#4daf4a"
+    }
+
+    if (legendData != null) {
+        let legendSet = new Set(legendData.values);
+
+        if (legendSet.has(null)) {
+            legendSet.delete(null);
+        }
+        let legendValues = Array.from(legendSet);
+        legend = {
+            legendDataPoints: [],
+            legendValues: []
+        }
+        for (let i = 0; i < legendValues.length; i++) {
+            const val = legendValues[i]
+            legend.legendValues.push({
+                color: legendColors[val],
+                selected: false,
+                value: val,
+                identity: host.createSelectionIdBuilder().createSelectionId()
+            });
+        }
+        let legendXValues = xData[0].values;
+        for (let i = 0; i < Math.min(legendData.values.length, legendXValues.length); i++) {
+            legend.legendDataPoints.push({
+                xValue: legendXValues[i],
+                yValue: legendData.values[i]
+            });
+
+        }
+
+
+    }
+
+    debugger;
 
     let plotTitles: string[] = [];
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
@@ -163,7 +219,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
     let plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
     let viewModel: ViewModel;
-    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount)
+    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, legend)
         .map(vm => viewModel = vm)
     if (viewModelResult.isErr()) {
         return viewModelResult.mapErr(err => { return err; });
@@ -182,25 +238,41 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         yDataPoints = yAxis.values;
         const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
         dataPoints = [];
-
+        const yColumnId = yData[plotNr].columnId;
+        const yColumnObjects = metadataColumns[yColumnId].objects;
+        const plotSettings: PlotSettings = {
+            plotSettings: {
+                fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
+                plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+                useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false)
+            }
+        }
         //create datapoints
         for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
-            const color: string = '#0f0f0f'; //getColumnnColorByIndex(xDataPoints, i, colorPalette); // TODO Add colors only if required
-
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
+            let color = plotSettings.plotSettings.fill;
+            const xVal = xDataPoints[pointNr];
+            if (plotSettings.plotSettings.useLegendColor) {
+                if (legend != null) {
+                    const legendVal = legend.legendDataPoints.find(x => x.xValue == xVal).yValue;
+                    color = legendVal == null ? color : legend.legendValues.find(x => x.value == legendVal).color;
+                }else{
+                    return err(new PlotLegendError(yAxis.name));
+                }
+            }
 
+            //const color = legend.legendValues.fin legend.legendDataPoints[pointNr].yValue
             let dataPoint: DataPoint = {
-                xValue: xDataPoints[pointNr],
+                xValue: xVal,
                 yValue: yDataPoints[pointNr],
                 identity: selectionId,
                 selected: false,
-                color: color,
+                color: color
             };
             dataPoints.push(dataPoint);
         }
         //get index of y-column in metadata
-        let yColumnId = yData[plotNr].columnId;
-        let yColumnObjects = metadataColumns[yColumnId].objects;
+
 
         dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
             return <number>a.xValue - <number>b.xValue;
@@ -228,18 +300,14 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         let plotTitle = plotTitles[plotNr]
         plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
 
+
         let plotModel: PlotModel = {
             plotId: plotNr,
             formatSettings: formatSettings,
             xName: xAxis.name,
             yName: yAxis.name,
             plotTop: plotTop,
-            plotSettings: {
-                plotSettings: {
-                    fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
-                    plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
-                },
-            },
+            plotSettings: plotSettings,
             plotTitleSettings: {
                 title: plotTitle//getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name)
             },
@@ -261,6 +329,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         viewModel.plotModels[plotNr] = plotModel;
         plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
     }
+    viewModel.generalPlotSettings.legendYPostion = plotTop;
 
     return ok(viewModel);
 
@@ -324,14 +393,15 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], viewMo
     }
 }
 
-function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number): Result<ViewModel, ParseAndTransformError> {
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, legend: Legend): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings
     const svgHeight: number = options.viewport.height;
     const svgWidth: number = options.viewport.width;
+    const legendHeight = legend ? margins.legendHeight : 0;
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
     }
-    const plotHeightSpace: number = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - margins.plotTitleHeight * plotTitlesCount) / yCount;
+    const plotHeightSpace: number = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - legendHeight - margins.plotTitleHeight * plotTitlesCount) / yCount;
     if (plotHeightSpace < margins.miniumumPlotHeight) {
         return err(new PlotSizeError("vertical"));
     }
@@ -339,15 +409,18 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
     if (plotWidth < margins.miniumumPlotWidth) {
         return err(new PlotSizeError("horizontal"));
     }
+
     let generalPlotSettings: GeneralPlotSettings = {
         plotTitleHeight: margins.plotTitleHeight,
         dotMargin: margins.dotMargin,
         plotHeight: plotHeightSpace - margins.margins.top - margins.margins.bottom,
         plotWidth: plotWidth,
+        legendHeight: legendHeight,
         xScalePadding: 0.1,
         solidOpacity: 1,
         transparentOpacity: 1,
-        margins: margins.margins
+        margins: margins.margins,
+        legendYPostion: 0
     };
 
     const zoomingSettings: ZoomingSettings = {
@@ -369,7 +442,8 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         svgHeight: svgHeight,
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth,
-        zoomingSettings: zoomingSettings
+        zoomingSettings: zoomingSettings,
+        legend: legend
     };
     return ok(viewModel);
 }
