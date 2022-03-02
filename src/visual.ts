@@ -72,7 +72,7 @@ export class Visual implements IVisual {
 
     private drawLegend() {
         const margins = this.viewModel.generalPlotSettings;
-        const yPosition = margins.legendYPostion;
+        const yPosition = margins.legendYPostion+10;
         const legendData = this.viewModel.legend.legendValues;
         let widths = [];
         let width = margins.margins.left;
