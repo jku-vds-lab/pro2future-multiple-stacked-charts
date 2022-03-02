@@ -3,6 +3,7 @@ export enum Settings {
     axisSettings = "axisSettings",
     colorSelector = "colorSelector",
     colorSettings = "colorSettings",
+    legendSettings = "legendSettings",
     overlayPlotSettings = "overlayPlotSettings",
     plotTitleSettings = "plotTitleSettings",
     tooltipTitleSettings = "tooltipTitleSettings",
@@ -12,6 +13,10 @@ export enum Settings {
 export enum YRangeSettingsNames{
     min = "min",
     max = "max"
+}
+export enum LegendSettingsNames{
+    legendTitle = "legendTitle",
+    legendColor = "legendColor"
 }
 
 export enum PlotSettingsNames {

@@ -45,9 +45,10 @@ import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
+import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 
@@ -69,7 +70,38 @@ export class Visual implements IVisual {
     }
 
 
+    private drawLegend() {
+        const margins = this.viewModel.generalPlotSettings;
+        const yPosition = margins.legendHeight + this.viewModel.svgTopPadding;
+        const legendData = this.viewModel.legend.legendValues;
+        let widths = [];
+        let width = margins.margins.left;
 
+        this.svg.selectAll("legendText")
+            .data(legendData)
+            .enter()
+            .append("text")
+            .text(function (d) { return String(d.value) })
+            .attr("x", function (d, i) {
+                let x = width
+                widths.push(width);
+                width = width + 25 + this.getComputedTextLength();
+                return 10 + x;
+            })
+            .attr("y", yPosition) // 100 is where the first dot appears. 25 is the distance between dots
+            // .style("fill", function (d) { return color(d) })
+
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+        this.svg.selectAll("legendDots")
+            .data(legendData)
+            .enter()
+            .append("circle")
+            .attr("cx", function (d, i) { return widths[i] })
+            .attr("cy", yPosition) // 100 is where the first dot appears. 25 is the distance between dots
+            .attr("r", 7)
+            .style("fill", function (d) { return d.color })
+    }
 
     public update(options: VisualUpdateOptions) {
 
@@ -82,7 +114,11 @@ export class Visual implements IVisual {
                 this.svg.attr("width", this.viewModel.svgWidth)
                     .attr("height", this.viewModel.svgHeight);
                 // this.displayError(new Error("this is a test"));
+                if (this.viewModel.legend != null) {
+                    this.drawLegend();
+                }
                 this.drawPlots(options);
+
 
             }).mapErr(err => this.displayError(err));
 
@@ -348,7 +384,7 @@ export class Visual implements IVisual {
                 .data(dataPoints)
                 .enter()
                 .append('circle')
-                .attr('fill', plotModel.plotSettings.plotSettings.fill)
+                .attr('fill', (d: DataPoint) => d.color)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => x.xScale(<number>d.xValue))
                 .attr('cy', (d) => y.yScale(<number>d.yValue))
@@ -409,7 +445,7 @@ export class Visual implements IVisual {
                 .data(dataPoints)
                 .enter()
                 .append('circle')
-                .attr('fill', plotModel.plotSettings.plotSettings.fill)
+                .attr('fill', (d: DataPoint) => d.color)//plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => x.xScale(<number>d.xValue))
                 .attr('cy', (d) => y.yScale(<number>d.yValue))
@@ -691,6 +727,33 @@ export class Visual implements IVisual {
                             slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#0000FF')
                         },
                         selector: null
+                    });
+                    break;
+                case Settings.legendSettings:
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, "Legend"),
+                        },
+                        selector: null
+                    });
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        displayName: "testing",
+                        properties: {
+                            legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
+
+                        },
+                        selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
+                    });
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        displayName: "testi2ng",
+                        properties: {
+                            legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
+
+                        },
+                        selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
                     });
                     break;
                 case Settings.zoomingSettings:
