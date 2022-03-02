@@ -24,6 +24,7 @@ export interface GeneralPlotSettings {
     plotWidth: number;
     plotTitleHeight: number;
     legendHeight: number;
+    legendYPostion: number;
     dotMargin: number;
     xScalePadding: number;
     solidOpacity: number;
@@ -164,6 +165,7 @@ export interface PlotSettings {
     plotSettings: {
         fill: string;
         plotType: PlotType;
+        useLegendColor: boolean;
     };
 }
 

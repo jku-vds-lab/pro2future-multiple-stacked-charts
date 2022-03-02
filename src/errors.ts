@@ -83,6 +83,17 @@ export class PlotSizeError extends ParseAndTransformError {
 
     }
 }
+export class PlotLegendError extends ParseAndTransformError {
+    /**
+     *
+     */
+    constructor(plotName:string) {
+        const name = "Plot Legend Error";
+        const message = `There is legend no data but legend colors are set to be used by ${plotName}. Please add legend data in the field pane.`;
+        super(message, name);
+
+    }
+}
 
 export class GetAxisInformationError extends ParseAndTransformError {
     /**

@@ -67,7 +67,7 @@
         },
         {
             "displayName": "Legend",
-            "name": "legends",
+            "name": "legend",
             "kind": "Grouping"
         }
     ],
@@ -87,7 +87,7 @@
                     "slabY": {
                         "max": 1
                     },
-                    "legends": {
+                    "legend": {
                         "max": 1
                     },
                     "category": {
@@ -128,7 +128,7 @@
                         },
                         {
                             "for": {
-                                "in": "legends"
+                                "in": "legend"
                             }
                         }
                     ]
@@ -263,6 +263,12 @@
                                 "color": true
                             }
                         }
+                    }
+                },
+                "useLegendColor": {
+                    "displayName": "Use Legend Color",
+                    "type": {
+                        "bool": true
                     }
                 }
             }

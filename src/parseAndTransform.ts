@@ -9,7 +9,7 @@ import { Color } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
-import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotSizeError, SVGSizeError } from './errors'
+import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
 
 // TODO #n: Allow user to change bars colors
 
@@ -109,7 +109,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 };
                 tooltipData[tooltipId] = data;
             }
-            else if (roles.legends) {
+            else if (roles.legend) {
                 legendData = {
                     name: category.source.displayName,
                     values: <string[]>category.values,
@@ -153,7 +153,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 };
                 tooltipData[tooltipId] = data;
             }
-            else if (roles.legends) {
+            else if (roles.legend) {
                 legendData = {
                     name: value.source.displayName,
                     values: <string[]>value.values,
@@ -228,7 +228,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
     createSlabInformation(slabLength, slabWidth, viewModel);
 
-    let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top + viewModel.generalPlotSettings.legendHeight;
+    let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
     //create Plotmodels
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
         //get x- and y-data for plotnumber
@@ -243,7 +243,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const plotSettings: PlotSettings = {
             plotSettings: {
                 fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
-                plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)]
+                plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+                useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false)
             }
         }
         //create datapoints
@@ -251,9 +252,13 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
             let color = plotSettings.plotSettings.fill;
             const xVal = xDataPoints[pointNr];
-            if (legend != null) {
-                const legendVal = legend.legendDataPoints.find(x => x.xValue == xVal).yValue;
-                color = legendVal == null ? color : legend.legendValues.find(x => x.value == legendVal).color;
+            if (plotSettings.plotSettings.useLegendColor) {
+                if (legend != null) {
+                    const legendVal = legend.legendDataPoints.find(x => x.xValue == xVal).yValue;
+                    color = legendVal == null ? color : legend.legendValues.find(x => x.value == legendVal).color;
+                }else{
+                    return err(new PlotLegendError(yAxis.name));
+                }
             }
 
             //const color = legend.legendValues.fin legend.legendDataPoints[pointNr].yValue
@@ -324,6 +329,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         viewModel.plotModels[plotNr] = plotModel;
         plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
     }
+    viewModel.generalPlotSettings.legendYPostion = plotTop;
 
     return ok(viewModel);
 
@@ -403,17 +409,18 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
     if (plotWidth < margins.miniumumPlotWidth) {
         return err(new PlotSizeError("horizontal"));
     }
-    
+
     let generalPlotSettings: GeneralPlotSettings = {
         plotTitleHeight: margins.plotTitleHeight,
         dotMargin: margins.dotMargin,
         plotHeight: plotHeightSpace - margins.margins.top - margins.margins.bottom,
         plotWidth: plotWidth,
-        legendHeight:legendHeight ,
+        legendHeight: legendHeight,
         xScalePadding: 0.1,
         solidOpacity: 1,
         transparentOpacity: 1,
-        margins: margins.margins
+        margins: margins.margins,
+        legendYPostion: 0
     };
 
     const zoomingSettings: ZoomingSettings = {

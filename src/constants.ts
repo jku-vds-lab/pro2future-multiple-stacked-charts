@@ -21,7 +21,8 @@ export enum LegendSettingsNames{
 
 export enum PlotSettingsNames {
     plotType = "plotType",
-    fill = "fill"
+    fill = "fill",
+    useLegendColor = "useLegendColor"
 }
 export enum TooltipTitleSettingsNames {
     title = "title"
