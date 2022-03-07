@@ -265,7 +265,7 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings
             const xAxis = plot.append('g').classed('xAxis', true);
-            const xScale = scaleLinear().domain([0, plotModel.xRange.max]).range([0, generalPlotSettings.plotWidth]);
+            const xScale = scaleLinear().domain([plotModel.xRange.min, plotModel.xRange.max]).range([0, generalPlotSettings.plotWidth]);
             const xAxisValue = axisBottom(xScale);
             let xLabel = null;
             if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
