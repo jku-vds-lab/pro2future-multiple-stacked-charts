@@ -72,7 +72,7 @@ export class Visual implements IVisual {
 
     private drawLegend() {
         const margins = this.viewModel.generalPlotSettings;
-        const yPosition = margins.legendYPostion;
+        const yPosition = margins.legendYPostion+10;
         const legendData = this.viewModel.legend.legendValues;
         let widths = [];
         let width = margins.margins.left;
@@ -755,31 +755,31 @@ export class Visual implements IVisual {
                     });
                     break;
                 case Settings.legendSettings:
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, "Legend"),
-                        },
-                        selector: null
-                    });
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        displayName: "testing",
-                        properties: {
-                            legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
+                    // objectEnumeration.push({
+                    //     objectName: objectName,
+                    //     properties: {
+                    //         legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, "Legend"),
+                    //     },
+                    //     selector: null
+                    // });
+                    // objectEnumeration.push({
+                    //     objectName: objectName,
+                    //     displayName: "testing",
+                    //     properties: {
+                    //         legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
 
-                        },
-                        selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
-                    });
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        displayName: "testi2ng",
-                        properties: {
-                            legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
+                    //     },
+                    //     selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
+                    // });
+                    // objectEnumeration.push({
+                    //     objectName: objectName,
+                    //     displayName: "testi2ng",
+                    //     properties: {
+                    //         legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
 
-                        },
-                        selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
-                    });
+                    //     },
+                    //     selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
+                    // });
                     break;
                 case Settings.zoomingSettings:
 
