@@ -572,6 +572,7 @@ export class Visual implements IVisual {
             const visualContainer = this.svg.node();
             const margins = this.viewModel.generalPlotSettings.margins;
             const tooltipModels = this.viewModel.tooltipModels;
+            const legend = this.viewModel.legend;
             const errorFunction = this.displayError;
             var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
             var Tooltip = d3.select(this.element)
@@ -609,6 +610,8 @@ export class Visual implements IVisual {
                     const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
                     let tooltipText = "<b>" + plotModels[0].xName + "</b> : " + data.xValue + " <br> ";
                     let tooltipData: TooltipData[] = [];
+
+                    //add tooltips for plots
                     plotModels.filter((model: PlotModel) => {
                         model.dataPoints.filter(modelData => {
                             if (modelData.xValue == data.xValue) {
@@ -619,6 +622,8 @@ export class Visual implements IVisual {
                             }
                         });
                     });
+
+                    //add tooltips for tooltips
                     tooltipModels.filter((model: TooltipModel) => {
                         model.tooltipData.filter(modelData => {
                             if (modelData.xValue == data.xValue) {
@@ -629,6 +634,18 @@ export class Visual implements IVisual {
                             }
                         })
                     });
+
+                    //add tooltips for legend
+                    if (legend) {
+                        legend.legendDataPoints.filter(legendDataPoint => {
+                            if (legendDataPoint.xValue == data.xValue) {
+                                tooltipData.push({
+                                    yValue: legendDataPoint.yValue,
+                                    title: legend.legendTitle
+                                });
+                            }
+                        });
+                    }
                     for (const tooltip of tooltipData) {
                         tooltipText += "<b> " + tooltip.title + "</b> : " + tooltip.yValue + " <br> ";
                     }
