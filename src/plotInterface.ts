@@ -2,6 +2,7 @@ import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
+import ISelectionId = powerbi.visuals.ISelectionId;
 
 // TODO #11: Make the bar chart transparent
 // TODO #n: Add point selection (for future)
@@ -16,7 +17,7 @@ export interface ViewModel {
     generalPlotSettings: GeneralPlotSettings;
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
-    legend: Legend;
+    legend?: Legend;
 }
 
 export interface GeneralPlotSettings {
@@ -123,14 +124,16 @@ export interface LegendDataPoint {
     yValue: PrimitiveValue;
 }
 
-export interface LegendValue  extends SelectableDataPoint {
+export interface LegendValue {
     color?: string;
     value: PrimitiveValue;
+    selectionId: ISelectionId;
 }
 
 export interface Legend{
     legendDataPoints: LegendDataPoint[];
     legendValues: LegendValue[];
+    legendTitle: string;
 }
 
 export interface DataPoint extends SelectableDataPoint {

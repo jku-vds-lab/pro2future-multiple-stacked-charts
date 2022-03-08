@@ -3,10 +3,10 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
-import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
+import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue } from './plotInterface';
 import { Color } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
 import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
@@ -177,7 +177,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
 
     if (legendData != null) {
+        let categories = categorical.categories.filter(x => x.source.roles.legend)
+        let category = categories.length > 0 ? categories[0] : null;
         let legendSet = new Set(legendData.values);
+        const defaultLegendName = category ? category.source.displayName : "Legend";
 
         if (legendSet.has(null)) {
             legendSet.delete(null);
@@ -185,15 +188,19 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         let legendValues = Array.from(legendSet);
         legend = {
             legendDataPoints: [],
-            legendValues: []
+            legendValues: [],
+            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName)
         }
+        debugger;
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i]
+            const defaultColor = legendColors[val] ? legendColors[val] : "FFFFFF"
+            const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
+
             legend.legendValues.push({
-                color: legendColors[val],
-                selected: false,
-                value: val,
-                identity: host.createSelectionIdBuilder().createSelectionId()
+                color: getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
+                selectionId: selectionId,
+                value: val
             });
         }
         let legendXValues = xData[0].values;
@@ -207,8 +214,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
     }
-
-    debugger;
 
     let plotTitles: string[] = [];
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
@@ -256,7 +261,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 if (legend != null) {
                     const legendVal = legend.legendDataPoints.find(x => x.xValue == xVal).yValue;
                     color = legendVal == null ? color : legend.legendValues.find(x => x.value == legendVal).color;
-                }else{
+                } else {
                     return err(new PlotLegendError(yAxis.name));
                 }
             }

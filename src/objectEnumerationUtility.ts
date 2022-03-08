@@ -59,6 +59,24 @@ export function getCategoricalObjectValue<T>(category: DataViewCategoryColumn, i
   return defaultValue;
 }
 
+export function getCategoricalObjectColor(category: DataViewCategoryColumn, index: number, objectName: string, propertyName: string, defaultValue: string): string {
+  let categoryObjects = category.objects;
+
+  if (categoryObjects) {
+    let categoryObject: DataViewObject = categoryObjects[index];
+    if (categoryObject) {
+      let object = categoryObject[objectName];
+      if (object) {
+        let property: Fill = <Fill>object[propertyName];
+        if (property !== undefined) {
+          return property.solid.color;
+        }
+      }
+    }
+  }
+  return defaultValue;
+}
+
 export function getAxisTextFillColor(objects: DataViewObjects,
   colorPalette: ISandboxExtendedColorPalette,
   defaultColor: string): string {
