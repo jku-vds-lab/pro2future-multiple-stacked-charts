@@ -8,8 +8,14 @@ export enum Settings {
     plotTitleSettings = "plotTitleSettings",
     tooltipTitleSettings = "tooltipTitleSettings",
     yRangeSettings = "yRangeSettings",
-    zoomingSettings = "zoomingSettings"
+    zoomingSettings = "zoomingSettings",
+    axisLabelSettings = "axisLabelSettings"
 }
+export enum AxisLabelSettingsNames{
+    xLabel = "xLabel",
+    yLabel = "yLabel"
+}
+
 export enum YRangeSettingsNames{
     min = "min",
     max = "max"

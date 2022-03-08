@@ -131,7 +131,8 @@
                                 "in": "legend"
                             }
                         }
-                    ], "dataReductionAlgorithm": {
+                    ],
+                    "dataReductionAlgorithm": {
                         "top": {
                             "count": 2000
                         }
@@ -188,6 +189,23 @@
                                 "value": "TicksLabels"
                             }
                         ]
+                    }
+                }
+            }
+        },
+        "axisLabelSettings": {
+            "displayName": "Axis Label Settings",
+            "properties": {
+                "xLabel": {
+                    "displayName": "x-Label",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "yLabel": {
+                    "displayName": "y-Label",
+                    "type": {
+                        "text": true
                     }
                 }
             }
