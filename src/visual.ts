@@ -42,7 +42,7 @@ import DataView = powerbi.DataView;
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
-import { getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
+import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
 import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames } from './constants';
@@ -72,10 +72,25 @@ export class Visual implements IVisual {
 
     private drawLegend() {
         const margins = this.viewModel.generalPlotSettings;
-        const yPosition = margins.legendYPostion+10;
+        const yPosition = margins.legendYPostion + 10;
         const legendData = this.viewModel.legend.legendValues;
+        const legendTitle = this.viewModel.legend.legendTitle;
         let widths = [];
         let width = margins.margins.left;
+
+        this.svg.selectAll("legendTitle")
+            .data([legendTitle])
+            .enter()
+            .append("text")
+            .text(d => d)
+            .attr("x", function (d, i) {
+                let x = width
+                width = width + 25 + this.getComputedTextLength();
+                return x;
+            })
+            .attr("y", yPosition)
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
 
         this.svg.selectAll("legendText")
             .data(legendData)
@@ -88,17 +103,16 @@ export class Visual implements IVisual {
                 width = width + 25 + this.getComputedTextLength();
                 return 10 + x;
             })
-            .attr("y", yPosition) // 100 is where the first dot appears. 25 is the distance between dots
-            // .style("fill", function (d) { return color(d) })
-
+            .attr("y", yPosition)
             .attr("text-anchor", "left")
             .style("alignment-baseline", "middle")
+
         this.svg.selectAll("legendDots")
             .data(legendData)
             .enter()
             .append("circle")
             .attr("cx", function (d, i) { return widths[i] })
-            .attr("cy", yPosition) // 100 is where the first dot appears. 25 is the distance between dots
+            .attr("cy", yPosition)
             .attr("r", 7)
             .style("fill", function (d) { return d.color })
     }
@@ -704,7 +718,6 @@ export class Visual implements IVisual {
     // }
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        debugger;
         const objectName = options.objectName;
         const colorPalette = this.host.colorPalette;
         const objects = this.dataview.metadata.objects;
@@ -755,31 +768,31 @@ export class Visual implements IVisual {
                     });
                     break;
                 case Settings.legendSettings:
-                    // objectEnumeration.push({
-                    //     objectName: objectName,
-                    //     properties: {
-                    //         legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, "Legend"),
-                    //     },
-                    //     selector: null
-                    // });
-                    // objectEnumeration.push({
-                    //     objectName: objectName,
-                    //     displayName: "testing",
-                    //     properties: {
-                    //         legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
+                    if (!this.viewModel.legend) break;
+                    let legendValues = this.viewModel.legend.legendValues;
+                    let categories = this.dataview.categorical.categories.filter(x => x.source.roles.legend)
+                    let category = categories.length > 0 ? categories[0] : null;
 
-                    //     },
-                    //     selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
-                    // });
-                    // objectEnumeration.push({
-                    //     objectName: objectName,
-                    //     displayName: "testi2ng",
-                    //     properties: {
-                    //         legendColor: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendColor, "Lnd"),
-
-                    //     },
-                    //     selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
-                    // });
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, this.viewModel.legend.legendTitle),
+                        },
+                        selector: null
+                    });
+                    let i = 0;
+                    for (const value of legendValues) {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            displayName: String(value.value),
+                            properties: {
+                                legendColor: getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, value.color),
+                            },
+                            altConstantValueSelector: value.selectionId.getSelector(),
+                            selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
+                        });
+                        i++;
+                    }
                     break;
                 case Settings.zoomingSettings:
 
