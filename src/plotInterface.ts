@@ -47,7 +47,7 @@ export interface ColorSettings {
     }
 }
 
-export interface ZoomingSettings{
+export interface ZoomingSettings {
     enableZoom: boolean;
     maximumZoom: number;
 }
@@ -77,6 +77,7 @@ export interface PlotModel {
     xName: string;
     yName: string;
     formatSettings: FormatSettings;
+    labelNames: LabelNames;
     overlayPlotSettings: OverlayPlotSettings;
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
@@ -89,6 +90,11 @@ export interface PlotModel {
         min: number;
         max: number;
     };
+}
+
+export interface LabelNames {
+    xLabel: string;
+    yLabel: string;
 }
 
 export interface TooltipModel {
@@ -108,7 +114,7 @@ export interface SlabRectangle {
     y: number;
 }
 
-export interface TooltipData{
+export interface TooltipData {
     yValue: PrimitiveValue;
     title: string;
 }
@@ -130,7 +136,7 @@ export interface LegendValue {
     selectionId: ISelectionId;
 }
 
-export interface Legend{
+export interface Legend {
     legendDataPoints: LegendDataPoint[];
     legendValues: LegendValue[];
     legendTitle: string;
@@ -226,8 +232,8 @@ export interface D3PlotYAxis {
     yLabel: any;
 }
 
-export interface TooltipInterface{
-     mouseover: () => void; 
-     mousemove: (event: any, data: any) => void; 
-     mouseout: () => void;
+export interface TooltipInterface {
+    mouseover: () => void;
+    mousemove: (event: any, data: any) => void;
+    mouseout: () => void;
 }
