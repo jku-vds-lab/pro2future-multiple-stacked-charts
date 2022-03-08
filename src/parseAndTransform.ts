@@ -6,7 +6,7 @@ import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColo
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue } from './plotInterface';
 import { Color } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, AxisLabelSettingsNames } from './constants';
 import { MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
 import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
@@ -207,8 +207,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
     }
-
-    debugger;
+    let formatSettings: FormatSettings[] = []
 
     let plotTitles: string[] = [];
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
@@ -216,10 +215,31 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         let yColumnId = yData[plotNr].columnId;
         let yColumnObjects = metadataColumns[yColumnId].objects;
         plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name))
+
+        const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
+        const yInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
+        let xAxisInformation: AxisInformationInterface, yAxisInformation: AxisInformationInterface;
+        let axisInformationError: ParseAndTransformError;
+        getAxisInformation(xInformation)
+            .map(inf => xAxisInformation = inf)
+            .mapErr(err => axisInformationError = err);
+        getAxisInformation(yInformation)
+            .map(inf => yAxisInformation = inf)
+            .mapErr(err => axisInformationError = err);
+        if (axisInformationError) {
+            return err(axisInformationError);
+        }
+        formatSettings.push({
+            axisSettings: {
+                xAxis: xAxisInformation,
+                yAxis: yAxisInformation
+            },
+        });
     }
-    let plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
+    const plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
+    const xLabelsCount = formatSettings.filter(x => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
     let viewModel: ViewModel;
-    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, legend)
+    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, legend)
         .map(vm => viewModel = vm)
     if (viewModelResult.isErr()) {
         return viewModelResult.mapErr(err => { return err; });
@@ -256,7 +276,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 if (legend != null) {
                     const legendVal = legend.legendDataPoints.find(x => x.xValue == xVal).yValue;
                     color = legendVal == null ? color : legend.legendValues.find(x => x.value == legendVal).color;
-                }else{
+                } else {
                     return err(new PlotLegendError(yAxis.name));
                 }
             }
@@ -277,25 +297,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
             return <number>a.xValue - <number>b.xValue;
         });
-        const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
-        const yInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)]
-        let xAxisInformation: AxisInformationInterface, yAxisInformation: AxisInformationInterface;
-        let axisInformationError: ParseAndTransformError;
-        getAxisInformation(xInformation)
-            .map(inf => xAxisInformation = inf)
-            .mapErr(err => axisInformationError = err);
-        getAxisInformation(yInformation)
-            .map(inf => yAxisInformation = inf)
-            .mapErr(err => axisInformationError = err);
-        if (axisInformationError) {
-            return err(axisInformationError);
-        }
-        let formatSettings: FormatSettings = {
-            axisSettings: {
-                xAxis: xAxisInformation,
-                yAxis: yAxisInformation
-            },
-        };
+
 
         let plotTitle = plotTitles[plotNr]
         plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
@@ -303,9 +305,13 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         let plotModel: PlotModel = {
             plotId: plotNr,
-            formatSettings: formatSettings,
+            formatSettings: formatSettings[plotNr],
             xName: xAxis.name,
             yName: yAxis.name,
+            labelNames: {
+                xLabel: getValue<string>(yColumnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.xLabel, xAxis.name),
+                yLabel: getValue<string>(yColumnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.yLabel, yAxis.name),
+            },
             plotTop: plotTop,
             plotSettings: plotSettings,
             plotTitleSettings: {
@@ -327,6 +333,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             dataPoints: dataPoints
         };
         viewModel.plotModels[plotNr] = plotModel;
+        const formatXAxis = plotModel.formatSettings.axisSettings.xAxis
+        plotTop = formatXAxis.lables && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;
         plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
     }
     viewModel.generalPlotSettings.legendYPostion = plotTop;
@@ -393,7 +401,7 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], viewMo
     }
 }
 
-function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, legend: Legend): Result<ViewModel, ParseAndTransformError> {
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, legend: Legend): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings
     const svgHeight: number = options.viewport.height;
     const svgWidth: number = options.viewport.width;
@@ -401,7 +409,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
     }
-    const plotHeightSpace: number = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - legendHeight - margins.plotTitleHeight * plotTitlesCount) / yCount;
+    const plotHeightSpace: number = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - legendHeight - margins.plotTitleHeight * plotTitlesCount - margins.xLabelSpace * xLabelsCount) / yCount;
     if (plotHeightSpace < margins.miniumumPlotHeight) {
         return err(new PlotSizeError("vertical"));
     }

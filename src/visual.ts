@@ -45,7 +45,7 @@ import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
@@ -72,7 +72,7 @@ export class Visual implements IVisual {
 
     private drawLegend() {
         const margins = this.viewModel.generalPlotSettings;
-        const yPosition = margins.legendYPostion+10;
+        const yPosition = margins.legendYPostion + 10;
         const legendData = this.viewModel.legend.legendValues;
         let widths = [];
         let width = margins.margins.left;
@@ -217,7 +217,7 @@ export class Visual implements IVisual {
                 .append('rect')
                 .attr('y', -generalPlotSettings.dotMargin)
                 .attr('x', -generalPlotSettings.dotMargin)
-                .attr('width', plotWidth - generalPlotSettings.margins.right + 2 * generalPlotSettings.dotMargin)
+                .attr('width', plotWidth +  2 * generalPlotSettings.dotMargin)
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
             return ok(null);
         } catch (error) {
@@ -279,8 +279,9 @@ export class Visual implements IVisual {
                     .attr('class', 'xLabel')
                     .attr('text-anchor', 'end')
                     .attr('x', generalPlotSettings.plotWidth / 2)
-                    .attr('y', generalPlotSettings.plotHeight + 20)
-                    .text(plotModel.xName);
+                    .attr('y', generalPlotSettings.plotHeight + (plotModel.formatSettings.axisSettings.xAxis.ticks ? 28 : 15))
+                    .style("font-size", "12px")
+                    .text(plotModel.labelNames.xLabel);
             }
 
             xAxis
@@ -308,8 +309,9 @@ export class Visual implements IVisual {
                     .attr('y', 0 - generalPlotSettings.margins.left)
                     .attr('x', 0 - generalPlotSettings.plotHeight / 2)
                     .attr('dy', '1em')
+                    .style("font-size", "12px")
                     .attr('transform', 'rotate(-90)')
-                    .text(plotModel.yName);
+                    .text(plotModel.labelNames.yLabel);
             }
 
             if (!plotModel.formatSettings.axisSettings.yAxis.ticks) {
@@ -704,7 +706,6 @@ export class Visual implements IVisual {
     // }
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        debugger;
         const objectName = options.objectName;
         const colorPalette = this.host.colorPalette;
         const objects = this.dataview.metadata.objects;
@@ -718,6 +719,7 @@ export class Visual implements IVisual {
                 case Settings.plotSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns, 3);
                     break;
+                case Settings.axisLabelSettings:
                 case Settings.axisSettings:
                 case Settings.yRangeSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns, 2);
@@ -838,11 +840,22 @@ export class Visual implements IVisual {
                                 yAxis: yInformation
                             };
                             break;
+                        case Settings.axisLabelSettings:
+                            const labelNames = plotmodles.filter(x => { return x.plotId == yIndex })[0].labelNames;
+                            const xLabel = getValue<string>(columnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.xLabel, labelNames.xLabel);
+                            const yLabel = getValue<string>(columnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.yLabel, labelNames.yLabel);
+                            displayNames = {
+                                xLabel: column.displayName + " x-Label",
+                                yLabel: column.displayName + " y-Label",
+                            };
+                            properties[AxisLabelSettingsNames.xLabel] = xLabel;
+                            properties[AxisLabelSettingsNames.yLabel] = yLabel;
+                            break;
                         case Settings.yRangeSettings:
                             const yRange = plotmodles.filter(x => { return x.plotId == yIndex })[0].yRange
                             displayNames = {
                                 min: column.displayName + " Minimum Value",
-                                yInformation: column.displayName + " Maximum Value",
+                                max: column.displayName + " Maximum Value",
                             };
                             properties = {
                                 min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),//TODO: change to yRange.min?
