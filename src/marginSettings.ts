@@ -7,6 +7,9 @@ export class MarginSettings {
     static readonly legendHeight = 20;
     static readonly dotMargin = 4;
     static readonly xLabelSpace = 10;
+    static readonly heatmapHeight = 10;
+    static readonly heatmapMargin = 8;
+    static readonly heatmapSpace = this.heatmapMargin + this.heatmapHeight;
     static readonly margins: Margins = {
         top: 10,
         right: 50,

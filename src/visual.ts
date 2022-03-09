@@ -49,6 +49,7 @@ import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNa
 import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
+import { MarginSettings } from './marginSettings';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 
@@ -538,11 +539,20 @@ export class Visual implements IVisual {
             .domain([0, heatmapValues.length])
             .range([0, this.viewModel.generalPlotSettings.plotWidth]);
         const generalPlotSettings = this.viewModel.generalPlotSettings;
+        let yTransition = plotModel.plotTop + generalPlotSettings.plotHeight + generalPlotSettings.margins.bottom;
+        const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
+        yTransition += xAxisSettings.lables || xAxisSettings.ticks ? MarginSettings.heatmapMargin : 0;
+        yTransition += xAxisSettings.lables && xAxisSettings.ticks ? MarginSettings.xLabelSpace : 0;
         const heatmap = this.svg.append('g')
             .classed("Heatmap" + plotModel.plotId, true)
             .attr('width', generalPlotSettings.plotWidth)
             .attr('height', generalPlotSettings.plotHeight)
-            .attr('transform', 'translate(' + generalPlotSettings.margins.left + ',' + (plotModel.plotTop + generalPlotSettings.plotHeight + generalPlotSettings.margins.bottom) + ')');
+            .attr('transform', 'translate(' + generalPlotSettings.margins.left + ',' + (yTransition) + ')');
+        heatmap.append("rect")
+            .attr("width", generalPlotSettings.plotWidth)
+            .attr("height", MarginSettings.heatmapHeight)
+            .attr("fill", "transparent")
+            .attr("stroke", "#000000");
         heatmap.selectAll()
             .data(heatmapValues)
             .enter()
@@ -551,10 +561,11 @@ export class Visual implements IVisual {
                 function (d, i) { return heatmapScale(i); })
             .attr("y", 0)
             .attr("width", function (d, i) { return heatmapScale(i) - heatmapScale(i - 1); })
-            .attr("height", 10)
+            .attr("height", MarginSettings.heatmapHeight)
             .attr("fill", function (d) {
                 return colorScale(d);
             });
+        // Legend(colorScale);
     }
 
     private addZoom(plots: D3Plot[], zoomingSettings: ZoomingSettings): Result<void, PlotError> {
@@ -832,7 +843,7 @@ export class Visual implements IVisual {
                         properties: {
                             verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
                             slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#0000FF'),
-                            heatmapColorScheme: getColorSettings(objects, ColorSettingsNames.heatmapColorScheme, colorPalette, 'interpolateBlues')
+                            heatmapColorScheme: <string>getValue(objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme,  'interpolateBlues')
                         },
                         selector: null
                     });

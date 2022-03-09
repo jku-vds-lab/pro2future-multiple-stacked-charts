@@ -213,9 +213,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
     }
-    let formatSettings: FormatSettings[] = []
-
+    let formatSettings: FormatSettings[] = [];
     let plotTitles: string[] = [];
+    let plotSettings: PlotSettings[] = [];
+
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
         let yAxis: YAxisData = yData[plotNr]
         let yColumnId = yData[plotNr].columnId;
@@ -241,11 +242,22 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 yAxis: yAxisInformation
             },
         });
+
+
+        plotSettings.push({
+            plotSettings: {
+                fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
+                plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+                useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
+                showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false)
+            }
+        });
     }
     const plotTitlesCount = plotTitles.filter(x => x.length > 0).length;
     const xLabelsCount = formatSettings.filter(x => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
+    const heatmapCount = plotSettings.filter(x => x.plotSettings.showHeatmap).length;
     let viewModel: ViewModel;
-    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, legend)
+    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, legend)
         .map(vm => viewModel = vm)
     if (viewModelResult.isErr()) {
         return viewModelResult.mapErr(err => { return err; });
@@ -298,7 +310,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             };
             dataPoints.push(dataPoint);
         }
-        //get index of y-column in metadata
+
 
 
         dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
@@ -344,6 +356,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const formatXAxis = plotModel.formatSettings.axisSettings.xAxis
         plotTop = formatXAxis.lables && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;
         plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
+        plotTop += plotModel.plotSettings.plotSettings.showHeatmap ? MarginSettings.heatmapSpace : 0;
     }
     viewModel.generalPlotSettings.legendYPostion = plotTop;
 
@@ -409,7 +422,7 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], viewMo
     }
 }
 
-function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, legend: Legend): Result<ViewModel, ParseAndTransformError> {
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, heatmapCount: number, legend: Legend): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings
     const svgHeight: number = options.viewport.height;
     const svgWidth: number = options.viewport.width;
@@ -417,7 +430,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
     }
-    const plotHeightSpace: number = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - legendHeight - margins.plotTitleHeight * plotTitlesCount - margins.xLabelSpace * xLabelsCount) / yCount;
+    const plotHeightSpace: number = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - legendHeight - margins.plotTitleHeight * plotTitlesCount - margins.xLabelSpace * xLabelsCount - margins.heatmapSpace * heatmapCount) / yCount;
     if (plotHeightSpace < margins.miniumumPlotHeight) {
         return err(new PlotSizeError("vertical"));
     }
@@ -450,7 +463,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
             colorSettings: {
                 verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
                 slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#000000'),
-                heatmapColorScheme: getColorSettings(objects, ColorSettingsNames.heatmapColorScheme, colorPalette, 'interpolateBlues')
+                heatmapColorScheme: <string>getValue(objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme,  'interpolateBlues')
 
             }
         },
