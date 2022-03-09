@@ -18,6 +18,7 @@ export interface ViewModel {
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
     legend?: Legend;
+
 }
 
 export interface GeneralPlotSettings {
@@ -40,12 +41,6 @@ export interface Margins {
     left: number;
 }
 
-export interface ColorSettings {
-    colorSettings: {
-        verticalRulerColor: string;
-        slabColor: string;
-    }
-}
 
 export interface ZoomingSettings {
     enableZoom: boolean;
@@ -70,6 +65,8 @@ export enum AxisInformation {
     Ticks = "Ticks",
     TicksLabels = "TicksLabels"
 }
+
+
 
 export interface PlotModel {
     plotId: number;
@@ -167,6 +164,7 @@ export interface ColorSettings {
     colorSettings: {
         verticalRulerColor: string;
         slabColor: string;
+        heatmapColorScheme: string;
     }
 }
 
@@ -175,6 +173,7 @@ export interface PlotSettings {
         fill: string;
         plotType: PlotType;
         useLegendColor: boolean;
+        showHeatmap: boolean;
     };
 }
 

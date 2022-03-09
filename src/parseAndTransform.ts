@@ -270,7 +270,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             plotSettings: {
                 fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
                 plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false)
+                useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
+                showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false)
             }
         }
         //create datapoints
@@ -307,6 +308,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         let plotTitle = plotTitles[plotNr]
         plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
+
 
 
         let plotModel: PlotModel = {
@@ -447,7 +449,9 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         colorSettings: {
             colorSettings: {
                 verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
-                slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#000000')
+                slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#000000'),
+                heatmapColorScheme: getColorSettings(objects, ColorSettingsNames.heatmapColorScheme, colorPalette, 'interpolateBlues')
+
             }
         },
         tooltipModels: [],
@@ -457,7 +461,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,
-        legend: legend
+        legend: legend,
     };
     return ok(viewModel);
 }

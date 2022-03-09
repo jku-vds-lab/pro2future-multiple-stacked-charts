@@ -234,6 +234,61 @@
                             }
                         }
                     }
+                },
+                "heatmapColorScheme": {
+                    "displayName": "Heatmap Color Scheme",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "BuGn",
+                                "value": "interpolateBuGn"
+                            },
+                            {
+                                "displayName": "BuPu",
+                                "value": "interpolateBuPu"
+                            },
+                            {
+                                "displayName": "GnBu",
+                                "value": "interpolateGnBu"
+                            },
+                            {
+                                "displayName": "OrRd",
+                                "value": "interpolateOrRd"
+                            },
+                            {
+                                "displayName": "PuBu",
+                                "value": "interpolatePuBu"
+                            },
+                            {
+                                "displayName": "PuBuGn",
+                                "value": "interpolatePuBuGn"
+                            },
+                            {
+                                "displayName": "PuRd",
+                                "value": "interpolatePuRd"
+                            },
+                            {
+                                "displayName": "RdPu",
+                                "value": "interpolateRdPu"
+                            },
+                            {
+                                "displayName": "YlGn",
+                                "value": "interpolateYlGn"
+                            },
+                            {
+                                "displayName": "YlGnBu",
+                                "value": "interpolateYlGnBu"
+                            },
+                            {
+                                "displayName": "YlOrBr",
+                                "value": "interpolateYlOrBr"
+                            },
+                            {
+                                "displayName": "YlOrRd",
+                                "value": "interpolateYlOrRd"
+                            }
+                        ]
+                    }
                 }
             }
         },
@@ -289,6 +344,12 @@
                 },
                 "useLegendColor": {
                     "displayName": "Use Legend Color",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "showHeatmap": {
+                    "displayName": "Show Heatmap",
                     "type": {
                         "bool": true
                     }
