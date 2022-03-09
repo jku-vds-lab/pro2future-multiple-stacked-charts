@@ -168,6 +168,7 @@ export class Visual implements IVisual {
     private drawPlots(options: VisualUpdateOptions) {
         let plots: D3Plot[] = [];
         for (let plotModel of this.viewModel.plotModels) {
+
             const plotType = plotModel.plotSettings.plotSettings.plotType;
             if (plotType == PlotType.LinePlot) {
                 this.drawLinePlot(plotModel)
@@ -231,7 +232,7 @@ export class Visual implements IVisual {
                 .append('rect')
                 .attr('y', -generalPlotSettings.dotMargin)
                 .attr('x', -generalPlotSettings.dotMargin)
-                .attr('width', plotWidth +  2 * generalPlotSettings.dotMargin)
+                .attr('width', plotWidth + 2 * generalPlotSettings.dotMargin)
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
             return ok(null);
         } catch (error) {
@@ -495,6 +496,55 @@ export class Visual implements IVisual {
             this.customTooltip().map(events => mouseEvents = events).mapErr(err => plotError = err);
             if (plotError) return err(plotError);
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
+
+
+
+
+           
+
+
+            const bins = d3.bin<DataPoint, number>().value((d: DataPoint) => { return <number>d.xValue }).thresholds(dataPoints.length / 10);
+
+            const binnedData = bins(dataPoints);
+
+            const heatmapValues = binnedData.map(bin => {
+                var extent = d3.extent(bin.map(d => <number>d.yValue));
+                return extent[1] - extent[0]
+            });
+
+            const colorScale = d3.scaleSequential()
+                .interpolator(d3.interpolateBlues)
+                .domain(d3.extent(heatmapValues))
+            window.d3 = d3;
+            const hScale = d3.scaleLinear()
+                .domain([0, heatmapValues.length])
+                .range([0, this.viewModel.generalPlotSettings.plotWidth]);
+            debugger;
+            const generalPlotSettings = this.viewModel.generalPlotSettings;
+            
+            const heatmap = this.svg.append('g')
+                .classed("Heatmap" + plotModel.plotId, true)
+                .attr('width', generalPlotSettings.plotWidth)
+                .attr('height', generalPlotSettings.plotHeight)
+                .attr('transform', 'translate(' + generalPlotSettings.margins.left + ',' + (plotModel.plotTop + generalPlotSettings.plotHeight+generalPlotSettings.margins.bottom) + ')');
+
+            
+            heatmap.selectAll()
+                .data(heatmapValues)
+                .enter()
+                .append("rect")
+                .attr("x",
+                    function (d, i) { return hScale(i); })
+                .attr("y", 0)
+                .attr("width", function (d, i) { return hScale(i) - hScale(i - 1); })
+                .attr("height", 10)
+                .attr("fill", function (d) {
+                    return colorScale(d);
+                });
+
+
+
+
             return ok(<D3Plot>{
                 type: type,
                 plot: linePath,

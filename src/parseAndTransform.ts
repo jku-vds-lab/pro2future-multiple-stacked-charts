@@ -191,7 +191,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             legendValues: [],
             legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName)
         }
-        debugger;
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i]
             const defaultColor = legendColors[val] ? legendColors[val] : "FFFFFF"
