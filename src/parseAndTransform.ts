@@ -7,7 +7,7 @@ import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColo
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue } from './plotInterface';
 import { Color } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames } from './constants';
-import { MarginSettings } from './marginSettings'
+import { Heatmapmargins, MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
 import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
 
@@ -356,7 +356,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const formatXAxis = plotModel.formatSettings.axisSettings.xAxis
         plotTop = formatXAxis.lables && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;
         plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
-        plotTop += plotModel.plotSettings.plotSettings.showHeatmap ? MarginSettings.heatmapSpace : 0;
+        plotTop += plotModel.plotSettings.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
     }
     viewModel.generalPlotSettings.legendYPostion = plotTop;
 
@@ -430,7 +430,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
     }
-    const plotHeightSpace: number = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - legendHeight - margins.plotTitleHeight * plotTitlesCount - margins.xLabelSpace * xLabelsCount - margins.heatmapSpace * heatmapCount) / yCount;
+    const plotHeightSpace: number = (svgHeight - margins.svgTopPadding - margins.svgBottomPadding - legendHeight - margins.plotTitleHeight * plotTitlesCount - margins.xLabelSpace * xLabelsCount - Heatmapmargins.heatmapSpace * heatmapCount) / yCount;
     if (plotHeightSpace < margins.miniumumPlotHeight) {
         return err(new PlotSizeError("vertical"));
     }
