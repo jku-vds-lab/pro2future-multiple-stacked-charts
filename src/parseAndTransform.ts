@@ -40,15 +40,17 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
 
     //count numbers of x-axis, y-axis and tooltipdata
-    const yCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.y_axis }).length;
-    const yValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.y_axis }).length;
+    const yCategoriesCount = categorical.categories === undefined ? 0 : new Set(categorical.categories.filter(cat => { return cat.source.roles.y_axis }).map(x=>x.source.index)).size;
+    const yValuesCount = categorical.values === undefined ? 0 : new Set(categorical.values.filter(val => { return val.source.roles.y_axis }).map(x=>x.source.index)).size;
     const yCount = yCategoriesCount + yValuesCount;
-    const xCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.x_axis }).length;
-    const xValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.x_axis }).length;
+    const xCategoriesCount = categorical.categories === undefined ? 0 : new Set(categorical.categories.filter(cat => { return cat.source.roles.x_axis }).map(x=>x.source.index)).size;
+    const xValuesCount = categorical.values === undefined ? 0 : new Set(categorical.values.filter(val => { return val.source.roles.x_axis }).map(x=>x.source.index)).size;
     const xCount = xCategoriesCount + xValuesCount;
-    const tooltipCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.tooltip }).length;
-    const tooltipValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.tooltip }).length;
+    const tooltipCategoriesCount = categorical.categories === undefined ? 0 : new Set(categorical.categories.filter(cat => { return cat.source.roles.tooltip }).map(x=>x.source.index)).size;
+    const tooltipValuesCount = categorical.values === undefined ? 0 : new Set(categorical.values.filter(val => { return val.source.roles.tooltip }).map(x=>x.source.index)).size;
     const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
+    console.log(tooltipCount);
+    debugger;
     const sharedXAxis = xCount == 1
 
     //check if input data count is ok

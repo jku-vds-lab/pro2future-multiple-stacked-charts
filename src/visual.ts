@@ -124,6 +124,8 @@ export class Visual implements IVisual {
         try {
 
             this.dataview = options.dataViews[0];
+            debugger;
+            //set here?
             visualTransform(options, this.host).map(model => {
                 this.viewModel = model
                 this.svg.selectAll('*').remove();
@@ -441,7 +443,7 @@ export class Visual implements IVisual {
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
             let mouseEvents: TooltipInterface;
-            this.customTooltip().map(events => mouseEvents = events).mapErr(err => plotError = err);
+            this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
             if (plotError) return err(plotError);
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
             let heatmap = null;
@@ -507,7 +509,7 @@ export class Visual implements IVisual {
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
             let mouseEvents: TooltipInterface;
-            this.customTooltip().map(events => mouseEvents = events).mapErr(err => plotError = err);
+            this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
             if (plotError) return err(plotError);
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
@@ -694,7 +696,7 @@ export class Visual implements IVisual {
 
     }
 
-    private customTooltip(): Result<TooltipInterface, PlotError> { // needs to be adjusted with vertical ruler method
+    private addTooltips(): Result<TooltipInterface, PlotError> { // needs to be adjusted with vertical ruler method
         try {
             const tooltipOffset = 10;
             const plotModels = this.viewModel.plotModels;
@@ -740,17 +742,17 @@ export class Visual implements IVisual {
                     let tooltipText = "<b>" + plotModels[0].xName + "</b> : " + data.xValue + " <br> ";
                     let tooltipData: TooltipData[] = [];
 
-                    //add tooltips for plots
-                    plotModels.filter((model: PlotModel) => {
-                        model.dataPoints.filter(modelData => {
-                            if (modelData.xValue == data.xValue) {
-                                tooltipData.push({
-                                    yValue: modelData.yValue,
-                                    title: model.plotTitleSettings.title
-                                });
-                            }
-                        });
-                    });
+                    // //add tooltips for plots
+                    // plotModels.filter((model: PlotModel) => {
+                    //     model.dataPoints.filter(modelData => {
+                    //         if (modelData.xValue == data.xValue) {
+                    //             tooltipData.push({
+                    //                 yValue: modelData.yValue,
+                    //                 title: model.plotTitleSettings.title
+                    //             });
+                    //         }
+                    //     });
+                    // });
 
                     //add tooltips for tooltips
                     tooltipModels.filter((model: TooltipModel) => {
@@ -764,17 +766,17 @@ export class Visual implements IVisual {
                         })
                     });
 
-                    //add tooltips for legend
-                    if (legend) {
-                        legend.legendDataPoints.filter(legendDataPoint => {
-                            if (legendDataPoint.xValue == data.xValue) {
-                                tooltipData.push({
-                                    yValue: legendDataPoint.yValue,
-                                    title: legend.legendTitle
-                                });
-                            }
-                        });
-                    }
+                    // //add tooltips for legend
+                    // if (legend) {
+                    //     legend.legendDataPoints.filter(legendDataPoint => {
+                    //         if (legendDataPoint.xValue == data.xValue) {
+                    //             tooltipData.push({
+                    //                 yValue: legendDataPoint.yValue,
+                    //                 title: legend.legendTitle
+                    //             });
+                    //         }
+                    //     });
+                    // }
                     for (const tooltip of tooltipData) {
                         tooltipText += "<b> " + tooltip.title + "</b> : " + tooltip.yValue + " <br> ";
                     }
