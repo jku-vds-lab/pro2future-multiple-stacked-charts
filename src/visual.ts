@@ -43,11 +43,11 @@ import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings } from './plotInterface';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ColorSchemes, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
-import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
+import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, HeatmapError, PlotError, SlabInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 
@@ -241,6 +241,13 @@ export class Visual implements IVisual {
                 .attr('x', -generalPlotSettings.dotMargin)
                 .attr('width', plotWidth + 2 * generalPlotSettings.dotMargin)
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
+            this.svg.append('defs').append('clipPath')
+                .attr('id', 'hclip')
+                .append('rect')
+                .attr('y', 0)
+                .attr('x', 0)
+                .attr('width', plotWidth)
+                .attr('height', Heatmapmargins.heatmapHeight);
             return ok(null);
         } catch (error) {
             return err(new AddClipPathError(error.stack))
@@ -442,12 +449,13 @@ export class Visual implements IVisual {
             this.customTooltip().map(events => mouseEvents = events).mapErr(err => plotError = err);
             if (plotError) return err(plotError);
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-
+            let heatmap = null;
             if (plotModel.plotSettings.plotSettings.showHeatmap) {
-                this.drawHeatmap(dataPoints, plotModel);
+                this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
+                if (plotError) return err(plotError);
             }
 
-            return ok(<D3Plot>{ type, plot, root: plot, points, x, y });
+            return ok(<D3Plot>{ type, plot, root: plot, points, x, y, heatmap });
 
         } catch (error) {
             return err(new DrawScatterPlotError(error.stack));
@@ -508,8 +516,10 @@ export class Visual implements IVisual {
             if (plotError) return err(plotError);
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
 
+            let heatmap = null;
             if (plotModel.plotSettings.plotSettings.showHeatmap) {
-                this.drawHeatmap(dataPoints, plotModel);
+                this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
+                if (plotError) return err(plotError);
             }
 
             return ok(<D3Plot>{
@@ -518,58 +528,72 @@ export class Visual implements IVisual {
                 root: plot,
                 points: points,
                 x: x,
-                y: y
+                y: y,
+                heatmap: heatmap
             });
         } catch (error) {
             return err(new DrawLinePlotError(error.stack));
         }
     }
 
-    private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel) {
-        const generalPlotSettings = this.viewModel.generalPlotSettings;
-        const heatmapSettings = this.viewModel.heatmapSettings;
-        const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
-        const bins = d3.bin<DataPoint, number>().value((d: DataPoint) => { return <number>d.xValue; }).thresholds(heatmapSettings.heatmapBins);
-        const binnedData = bins(dataPoints);
-        const heatmapValues = binnedData.map(bin => {
-            var extent = d3.extent(bin.map(d => <number>d.yValue));
-            return extent[1] - extent[0];
-        });
-        const colorScale = d3.scaleSequential()
-            .interpolator(d3[this.viewModel.colorSettings.colorSettings.heatmapColorScheme])
-            .domain(d3.extent(heatmapValues));
-        const heatmapScale = d3.scaleLinear()
-            .domain([0, heatmapValues.length])
-            .range([0, this.viewModel.generalPlotSettings.plotWidth]);
+    private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel): Result<D3Heatmap, HeatmapError> {
+        try {
 
-        let yTransition = generalPlotSettings.plotHeight + generalPlotSettings.margins.bottom;
-        yTransition += xAxisSettings.lables || xAxisSettings.ticks ? Heatmapmargins.heatmapMargin : 0;
-        yTransition += xAxisSettings.lables && xAxisSettings.ticks ? MarginSettings.xLabelSpace : 0;
-        const heatmap = this.svg.append('g')
-            .classed("Heatmap" + plotModel.plotId, true)
-            .attr('width', generalPlotSettings.plotWidth)
-            .attr('height', generalPlotSettings.plotHeight)
-            .attr('transform', 'translate(' + generalPlotSettings.margins.left + ',' + (plotModel.plotTop + yTransition) + ')');
-        heatmap.append("rect")
-            .attr("width", generalPlotSettings.plotWidth)
-            .attr("height", Heatmapmargins.heatmapHeight)
-            .attr("fill", "transparent")
-            .attr("stroke", "#000000");
-        heatmap.selectAll()
-            .data(heatmapValues)
-            .enter()
-            .append("rect")
-            .attr("x",
-                function (d, i) { return heatmapScale(i); })
-            .attr("y", 0)
-            .attr("width", function (d, i) { return heatmapScale(i) - heatmapScale(i - 1); })
-            .attr("height", Heatmapmargins.heatmapHeight)
-            .attr("fill", function (d) {
-                return colorScale(d);
+
+            const generalPlotSettings = this.viewModel.generalPlotSettings;
+            const heatmapSettings = this.viewModel.heatmapSettings;
+            const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
+            const bins = d3.bin<DataPoint, number>().value((d: DataPoint) => { return <number>d.xValue; }).thresholds(heatmapSettings.heatmapBins);
+            const binnedData = bins(dataPoints);
+            const heatmapValues = binnedData.map(bin => {
+                var extent = d3.extent(bin.map(d => <number>d.yValue));
+                return extent[1] - extent[0];
             });
+            const colorScale = d3.scaleSequential()
+                .interpolator(d3[this.viewModel.colorSettings.colorSettings.heatmapColorScheme])
+                .domain(d3.extent(heatmapValues));
+            const heatmapScale = d3.scaleLinear()
+                .domain([0, heatmapValues.length])
+                .range([0, this.viewModel.generalPlotSettings.plotWidth]);
 
-        this.drawHeatmapLegend(yTransition, colorScale, heatmap, generalPlotSettings);
 
+            let yTransition = generalPlotSettings.plotHeight + generalPlotSettings.margins.bottom;
+            yTransition += xAxisSettings.lables || xAxisSettings.ticks ? Heatmapmargins.heatmapMargin : 0;
+            yTransition += xAxisSettings.lables && xAxisSettings.ticks ? MarginSettings.xLabelSpace : 0;
+            const heatmap = this.svg.append('g')
+                .classed("Heatmap" + plotModel.plotId, true)
+                .attr('width', generalPlotSettings.plotWidth)
+                .attr('height', generalPlotSettings.plotHeight)
+                .attr('transform', 'translate(' + generalPlotSettings.margins.left + ',' + (plotModel.plotTop + yTransition) + ')');
+            heatmap.append("rect")
+                .attr("width", generalPlotSettings.plotWidth)
+                .attr("height", Heatmapmargins.heatmapHeight)
+                .attr("fill", "transparent")
+                .attr("stroke", "#000000");
+            let values = heatmap.selectAll()
+                .data(heatmapValues)
+                .enter()
+                .append("rect")
+                .attr("x",
+                    function (d, i) { return heatmapScale(i); })
+                .attr("y", 0)
+                .attr("width", function (d, i) { return heatmapScale(i) - heatmapScale(i - 1); })
+                .attr("height", Heatmapmargins.heatmapHeight)
+                .attr("fill", function (d) {
+                    return colorScale(d);
+                });
+
+            this.drawHeatmapLegend(yTransition, colorScale, heatmap, generalPlotSettings);
+            let d3heatmap: D3Heatmap = {
+                axis: null,
+                scale: heatmapScale,
+                values: values
+            }
+            return ok(d3heatmap);
+
+        } catch (error) {
+            return err(new HeatmapError(error.stack))
+        }
     }
 
     private drawHeatmapLegend(yTransition: number, colorScale: d3.ScaleSequential<number, never>, heatmap: d3.Selection<SVGGElement, any, any, any>, generalPlotSettings: GeneralPlotSettings) {
@@ -621,7 +645,6 @@ export class Visual implements IVisual {
                         transform.x = 0
                     }
                     for (let plot of plots) {
-
                         plot.x.xAxis.attr('clip-path', 'url(#clip)')
 
                         let xAxisValue = plot.x.xAxisValue;
@@ -651,6 +674,13 @@ export class Visual implements IVisual {
                                 .y((d) => plot.y.yScale(<number>d.yValue));
 
                             plot.plot.attr('d', line);
+                        }
+                        if (plot.heatmap) {
+                            let values = plot.heatmap.values;
+                            let scale = transform.rescaleX(plot.heatmap.scale);
+                            values.attr("x", function (d, i) { return scale(i); })
+                                .attr("width", function (d, i) { return scale(i) - scale(i - 1); })
+                                .attr('clip-path', 'url(#hclip)')
                         }
                     }
                 } catch (error) {
@@ -899,7 +929,6 @@ export class Visual implements IVisual {
                         },
                         selector: null
                     });
-                    debugger;
                     break;
                 case Settings.legendSettings:
                     if (!this.viewModel.legend) break;

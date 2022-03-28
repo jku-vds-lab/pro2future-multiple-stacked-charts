@@ -218,6 +218,7 @@ export interface D3Plot {
     root: any;
     x: D3PlotXAxis;
     y: D3PlotYAxis;
+    heatmap: D3Heatmap;
 }
 
 export interface D3PlotXAxis {
@@ -225,6 +226,12 @@ export interface D3PlotXAxis {
     xAxisValue: any;
     xScale: any;
     xLabel: any;
+}
+
+export interface D3Heatmap {
+    axis: any;
+    scale: any;
+    values: any;
 }
 
 

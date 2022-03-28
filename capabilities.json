@@ -296,7 +296,7 @@
             "displayName": "Heatmap Settings",
             "properties": {
                 "heatmapBins": {
-                    "displayName": "Number of Bins for Heatmap",
+                    "displayName": "Number of Bins",
                     "type": {
                         "numeric": true
                     }
