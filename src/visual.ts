@@ -68,11 +68,6 @@ export class Visual implements IVisual {
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true)
             .attr("width", this.element.clientWidth)
             .attr("height", this.element.clientHeight);
-        var str = ""
-        for (const scheme of ColorSchemes.schemes.sequential) {
-            str = str + '{"displayName": "' + scheme + '",   "value": "interpolate' + scheme + '"},'
-        }
-        console.log(str);
     }
 
 
@@ -1077,6 +1072,14 @@ export class Visual implements IVisual {
     }
 }
 
+//function to print color schemes for adding them to capabilities
+function printColorSchemes() {
+    var str = "";
+    for (const scheme of ColorSchemes.schemes.sequential) {
+        str = str + '{"displayName": "' + scheme + '",   "value": "interpolate' + scheme + '"},';
+    }
+    console.log(str);
+}
 
 function filterNullValues(dataPoints: DataPoint[]) {
     dataPoints = dataPoints.filter(d => { return d.yValue != null; });
