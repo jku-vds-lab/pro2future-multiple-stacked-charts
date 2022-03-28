@@ -45,7 +45,7 @@ import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
 import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ColorSchemes } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ColorSchemes, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
@@ -527,8 +527,9 @@ export class Visual implements IVisual {
 
     private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel) {
         const generalPlotSettings = this.viewModel.generalPlotSettings;
+        const heatmapSettings = this.viewModel.heatmapSettings;
         const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
-        const bins = d3.bin<DataPoint, number>().value((d: DataPoint) => { return <number>d.xValue; }).thresholds(dataPoints.length / 10);
+        const bins = d3.bin<DataPoint, number>().value((d: DataPoint) => { return <number>d.xValue; }).thresholds(heatmapSettings.heatmapBins);
         const binnedData = bins(dataPoints);
         const heatmapValues = binnedData.map(bin => {
             var extent = d3.extent(bin.map(d => <number>d.yValue));
@@ -890,6 +891,16 @@ export class Visual implements IVisual {
                     });
                     break;
 
+                case Settings.heatmapSettings:
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            heatmapBins: <number>getValue(objects, Settings.heatmapSettings, HeatmapSettingsNames.heatmapBins, 100)
+                        },
+                        selector: null
+                    });
+                    debugger;
+                    break;
                 case Settings.legendSettings:
                     if (!this.viewModel.legend) break;
                     let legendValues = this.viewModel.legend.legendValues;

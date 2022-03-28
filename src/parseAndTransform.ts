@@ -6,7 +6,7 @@ import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColo
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
 import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue } from './plotInterface';
 import { Color } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, HeatmapSettingsNames } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
 import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
@@ -463,10 +463,11 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
             colorSettings: {
                 verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
                 slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#000000'),
-                heatmapColorScheme: <string>getValue(objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme,  'interpolateBlues')
+                heatmapColorScheme: <string>getValue(objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme, 'interpolateBlues')
 
             }
         },
+        heatmapSettings: { heatmapBins: getValue<number>(objects, Settings.heatmapSettings, HeatmapSettingsNames.heatmapBins, 100) },
         tooltipModels: [],
         generalPlotSettings: generalPlotSettings,
         slabRectangles: [],

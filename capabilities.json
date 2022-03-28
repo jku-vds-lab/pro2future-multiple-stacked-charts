@@ -292,6 +292,17 @@
                 }
             }
         },
+        "heatmapSettings": {
+            "displayName": "Heatmap Settings",
+            "properties": {
+                "heatmapBins": {
+                    "displayName": "Number of Bins for Heatmap",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
         "legendSettings": {
             "displayName": "Legend Settings",
             "properties": {

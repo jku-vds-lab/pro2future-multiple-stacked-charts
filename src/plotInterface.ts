@@ -18,6 +18,7 @@ export interface ViewModel {
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
     legend?: Legend;
+    heatmapSettings: HeatmapSettings;
 
 }
 
@@ -166,6 +167,9 @@ export interface ColorSettings {
         slabColor: string;
         heatmapColorScheme: string;
     }
+}
+export interface HeatmapSettings {
+    heatmapBins: number;
 }
 
 export interface PlotSettings {

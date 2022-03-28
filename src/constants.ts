@@ -3,6 +3,7 @@ export enum Settings {
     axisSettings = "axisSettings",
     colorSelector = "colorSelector",
     colorSettings = "colorSettings",
+    heatmapSettings = "heatmapSettings",
     legendSettings = "legendSettings",
     overlayPlotSettings = "overlayPlotSettings",
     plotTitleSettings = "plotTitleSettings",
@@ -14,7 +15,10 @@ export enum Settings {
 export enum AxisLabelSettingsNames {
     xLabel = "xLabel",
     yLabel = "yLabel"
-    
+
+}
+export enum HeatmapSettingsNames {
+    heatmapBins = "heatmapBins"
 }
 
 export enum YRangeSettingsNames {
