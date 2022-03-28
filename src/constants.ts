@@ -3,6 +3,7 @@ export enum Settings {
     axisSettings = "axisSettings",
     colorSelector = "colorSelector",
     colorSettings = "colorSettings",
+    heatmapSettings = "heatmapSettings",
     legendSettings = "legendSettings",
     overlayPlotSettings = "overlayPlotSettings",
     plotTitleSettings = "plotTitleSettings",
@@ -11,16 +12,20 @@ export enum Settings {
     zoomingSettings = "zoomingSettings",
     axisLabelSettings = "axisLabelSettings"
 }
-export enum AxisLabelSettingsNames{
+export enum AxisLabelSettingsNames {
     xLabel = "xLabel",
     yLabel = "yLabel"
+
+}
+export enum HeatmapSettingsNames {
+    heatmapBins = "heatmapBins"
 }
 
-export enum YRangeSettingsNames{
+export enum YRangeSettingsNames {
     min = "min",
     max = "max"
 }
-export enum LegendSettingsNames{
+export enum LegendSettingsNames {
     legendTitle = "legendTitle",
     legendColor = "legendColor"
 }
@@ -28,7 +33,8 @@ export enum LegendSettingsNames{
 export enum PlotSettingsNames {
     plotType = "plotType",
     fill = "fill",
-    useLegendColor = "useLegendColor"
+    useLegendColor = "useLegendColor",
+    showHeatmap = "showHeatmap"
 }
 export enum TooltipTitleSettingsNames {
     title = "title"
@@ -38,13 +44,14 @@ export enum OverlayPlotSettingsNames {
 }
 export enum ColorSettingsNames {
     verticalRulerColor = "verticalRulerColor",
-    slabColor = "slabColor"
+    slabColor = "slabColor",
+    heatmapColorScheme = "heatmapColorScheme"
 }
 export enum AxisSettingsNames {
     xAxis = "xAxis",
     yAxis = "yAxis"
 }
-export enum ZoomingSettingsNames{
+export enum ZoomingSettingsNames {
     show = "show",
     maximum = "maximum"
 }
@@ -62,4 +69,12 @@ export enum Constants {
     slabClass = "slabBars",
     barClass = "bar",
     dotClass = "dot"
+}
+
+export class ColorSchemes {
+    static readonly schemes = {
+        sequential: ["BuGn", "BuPu", "GnBu", "OrRd", "PuBu", "PuBuGn", "PuRd", "RdPu", "YlGn", "YlGnBu", "YlOrBr", "YlOrRd"],
+        singlehue: ["Blues", "Greens", "Greys", "Oranges", "Purples", "Reds"],
+        diverging: ["BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy", "RdYlBu", "RdYlGn", "Spectral"]
+    };
 }

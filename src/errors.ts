@@ -286,3 +286,17 @@ export class CustomTooltipError extends PlotError {
 
     }
 }
+
+export class HeatmapError extends PlotError {
+    /**
+     *
+     */
+    constructor(stack?: string) {
+        const name = "HeatmapError";
+        const message = "Error on drawing heatmap. This should not have happended.";
+        super(message, name);
+        this.stack = stack;
+
+    }
+}
+

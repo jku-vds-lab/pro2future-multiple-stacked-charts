@@ -43,12 +43,13 @@ import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings } from './plotInterface';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ColorSchemes, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
-import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, PlotError, SlabInformationError } from './errors';
+import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, HeatmapError, PlotError, SlabInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
+import { Heatmapmargins, MarginSettings } from './marginSettings';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 
@@ -115,6 +116,7 @@ export class Visual implements IVisual {
             .attr("cy", yPosition)
             .attr("r", 7)
             .style("fill", function (d) { return d.color })
+
     }
 
     public update(options: VisualUpdateOptions) {
@@ -168,6 +170,7 @@ export class Visual implements IVisual {
     private drawPlots(options: VisualUpdateOptions) {
         let plots: D3Plot[] = [];
         for (let plotModel of this.viewModel.plotModels) {
+
             const plotType = plotModel.plotSettings.plotSettings.plotType;
             if (plotType == PlotType.LinePlot) {
                 this.drawLinePlot(plotModel)
@@ -231,8 +234,15 @@ export class Visual implements IVisual {
                 .append('rect')
                 .attr('y', -generalPlotSettings.dotMargin)
                 .attr('x', -generalPlotSettings.dotMargin)
-                .attr('width', plotWidth +  2 * generalPlotSettings.dotMargin)
+                .attr('width', plotWidth + 2 * generalPlotSettings.dotMargin)
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
+            this.svg.append('defs').append('clipPath')
+                .attr('id', 'hclip')
+                .append('rect')
+                .attr('y', 0)
+                .attr('x', 0)
+                .attr('width', plotWidth)
+                .attr('height', Heatmapmargins.heatmapHeight);
             return ok(null);
         } catch (error) {
             return err(new AddClipPathError(error.stack))
@@ -434,8 +444,13 @@ export class Visual implements IVisual {
             this.customTooltip().map(events => mouseEvents = events).mapErr(err => plotError = err);
             if (plotError) return err(plotError);
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
+            let heatmap = null;
+            if (plotModel.plotSettings.plotSettings.showHeatmap) {
+                this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
+                if (plotError) return err(plotError);
+            }
 
-            return ok(<D3Plot>{ type, plot, root: plot, points, x, y });
+            return ok(<D3Plot>{ type, plot, root: plot, points, x, y, heatmap });
 
         } catch (error) {
             return err(new DrawScatterPlotError(error.stack));
@@ -495,16 +510,122 @@ export class Visual implements IVisual {
             this.customTooltip().map(events => mouseEvents = events).mapErr(err => plotError = err);
             if (plotError) return err(plotError);
             points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
+
+            let heatmap = null;
+            if (plotModel.plotSettings.plotSettings.showHeatmap) {
+                this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
+                if (plotError) return err(plotError);
+            }
+
             return ok(<D3Plot>{
                 type: type,
                 plot: linePath,
                 root: plot,
                 points: points,
                 x: x,
-                y: y
+                y: y,
+                heatmap: heatmap
             });
         } catch (error) {
             return err(new DrawLinePlotError(error.stack));
+        }
+    }
+
+    private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel): Result<D3Heatmap, HeatmapError> {
+        try {
+
+
+            const generalPlotSettings = this.viewModel.generalPlotSettings;
+            const heatmapSettings = this.viewModel.heatmapSettings;
+            const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
+            const bins = d3.bin<DataPoint, number>().value((d: DataPoint) => { return <number>d.xValue; }).thresholds(heatmapSettings.heatmapBins);
+            const binnedData = bins(dataPoints);
+            const heatmapValues = binnedData.map(bin => {
+                var extent = d3.extent(bin.map(d => <number>d.yValue));
+                return extent[1] - extent[0];
+            });
+            const colorScale = d3.scaleSequential()
+                .interpolator(d3[this.viewModel.colorSettings.colorSettings.heatmapColorScheme])
+                .domain(d3.extent(heatmapValues));
+            const heatmapScale = d3.scaleLinear()
+                .domain([0, heatmapValues.length])
+                .range([0, this.viewModel.generalPlotSettings.plotWidth]);
+
+
+            let yTransition = generalPlotSettings.plotHeight + generalPlotSettings.margins.bottom;
+            yTransition += xAxisSettings.lables || xAxisSettings.ticks ? Heatmapmargins.heatmapMargin : 0;
+            yTransition += xAxisSettings.lables && xAxisSettings.ticks ? MarginSettings.xLabelSpace : 0;
+            const heatmap = this.svg.append('g')
+                .classed("Heatmap" + plotModel.plotId, true)
+                .attr('width', generalPlotSettings.plotWidth)
+                .attr('height', generalPlotSettings.plotHeight)
+                .attr('transform', 'translate(' + generalPlotSettings.margins.left + ',' + (plotModel.plotTop + yTransition) + ')');
+            heatmap.append("rect")
+                .attr("width", generalPlotSettings.plotWidth)
+                .attr("height", Heatmapmargins.heatmapHeight)
+                .attr("fill", "transparent")
+                .attr("stroke", "#000000");
+            let values = heatmap.selectAll()
+                .data(heatmapValues)
+                .enter()
+                .append("rect")
+                .attr("x",
+                    function (d, i) { return heatmapScale(i); })
+                .attr("y", 0)
+                .attr("width", function (d, i) { return heatmapScale(i) - heatmapScale(i - 1); })
+                .attr("height", Heatmapmargins.heatmapHeight)
+                .attr("fill", function (d) {
+                    return colorScale(d);
+                });
+
+            this.drawHeatmapLegend(yTransition, colorScale, heatmap, generalPlotSettings);
+            let d3heatmap: D3Heatmap = {
+                axis: null,
+                scale: heatmapScale,
+                values: values
+            }
+            return ok(d3heatmap);
+
+        } catch (error) {
+            return err(new HeatmapError(error.stack))
+        }
+    }
+
+    private drawHeatmapLegend(yTransition: number, colorScale: d3.ScaleSequential<number, never>, heatmap: d3.Selection<SVGGElement, any, any, any>, generalPlotSettings: GeneralPlotSettings) {
+        const legendHeight = yTransition + Heatmapmargins.heatmapHeight;
+        let legendScale = Object.assign(colorScale.copy()
+            .interpolator(d3.interpolateRound(0, legendHeight)),
+            { range() { return [0, legendHeight]; } });
+
+        let tickValues = d3.range(Heatmapmargins.legendTickCount).map(i => d3.quantile(colorScale.domain(), i / (Heatmapmargins.legendTickCount - 1)));
+        let legend = heatmap.append("g")
+            .attr("transform", `translate(${generalPlotSettings.plotWidth + Heatmapmargins.legendMargin},${-yTransition})`);
+        legend.append("image")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", Heatmapmargins.legendWidth)
+            .attr("height", legendHeight)
+            .attr("preserveAspectRatio", "none")
+            .attr("xlink:href", createHeatmapLegendImage(colorScale.interpolator()).toDataURL());
+        let tickAdjust = g => g.selectAll(".tick line").attr("x1", Heatmapmargins.legendWidth - Heatmapmargins.legendTicksTranslation).attr("x2", -Heatmapmargins.legendTicksTranslation);
+        legend.append("g")
+            .attr("transform", `translate(${Heatmapmargins.legendTicksTranslation},0)`)
+            .call(d3.axisRight(legendScale)
+                .tickSize(6)
+                .tickValues(tickValues))
+            .call(tickAdjust)
+            .call(g => g.select(".domain").remove());
+
+        function createHeatmapLegendImage(color, n = 256) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 1;
+            canvas.height = n;
+            const context = canvas.getContext("2d");
+            for (let i = 0; i < n; ++i) {
+                context.fillStyle = color(i / (n - 1));
+                context.fillRect(0, i, 1, 1);
+            }
+            return canvas;
         }
     }
 
@@ -519,7 +640,6 @@ export class Visual implements IVisual {
                         transform.x = 0
                     }
                     for (let plot of plots) {
-
                         plot.x.xAxis.attr('clip-path', 'url(#clip)')
 
                         let xAxisValue = plot.x.xAxisValue;
@@ -549,6 +669,13 @@ export class Visual implements IVisual {
                                 .y((d) => plot.y.yScale(<number>d.yValue));
 
                             plot.plot.attr('d', line);
+                        }
+                        if (plot.heatmap) {
+                            let values = plot.heatmap.values;
+                            let scale = transform.rescaleX(plot.heatmap.scale);
+                            values.attr("x", function (d, i) { return scale(i); })
+                                .attr("width", function (d, i) { return scale(i) - scale(i - 1); })
+                                .attr('clip-path', 'url(#hclip)')
                         }
                     }
                 } catch (error) {
@@ -748,7 +875,7 @@ export class Visual implements IVisual {
             let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
                 case Settings.plotSettings:
-                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 3);
+                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 4);
                     break;
                 case Settings.axisLabelSettings:
                 case Settings.axisSettings:
@@ -782,7 +909,18 @@ export class Visual implements IVisual {
                         objectName: objectName,
                         properties: {
                             verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
-                            slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#0000FF')
+                            slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#0000FF'),
+                            heatmapColorScheme: <string>getValue(objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme, 'interpolateBlues')
+                        },
+                        selector: null
+                    });
+                    break;
+
+                case Settings.heatmapSettings:
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            heatmapBins: <number>getValue(objects, Settings.heatmapSettings, HeatmapSettingsNames.heatmapBins, 100)
                         },
                         selector: null
                     });
@@ -847,12 +985,14 @@ export class Visual implements IVisual {
                             displayNames = {
                                 plotType: column.displayName + " Plot Type",
                                 fill: column.displayName + " Plot Color",
-                                useLegendColor: column.displayName + " Use Legend Color"
+                                useLegendColor: column.displayName + " Use Legend Color",
+                                showHeatmap: column.displayName + " Show Heatmap"
                             };
                             properties = {
                                 plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
                                 fill: getPlotFillColor(columnObjects, colorPalette, '#000000'),
-                                useLegendColor: getValue<boolean>(columnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false)
+                                useLegendColor: getValue<boolean>(columnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
+                                showHeatmap: <boolean>getValue(columnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false)
 
                             };
 
@@ -932,9 +1072,16 @@ export class Visual implements IVisual {
     }
 }
 
+//function to print color schemes for adding them to capabilities
+function printColorSchemes() {
+    var str = "";
+    for (const scheme of ColorSchemes.schemes.sequential) {
+        str = str + '{"displayName": "' + scheme + '",   "value": "interpolate' + scheme + '"},';
+    }
+    console.log(str);
+}
 
 function filterNullValues(dataPoints: DataPoint[]) {
     dataPoints = dataPoints.filter(d => { return d.yValue != null; });
     return dataPoints;
 }
-

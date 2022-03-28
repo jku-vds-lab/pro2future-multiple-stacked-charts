@@ -18,6 +18,8 @@ export interface ViewModel {
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
     legend?: Legend;
+    heatmapSettings: HeatmapSettings;
+
 }
 
 export interface GeneralPlotSettings {
@@ -40,12 +42,6 @@ export interface Margins {
     left: number;
 }
 
-export interface ColorSettings {
-    colorSettings: {
-        verticalRulerColor: string;
-        slabColor: string;
-    }
-}
 
 export interface ZoomingSettings {
     enableZoom: boolean;
@@ -70,6 +66,8 @@ export enum AxisInformation {
     Ticks = "Ticks",
     TicksLabels = "TicksLabels"
 }
+
+
 
 export interface PlotModel {
     plotId: number;
@@ -167,7 +165,11 @@ export interface ColorSettings {
     colorSettings: {
         verticalRulerColor: string;
         slabColor: string;
+        heatmapColorScheme: string;
     }
+}
+export interface HeatmapSettings {
+    heatmapBins: number;
 }
 
 export interface PlotSettings {
@@ -175,6 +177,7 @@ export interface PlotSettings {
         fill: string;
         plotType: PlotType;
         useLegendColor: boolean;
+        showHeatmap: boolean;
     };
 }
 
@@ -215,6 +218,7 @@ export interface D3Plot {
     root: any;
     x: D3PlotXAxis;
     y: D3PlotYAxis;
+    heatmap: D3Heatmap;
 }
 
 export interface D3PlotXAxis {
@@ -222,6 +226,12 @@ export interface D3PlotXAxis {
     xAxisValue: any;
     xScale: any;
     xLabel: any;
+}
+
+export interface D3Heatmap {
+    axis: any;
+    scale: any;
+    values: any;
 }
 
 
