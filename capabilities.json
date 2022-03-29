@@ -76,10 +76,10 @@
             "conditions": [
                 {
                     "x_axis": {
-                        "max": 8
+                        "max": 20
                     },
                     "y_axis": {
-                        "max": 8
+                        "max": 20
                     },
                     "slabX": {
                         "max": 1
@@ -91,10 +91,10 @@
                         "max": 1
                     },
                     "category": {
-                        "max": 16
+                        "max": 100
                     },
                     "measure": {
-                        "max": 16
+                        "max": 100
                     }
                 }
             ],

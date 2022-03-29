@@ -205,6 +205,13 @@ export interface YAxisData {
     columnId: number;
 }
 
+export interface TooltipColumnData {
+    type:   powerbi.ValueTypeDescriptor;
+    values: PrimitiveValue[];
+    name?: string;
+    columnId: number;
+}
+
 export interface LegendData {
     values: string[];
     name?: string;
