@@ -124,8 +124,18 @@ export class Visual implements IVisual {
         try {
 
             this.dataview = options.dataViews[0];
-            debugger;
-            //set here?
+            let categoryIndices = new Set()
+            this.dataview.categorical.categories = this.dataview.categorical.categories.filter(cat => {
+                const duplicate = categoryIndices.has(cat.source.index);
+                categoryIndices.add(cat.source.index);
+                return !duplicate;
+            });
+            let valueIndices = new Set()
+            this.dataview.categorical.values = <powerbi.DataViewValueColumns>this.dataview.categorical.values.filter(val => {
+                const duplicate = valueIndices.has(val.source.index);
+                valueIndices.add(val.source.index);
+                return !duplicate;
+            });
             visualTransform(options, this.host).map(model => {
                 this.viewModel = model
                 this.svg.selectAll('*').remove();
@@ -739,7 +749,7 @@ export class Visual implements IVisual {
                     const x = event.clientX - margins.left;
                     const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
                     const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
-                    let tooltipText = "<b>" + plotModels[0].xName + "</b> : " + data.xValue + " <br> ";
+                    let tooltipText = "";//"<b>" + plotModels[0].xName + "</b> : " + data.xValue + " <br> ";
                     let tooltipData: TooltipData[] = [];
 
                     // //add tooltips for plots
