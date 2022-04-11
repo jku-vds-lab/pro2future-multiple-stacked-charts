@@ -220,6 +220,7 @@ export interface LegendData {
 }
 
 export interface D3Plot {
+    yName:string;
     type: string;
     plot: any;
     points: any;

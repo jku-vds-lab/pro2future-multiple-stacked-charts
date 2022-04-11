@@ -238,7 +238,7 @@ export class Visual implements IVisual {
         if (plotError) {
             return err(plotError);
         }
-        return ok(<D3Plot>{ type: plotType, plot, points: null, x, y });
+        return ok(<D3Plot>{ yName: plotModel.yName, type: plotType, plot, points: null, x, y });
 
     }
 
@@ -476,7 +476,7 @@ export class Visual implements IVisual {
                 if (plotError) return err(plotError);
             }
 
-            return ok(<D3Plot>{ type, plot, root: plot, points, x, y, heatmap });
+            return ok(<D3Plot>{ yName: plotModel.yName, type, plot, root: plot, points, x, y, heatmap });
 
         } catch (error) {
             return err(new DrawScatterPlotError(error.stack));
@@ -544,6 +544,7 @@ export class Visual implements IVisual {
             }
 
             return ok(<D3Plot>{
+                yName: plotModel.yName,
                 type: type,
                 plot: linePath,
                 root: plot,
@@ -657,24 +658,44 @@ export class Visual implements IVisual {
 
     private addZoom(plots: D3Plot[], zoomingSettings: ZoomingSettings): Result<void, PlotError> {
         try {
+            const _this = this;
             let errorFunction = this.displayError;
             let zoomed = function (event) {
-
                 try {
-                    let transform = event.transform;
+                    let transform: d3.ZoomTransform = event.transform;
                     if (transform.k == 1) {
-                        transform.x = 0
+                        transform = d3.zoomIdentity.translate(0, transform.y).scale(transform.k);
                     }
                     for (let plot of plots) {
                         plot.x.xAxis.attr('clip-path', 'url(#clip)');
                         let xAxisValue = plot.x.xAxisValue;
-
                         let xScaleNew = transform.rescaleX(plot.x.xScale);
                         xAxisValue.scale(xScaleNew);
                         plot.x.xAxis.call(xAxisValue);
-
                         plot.points.attr('cx', (d) => { return xScaleNew(<number>d.xValue) })
                             .attr('r', 2);
+                        if (plot.yName.includes("212")) {
+                            const yScale = plot.y.yScale;
+                            let domain = yScale.domain();
+                            const invertScale = yScale.domain([domain[1], domain[0]]);
+                            const t = d3.zoomIdentity.translate(0, 0).scale(transform.k);
+                            let yScaleNew = t.rescaleY(invertScale);
+                            yScale.domain(domain);
+                            domain = yScaleNew.domain();
+                            yScaleNew = yScaleNew.domain([domain[1], domain[0]]);
+                            const plotModel = _this.viewModel.plotModels.filter(x => x.yName === plot.yName)[0];
+                            const xMin = xScaleNew.domain()[0];
+                            const xMax = xScaleNew.domain()[1];
+                            let yDataPoints = plotModel.dataPoints.filter(x => x.xValue >= xMin && x.xValue <= xMax).map(x => Number(x.yValue));
+                            let yMin = Math.min(yScaleNew.domain()[0], ...yDataPoints);
+                            let yMax = Math.max(yScaleNew.domain()[0], ...yDataPoints);
+                            yScaleNew.domain([yMin, yMax]);
+                            plot.points.attr('cy', (d) => { return yScaleNew(<number>d.yValue) })
+                                .attr('r', 2);
+                            let yAxisValue = plot.y.yAxisValue;
+                            yAxisValue.scale(yScaleNew);
+                            plot.y.yAxis.call(yAxisValue);
+                        }
 
                         plot.points.attr('clip-path', 'url(#clip)');
                         var slabBars = plot.root.select(`.${Constants.slabClass}`);
