@@ -674,6 +674,8 @@ export class Visual implements IVisual {
                         plot.x.xAxis.call(xAxisValue);
                         plot.points.attr('cx', (d) => { return xScaleNew(<number>d.xValue) })
                             .attr('r', 2);
+
+                        //y-zoom for 212
                         if (plot.yName.includes("212")) {
                             const yScale = plot.y.yScale;
                             let domain = yScale.domain();
@@ -686,9 +688,9 @@ export class Visual implements IVisual {
                             const plotModel = _this.viewModel.plotModels.filter(x => x.yName === plot.yName)[0];
                             const xMin = xScaleNew.domain()[0];
                             const xMax = xScaleNew.domain()[1];
-                            let yDataPoints = plotModel.dataPoints.filter(x => x.xValue >= xMin && x.xValue <= xMax).map(x => Number(x.yValue));
-                            let yMin = Math.min(yScaleNew.domain()[0], ...yDataPoints);
-                            let yMax = Math.max(yScaleNew.domain()[0], ...yDataPoints);
+                            const yDataPoints = plotModel.dataPoints.filter(x => x.xValue >= xMin && x.xValue <= xMax).map(x => Number(x.yValue));
+                            const yMin = Math.min(yScaleNew.domain()[0], ...yDataPoints);
+                            const yMax = Math.max(yScaleNew.domain()[1], ...yDataPoints);
                             yScaleNew.domain([yMin, yMax]);
                             plot.points.attr('cy', (d) => { return yScaleNew(<number>d.yValue) })
                                 .attr('r', 2);
