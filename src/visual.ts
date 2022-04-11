@@ -221,7 +221,7 @@ export class Visual implements IVisual {
         let plotError: PlotError;
         const PlotResult = this.buildBasicPlot(plotModel).map(plt => {
             plot = plt;
-            plot.append("g").attr("class", Constants.slabClass);
+            plot.append("g").attr("class", Constants.slabClass).attr('clip-path', 'url(#slabClip)');
         }).mapErr(error => this.displayError(error));
         if (PlotResult.isErr()) {
             return err(plotError);
@@ -252,6 +252,13 @@ export class Visual implements IVisual {
                 .attr('x', -generalPlotSettings.dotMargin)
                 .attr('width', plotWidth + 2 * generalPlotSettings.dotMargin)
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
+            this.svg.append('defs').append('clipPath')
+                .attr('id', 'slabClip')
+                .append('rect')
+                .attr('y', 0)
+                .attr('x', 0)
+                .attr('width', plotWidth)
+                .attr('height', plotHeight);
             this.svg.append('defs').append('clipPath')
                 .attr('id', 'hclip')
                 .append('rect')
@@ -668,7 +675,7 @@ export class Visual implements IVisual {
                             .attr('r', 2);
 
                         plot.points.attr('clip-path', 'url(#clip)');
-                        var slabBars = plot.root.select(`.${Constants.slabClass}`).attr('clip-path', 'url(#clip)');
+                        var slabBars = plot.root.select(`.${Constants.slabClass}`);
                         slabBars.selectAll('rect')
                             .attr("x", function (d: SlabRectangle) { return xScaleNew(d.x); })
                             .attr("width", function (d: SlabRectangle) { return xScaleNew(d.length + d.x) - xScaleNew(d.x); });
@@ -778,7 +785,7 @@ export class Visual implements IVisual {
                     //         }
                     //     }
                     // }
-             
+
                     Tooltip
                         .html(Array.from(tooltipSet).join(''))
                         .style("left", (tooltipX) + "px")
