@@ -86,12 +86,13 @@ export class Visual implements IVisual {
             .text(d => d)
             .attr("x", function (d, i) {
                 let x = width
-                width = width + 25 + this.getComputedTextLength();
+                width = width + this.getComputedTextLength();
                 return x;
             })
             .attr("y", yPosition)
             .attr("text-anchor", "left")
             .style("alignment-baseline", "middle")
+            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
 
         this.svg.selectAll("legendText")
             .data(legendData)
@@ -107,6 +108,7 @@ export class Visual implements IVisual {
             .attr("y", yPosition)
             .attr("text-anchor", "left")
             .style("alignment-baseline", "middle")
+            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
 
         this.svg.selectAll("legendDots")
             .data(legendData)
@@ -283,6 +285,7 @@ export class Visual implements IVisual {
                     .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top)
                     .attr('x', 0)
                     .attr('dy', '1em')
+                    .style("font-size", generalPlotSettings.fontSize)
                     .text(plotModel.plotTitleSettings.title);
             }
             return ok(null);
@@ -327,7 +330,7 @@ export class Visual implements IVisual {
                     .attr('text-anchor', 'end')
                     .attr('x', generalPlotSettings.plotWidth / 2)
                     .attr('y', generalPlotSettings.plotHeight + (plotModel.formatSettings.axisSettings.xAxis.ticks ? 28 : 15))
-                    .style("font-size", "12px")
+                    .style("font-size", generalPlotSettings.fontSize)
                     .text(plotModel.labelNames.xLabel);
             }
 
@@ -356,7 +359,7 @@ export class Visual implements IVisual {
                     .attr('y', 0 - generalPlotSettings.margins.left)
                     .attr('x', 0 - generalPlotSettings.plotHeight / 2)
                     .attr('dy', '1em')
-                    .style("font-size", "12px")
+                    .style("font-size", generalPlotSettings.fontSize)
                     .attr('transform', 'rotate(-90)')
                     .text(plotModel.labelNames.yLabel);
             }
@@ -663,8 +666,7 @@ export class Visual implements IVisual {
                         transform.x = 0
                     }
                     for (let plot of plots) {
-                        plot.x.xAxis.attr('clip-path', 'url(#clip)')
-
+                        plot.x.xAxis.attr('clip-path', 'url(#clip)');
                         let xAxisValue = plot.x.xAxisValue;
 
                         let xScaleNew = transform.rescaleX(plot.x.xScale);
