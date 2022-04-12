@@ -26,6 +26,7 @@ export interface GeneralPlotSettings {
     plotHeight: number;
     plotWidth: number;
     plotTitleHeight: number;
+    fontSize:string;
     legendHeight: number;
     legendYPostion: number;
     dotMargin: number;
@@ -219,6 +220,7 @@ export interface LegendData {
 }
 
 export interface D3Plot {
+    yName:string;
     type: string;
     plot: any;
     points: any;

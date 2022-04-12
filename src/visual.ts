@@ -86,12 +86,13 @@ export class Visual implements IVisual {
             .text(d => d)
             .attr("x", function (d, i) {
                 let x = width
-                width = width + 25 + this.getComputedTextLength();
+                width = width + this.getComputedTextLength();
                 return x;
             })
             .attr("y", yPosition)
             .attr("text-anchor", "left")
             .style("alignment-baseline", "middle")
+            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
 
         this.svg.selectAll("legendText")
             .data(legendData)
@@ -107,6 +108,7 @@ export class Visual implements IVisual {
             .attr("y", yPosition)
             .attr("text-anchor", "left")
             .style("alignment-baseline", "middle")
+            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
 
         this.svg.selectAll("legendDots")
             .data(legendData)
@@ -221,7 +223,7 @@ export class Visual implements IVisual {
         let plotError: PlotError;
         const PlotResult = this.buildBasicPlot(plotModel).map(plt => {
             plot = plt;
-            plot.append("g").attr("class", Constants.slabClass);
+            plot.append("g").attr("class", Constants.slabClass).attr('clip-path', 'url(#slabClip)');
         }).mapErr(error => this.displayError(error));
         if (PlotResult.isErr()) {
             return err(plotError);
@@ -236,7 +238,7 @@ export class Visual implements IVisual {
         if (plotError) {
             return err(plotError);
         }
-        return ok(<D3Plot>{ type: plotType, plot, points: null, x, y });
+        return ok(<D3Plot>{ yName: plotModel.yName, type: plotType, plot, points: null, x, y });
 
     }
 
@@ -252,6 +254,13 @@ export class Visual implements IVisual {
                 .attr('x', -generalPlotSettings.dotMargin)
                 .attr('width', plotWidth + 2 * generalPlotSettings.dotMargin)
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
+            this.svg.append('defs').append('clipPath')
+                .attr('id', 'slabClip')
+                .append('rect')
+                .attr('y', 0)
+                .attr('x', 0)
+                .attr('width', plotWidth)
+                .attr('height', plotHeight);
             this.svg.append('defs').append('clipPath')
                 .attr('id', 'hclip')
                 .append('rect')
@@ -276,6 +285,7 @@ export class Visual implements IVisual {
                     .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top)
                     .attr('x', 0)
                     .attr('dy', '1em')
+                    .style("font-size", generalPlotSettings.fontSize)
                     .text(plotModel.plotTitleSettings.title);
             }
             return ok(null);
@@ -320,7 +330,7 @@ export class Visual implements IVisual {
                     .attr('text-anchor', 'end')
                     .attr('x', generalPlotSettings.plotWidth / 2)
                     .attr('y', generalPlotSettings.plotHeight + (plotModel.formatSettings.axisSettings.xAxis.ticks ? 28 : 15))
-                    .style("font-size", "12px")
+                    .style("font-size", generalPlotSettings.fontSize)
                     .text(plotModel.labelNames.xLabel);
             }
 
@@ -349,7 +359,7 @@ export class Visual implements IVisual {
                     .attr('y', 0 - generalPlotSettings.margins.left)
                     .attr('x', 0 - generalPlotSettings.plotHeight / 2)
                     .attr('dy', '1em')
-                    .style("font-size", "12px")
+                    .style("font-size", generalPlotSettings.fontSize)
                     .attr('transform', 'rotate(-90)')
                     .text(plotModel.labelNames.yLabel);
             }
@@ -466,7 +476,7 @@ export class Visual implements IVisual {
                 if (plotError) return err(plotError);
             }
 
-            return ok(<D3Plot>{ type, plot, root: plot, points, x, y, heatmap });
+            return ok(<D3Plot>{ yName: plotModel.yName, type, plot, root: plot, points, x, y, heatmap });
 
         } catch (error) {
             return err(new DrawScatterPlotError(error.stack));
@@ -534,6 +544,7 @@ export class Visual implements IVisual {
             }
 
             return ok(<D3Plot>{
+                yName: plotModel.yName,
                 type: type,
                 plot: linePath,
                 root: plot,
@@ -647,28 +658,49 @@ export class Visual implements IVisual {
 
     private addZoom(plots: D3Plot[], zoomingSettings: ZoomingSettings): Result<void, PlotError> {
         try {
+            const _this = this;
             let errorFunction = this.displayError;
             let zoomed = function (event) {
-
                 try {
-                    let transform = event.transform;
+                    let transform: d3.ZoomTransform = event.transform;
                     if (transform.k == 1) {
-                        transform.x = 0
+                        transform = d3.zoomIdentity.translate(0, transform.y).scale(transform.k);
                     }
                     for (let plot of plots) {
-                        plot.x.xAxis.attr('clip-path', 'url(#clip)')
-
+                        plot.x.xAxis.attr('clip-path', 'url(#clip)');
                         let xAxisValue = plot.x.xAxisValue;
-
                         let xScaleNew = transform.rescaleX(plot.x.xScale);
                         xAxisValue.scale(xScaleNew);
                         plot.x.xAxis.call(xAxisValue);
-
                         plot.points.attr('cx', (d) => { return xScaleNew(<number>d.xValue) })
                             .attr('r', 2);
 
+                        //y-zoom for 212
+                        if (plot.yName.includes("212")) {
+                            const yScale = plot.y.yScale;
+                            let domain = yScale.domain();
+                            const invertScale = yScale.domain([domain[1], domain[0]]);
+                            const t = d3.zoomIdentity.translate(0, 0).scale(transform.k);
+                            let yScaleNew = t.rescaleY(invertScale);
+                            yScale.domain(domain);
+                            domain = yScaleNew.domain();
+                            yScaleNew = yScaleNew.domain([domain[1], domain[0]]);
+                            const plotModel = _this.viewModel.plotModels.filter(x => x.yName === plot.yName)[0];
+                            const xMin = xScaleNew.domain()[0];
+                            const xMax = xScaleNew.domain()[1];
+                            const yDataPoints = plotModel.dataPoints.filter(x => x.xValue >= xMin && x.xValue <= xMax).map(x => Number(x.yValue));
+                            const yMin = Math.min(yScaleNew.domain()[0], ...yDataPoints);
+                            const yMax = Math.max(yScaleNew.domain()[1], ...yDataPoints);
+                            yScaleNew.domain([yMin, yMax]);
+                            plot.points.attr('cy', (d) => { return yScaleNew(<number>d.yValue) })
+                                .attr('r', 2);
+                            let yAxisValue = plot.y.yAxisValue;
+                            yAxisValue.scale(yScaleNew);
+                            plot.y.yAxis.call(yAxisValue);
+                        }
+
                         plot.points.attr('clip-path', 'url(#clip)');
-                        var slabBars = plot.root.select(`.${Constants.slabClass}`).attr('clip-path', 'url(#clip)');
+                        var slabBars = plot.root.select(`.${Constants.slabClass}`);
                         slabBars.selectAll('rect')
                             .attr("x", function (d: SlabRectangle) { return xScaleNew(d.x); })
                             .attr("width", function (d: SlabRectangle) { return xScaleNew(d.length + d.x) - xScaleNew(d.x); });
@@ -778,7 +810,7 @@ export class Visual implements IVisual {
                     //         }
                     //     }
                     // }
-             
+
                     Tooltip
                         .html(Array.from(tooltipSet).join(''))
                         .style("left", (tooltipX) + "px")

@@ -487,7 +487,8 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         solidOpacity: 1,
         transparentOpacity: 1,
         margins: margins.margins,
-        legendYPostion: 0
+        legendYPostion: 0,
+        fontSize: "10px"
     };
 
     const zoomingSettings: ZoomingSettings = {
