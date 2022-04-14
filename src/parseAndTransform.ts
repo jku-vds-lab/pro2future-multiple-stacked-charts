@@ -61,7 +61,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     // const tooltipValuesCount = categorical.values === undefined ? 0 : new Set(categorical.values.filter(val => { return val.source.roles.tooltip }).map(x => x.source.index)).size;
     // const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
     // console.log(tooltipCount);
-    // debugger;
     // const sharedXAxis = xCount == 1
 
     //check if input data count is ok
@@ -399,8 +398,8 @@ function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipDa
                         console.log("Type is no date, this should not have happened: " + column.displayName);
                         return val;
                     }
-                    let d = new Date(Date.parse(<string>val));
-                    let formatedDate = padTo2Digits(d.getDay()) + "." + padTo2Digits(d.getMonth()) + "." + padTo2Digits(d.getFullYear()) + " " + padTo2Digits(d.getHours()) + ":" + padTo2Digits(d.getMinutes())
+                    let d = new Date(<string>val);
+                    let formatedDate = padTo2Digits(d.getDate()) + "." + padTo2Digits(d.getMonth() + 1) + "." + padTo2Digits(d.getFullYear()) + " " + padTo2Digits(d.getHours()) + ":" + padTo2Digits(d.getMinutes())
                     return formatedDate;
                 });
             } else if (type.numeric && !type.integer) {
