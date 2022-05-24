@@ -60,6 +60,7 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: Selection<any>;
+    private defectSelection: Set<string>;
 
 
     constructor(options: VisualConstructorOptions) {
@@ -68,6 +69,8 @@ export class Visual implements IVisual {
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true)
             .attr("width", this.element.clientWidth)
             .attr("height", this.element.clientHeight);
+        this.defectSelection = new Set<string>();
+
     }
 
 
@@ -76,6 +79,7 @@ export class Visual implements IVisual {
         const yPosition = margins.legendYPostion + 10;
         const legendData = this.viewModel.legend.legendValues;
         const legendTitle = this.viewModel.legend.legendTitle;
+        const _this = this;
         let widths = [];
         let width = margins.margins.left;
 
@@ -86,7 +90,7 @@ export class Visual implements IVisual {
             .text(d => d)
             .attr("x", function (d, i) {
                 let x = width
-                width = width + this.getComputedTextLength();
+                width = width + this.getComputedTextLength() + 10;
                 return x;
             })
             .attr("y", yPosition)
@@ -118,6 +122,51 @@ export class Visual implements IVisual {
             .attr("cy", yPosition)
             .attr("r", 7)
             .style("fill", function (d) { return d.color })
+
+        const checkBoxSize = 10;
+        this.svg.selectAll("legendCheckboxes")
+            .data(legendData)
+            .enter()
+            .append("rect")
+            .attr("x", function (d, i) { return widths[i] - 20 })
+            .attr("y", yPosition - 5)
+            .attr("width", checkBoxSize)
+            .attr("height", checkBoxSize)
+            .style("fill", "white")
+            .style("stroke", "black")
+            .style("stroke-width", "1px")
+            .style("pointer-events", "auto")
+            .on("click", function (event, d) {
+                const defect = d.value.toString()
+                if (_this.defectSelection.has(defect)) {
+                    _this.defectSelection.delete(defect);
+                    d3.selectAll("." + defect + "line").remove()
+                }
+                else {
+                    _this.defectSelection.add(defect);
+                    const rect = d3.select(this);
+                    const x = rect.property("x").baseVal.value;
+                    const y = rect.property("y").baseVal.value;
+                    //line1 
+                    _this.svg.append("line")
+                        .attr("class", defect + "line")
+                        .attr("x1", x)
+                        .attr("x2", x + checkBoxSize)
+                        .attr("y1", y)
+                        .attr("y2", y + checkBoxSize)
+                        .style("stroke", "black")
+                        .style("pointer-events", "none")
+                    //line2
+                    _this.svg.append("line")
+                        .attr("class", defect + "line")
+                        .attr("x1", x + checkBoxSize)
+                        .attr("x2", x)
+                        .attr("y1", y)
+                        .attr("y2", y + checkBoxSize)
+                        .style("stroke", "black")
+                        .style("pointer-events", "none")
+                }
+            });
 
     }
 

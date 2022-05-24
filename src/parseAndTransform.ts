@@ -125,7 +125,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 };
                 tooltipData[tooltipId] = data;
             }
-            else if (roles.legend) {
+            if (roles.legend) {
                 legendData = {
                     name: category.source.displayName,
                     values: <string[]>category.values,
