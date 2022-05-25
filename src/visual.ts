@@ -166,6 +166,8 @@ export class Visual implements IVisual {
                         .style("stroke", "black")
                         .style("pointer-events", "none")
                 }
+                const filterArray = _this.viewModel.defectIndices.getFilterArray(Array.from(_this.defectSelection))
+                debugger;
             });
 
     }

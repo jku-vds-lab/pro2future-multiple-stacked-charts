@@ -69,6 +69,19 @@
             "displayName": "Legend",
             "name": "legend",
             "kind": "Grouping"
+        },
+        {
+            "displayName": "Defect Indices",
+            "name": "defectIndices",
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
         }
     ],
     "dataViewMappings": [
@@ -89,6 +102,9 @@
                     },
                     "legend": {
                         "max": 1
+                    },
+                    "defectIndices":{
+                        "max": 10
                     },
                     "category": {
                         "max": 100
@@ -129,6 +145,11 @@
                         {
                             "for": {
                                 "in": "legend"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "defectIndices"
                             }
                         }
                     ],

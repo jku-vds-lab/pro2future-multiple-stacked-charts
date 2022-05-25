@@ -19,14 +19,54 @@ export interface ViewModel {
     zoomingSettings: ZoomingSettings;
     legend?: Legend;
     heatmapSettings: HeatmapSettings;
+    defectIndices: DefectIndices;
+}
+export class DefectIndices {
 
+    xValues: number[];
+    defectIndices: Map<string, number[]>;
+
+    constructor() {
+        this.defectIndices = new Map<string, number[]>()
+    }
+
+    getFilterArray(defects: string[]): number[] {
+        let arrays = [];
+        let filterArray = null;
+        for (const key of defects) {
+            if (this.defectIndices.has(key)) {
+                arrays.push(this.defectIndices.get(key));
+            }
+        }
+        if (arrays.length === 0) return filterArray;
+        filterArray = arrays[0];
+        for (let i = 1; i < arrays.length; i++) {
+            const array = arrays[i];
+            filterArray = filterArray.map(function (n: number, idx: number) {
+                return n + array[idx];
+            })
+        }
+        let sortedList: SortedListItem[] = [];
+        for (let i = 0; i < this.xValues.length; i++) {
+            sortedList.push({ x: this.xValues[i], defect: filterArray[i] });
+        }
+        sortedList = sortedList.sort((a, b) => {
+            return a.x - b.x;
+        });
+        return sortedList.map(x => x.defect);
+    }
+}
+
+interface SortedListItem {
+    x: number;
+    defect: number;
 }
 
 export interface GeneralPlotSettings {
     plotHeight: number;
     plotWidth: number;
     plotTitleHeight: number;
-    fontSize:string;
+    fontSize: string;
     legendHeight: number;
     legendYPostion: number;
     dotMargin: number;
@@ -207,7 +247,7 @@ export interface YAxisData {
 }
 
 export interface TooltipColumnData {
-    type:   powerbi.ValueTypeDescriptor;
+    type: powerbi.ValueTypeDescriptor;
     values: PrimitiveValue[];
     name?: string;
     columnId: number;
@@ -220,7 +260,7 @@ export interface LegendData {
 }
 
 export interface D3Plot {
-    yName:string;
+    yName: string;
     type: string;
     plot: any;
     points: any;

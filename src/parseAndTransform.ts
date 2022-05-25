@@ -4,7 +4,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData, DefectIndices } from './plotInterface';
 import { Color, stratify } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, HeatmapSettingsNames } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings'
@@ -78,6 +78,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let yData = new Array<YAxisData>(yCount);
     let tooltipData = new Array<TooltipColumnData>(tooltipCount);
     let legendData: LegendData = null;
+    let defectIndices: DefectIndices = new DefectIndices();
 
 
     let xDataPoints: number[] = [];
@@ -132,6 +133,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     columnId: category.source.index
                 };
             }
+            if (roles.defectIndices) {
+                defectIndices.defectIndices.set(category.source.displayName, <number[]>category.values)
+            }
         }
     }
     //aquire all measure values
@@ -179,10 +183,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     columnId: value.source.index
                 };
             }
+            if (roles.defectIndices) {
+                defectIndices.defectIndices.set(value.source.displayName, <number[]>value.values);
+            }
+
         }
     }
 
 
+    defectIndices.xValues = xData[0].values;
 
     const possibleNullValues: XAxisData[] = xData.filter(x => x.values.filter(y => y === null || y === undefined).length > 0)
     if (possibleNullValues.length > 0) {
@@ -276,7 +285,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const xLabelsCount = formatSettings.filter(x => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
     const heatmapCount = plotSettings.filter(x => x.plotSettings.showHeatmap).length;
     let viewModel: ViewModel;
-    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, legend)
+    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, legend, defectIndices)
         .map(vm => viewModel = vm)
     if (viewModelResult.isErr()) {
         return viewModelResult.mapErr(err => { return err; });
@@ -459,7 +468,7 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], viewMo
     }
 }
 
-function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, heatmapCount: number, legend: Legend): Result<ViewModel, ParseAndTransformError> {
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, heatmapCount: number, legend: Legend, defectIndices: DefectIndices): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings
     const svgHeight: number = options.viewport.height;
     const svgWidth: number = options.viewport.width;
@@ -514,6 +523,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,
         legend: legend,
+        defectIndices: defectIndices
     };
     return ok(viewModel);
 }
