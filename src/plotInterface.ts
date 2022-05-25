@@ -262,8 +262,8 @@ export interface LegendData {
 export interface D3Plot {
     yName: string;
     type: string;
-    plot: any;
     points: any;
+    plotLine:any;
     root: any;
     x: D3PlotXAxis;
     y: D3PlotYAxis;
