@@ -247,13 +247,13 @@ export class Visual implements IVisual {
     }
 
     private drawPlots() {
-        let plots: D3Plot[] = [];
+        this.addClipPath().mapErr(err => this.displayError(err));
         for (let plotModel of this.viewModel.plotModels) {
 
             const plotType = plotModel.plotSettings.plotSettings.plotType;
 
             this.drawPlot(plotModel)
-                .map(linePlot => plots.push(linePlot))
+                //.map(linePlot => plots.push(linePlot))
                 .mapErr(err => this.displayError(err));
 
             // }
@@ -272,61 +272,66 @@ export class Visual implements IVisual {
 
         const zoomingSettings = this.viewModel.zoomingSettings;
         if (zoomingSettings.enableZoom) {
-            this.addZoom(plots, zoomingSettings).mapErr(err => this.displayError(err));
+            this.addZoom(zoomingSettings).mapErr(err => this.displayError(err));
         }
         if (this.viewModel.rolloutRectangles) {
-            const xScale = plots[0].x.xScale;
-
-            const rolloutG = this.svg
-                .append("g")
-                .attr("transform", 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')')
-
-            rolloutG.selectAll("." + Constants.rolloutClass)
-                .data(this.viewModel.rolloutRectangles.rolloutRectangles)
-                .enter()
-                .append("rect")
-                .attr("class", Constants.rolloutClass)
-                .attr("width", (d) => xScale(d.length))
-                .attr("height", (d) => d.width)
-                .attr("x", d => xScale(d.x))
-                .attr("y", d => d.y)
-                .attr("fill", d => d.color)
-                .attr("clip-path","url(#rolloutClip)")
-                .style("opacity", 0.5);
-            rolloutG.lower();
+            this.drawRolloutRectangles();
         }
     }
 
-    private constructBasicPlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
+    private drawRolloutRectangles() {
+        const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
+
+        const rolloutG = this.svg
+            .append("g")
+            .attr("transform", 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')');
+
+        rolloutG.selectAll("." + Constants.rolloutClass)
+            .data(this.viewModel.rolloutRectangles.rolloutRectangles)
+            .enter()
+            .append("rect")
+            .attr("class", Constants.rolloutClass)
+            .attr("width", (d) => xScale(d.length))
+            .attr("height", (d) => d.width)
+            .attr("x", d => xScale(d.x))
+            .attr("y", d => d.y)
+            .attr("fill", d => d.color)
+            .attr("clip-path", "url(#rolloutClip)")
+            .style("opacity", 0.5);
+        rolloutG.lower();
+    }
+
+    private constructBasicPlot(plotModel: PlotModel): Result<void, PlotError> {
         const plotType = plotModel.plotSettings.plotSettings.plotType
-        let plot: d3.Selection<SVGGElement, any, any, any>;
+        let root: d3.Selection<SVGGElement, any, any, any>;
         let x: D3PlotXAxis;
         let y: D3PlotYAxis;
         let plotError: PlotError;
         const PlotResult = this.buildBasicPlot(plotModel).map(plt => {
-            plot = plt;
-            plot.append("g").attr("class", Constants.slabClass).attr('clip-path', 'url(#slabClip)');
+            root = plt;
+            root.append("g").attr("class", Constants.slabClass).attr('clip-path', 'url(#slabClip)');
         }).mapErr(error => this.displayError(error));
         if (PlotResult.isErr()) {
             return err(plotError);
         }
 
-        this.buildXAxis(plotModel, plot).map(axis => x = axis).mapErr(err => plotError = err);
-        this.buildYAxis(plotModel, plot).map(axis => y = axis).mapErr(err => plotError = err);
-        this.addClipPath().mapErr(err => plotError = err);
-        this.addPlotTitles(plotModel, plot).mapErr(err => plotError = err);
-        this.addVerticalRuler(plot).mapErr(err => plotError = err);
-        this.drawSlabs(plotModel, plot, x.xScale, y.yScale).mapErr(err => plotError = err);
+        this.buildXAxis(plotModel, root).map(axis => x = axis).mapErr(err => plotError = err);
+        this.buildYAxis(plotModel, root).map(axis => y = axis).mapErr(err => plotError = err);
+        plotModel.d3Plot = <D3Plot>{ yName: plotModel.yName, type: plotType, root, points: null, x, y };
+        this.addPlotTitles(plotModel, root).mapErr(err => plotError = err);
+        this.addVerticalRuler(root).mapErr(err => plotError = err);
+        this.drawSlabs(plotModel).mapErr(err => plotError = err);
         if (plotError) {
             return err(plotError);
         }
-        return ok(<D3Plot>{ yName: plotModel.yName, type: plotType, root: plot, points: null, x, y });
+
+        return ok(null);
 
     }
 
     private addClipPath(): Result<void, PlotError> {
         try {
-            const rolloutRectangle = this.viewModel.rolloutRectangles.rolloutRectangles[0];
+
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plotWidth = generalPlotSettings.plotWidth;
             const plotHeight = generalPlotSettings.plotHeight;
@@ -351,13 +356,16 @@ export class Visual implements IVisual {
                 .attr('x', 0)
                 .attr('width', plotWidth)
                 .attr('height', Heatmapmargins.heatmapHeight);
-            this.svg.append('defs').append('clipPath')
-                .attr('id', 'rolloutClip')
-                .append('rect')
-                .attr('y', rolloutRectangle.y)
-                .attr('x', rolloutRectangle.x)
-                .attr('width', rolloutRectangle.x + plotWidth)
-                .attr('height', rolloutRectangle.width);
+            if (this.viewModel.rolloutRectangles) {
+                const rolloutRectangle = this.viewModel.rolloutRectangles.rolloutRectangles[0];
+                this.svg.append('defs').append('clipPath')
+                    .attr('id', 'rolloutClip')
+                    .append('rect')
+                    .attr('y', rolloutRectangle.y)
+                    .attr('x', rolloutRectangle.x)
+                    .attr('width', rolloutRectangle.x + plotWidth)
+                    .attr('height', rolloutRectangle.width);
+            }
             return ok(null);
         } catch (error) {
             return err(new AddClipPathError(error.stack))
@@ -403,10 +411,10 @@ export class Visual implements IVisual {
     private buildXAxis(plotModel: PlotModel, plot: any): Result<D3PlotXAxis, PlotError> {
 
         try {
-            const generalPlotSettings = this.viewModel.generalPlotSettings
+            const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxis = plot.append('g').classed('xAxis', true);
-            const xScale = scaleLinear().domain([plotModel.xRange.min, plotModel.xRange.max]).range([0, generalPlotSettings.plotWidth]);
-            const xAxisValue = axisBottom(xScale);
+
+            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScale);
             let xLabel = null;
             if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
                 xAxisValue.tickValues([]);
@@ -428,7 +436,7 @@ export class Visual implements IVisual {
                 .attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')')
                 .call(xAxisValue);
 
-            return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xScale, xLabel: xLabel });
+            return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xLabel: xLabel });
         } catch (error) {
             return err(new BuildXAxisError(error.stack))
         }
@@ -469,13 +477,16 @@ export class Visual implements IVisual {
     }
 
 
-    private drawSlabs(plotModel: PlotModel, plot: Selection<any, any>, xScale: d3.ScaleLinear<number, number, never>, yScale: d3.ScaleLinear<number, number, never>): Result<void, PlotError> {
+    private drawSlabs(plotModel: PlotModel): Result<void, PlotError> {
 
         try {
             const colorSettings = this.viewModel.colorSettings.colorSettings;
             const slabtype = plotModel.overlayPlotSettings.overlayPlotSettings.slabType;
             const slabRectangles = this.viewModel.slabRectangles;
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
+            const plot = plotModel.d3Plot.root;
+            const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
+            const yScale = plotModel.d3Plot.y.yScale;
             if (slabtype != SlabType.None && slabRectangles != null) {
                 if (slabRectangles.length == 0) {
                     return err(new SlabInformationError());
@@ -574,24 +585,29 @@ export class Visual implements IVisual {
     // }
 
 
-    private drawPlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
+    private drawPlot(plotModel: PlotModel): Result<void, PlotError> {
         try {
-            let basicPlot: D3Plot;
-            let plotError: PlotError;
-            let x: D3PlotXAxis;
-            let y: D3PlotYAxis;
-            let type: PlotType;
-            let plot: any;
-            this.constructBasicPlot(plotModel)
-                .map(plt => {
-                    basicPlot = plt;
-                    x = basicPlot.x;
-                    y = basicPlot.y;
-                    type = plotModel.plotSettings.plotSettings.plotType;
-                    plot = basicPlot.root;
-                }).mapErr(err => plotError = err);
-            if (plotError) return err(plotError);
 
+            let plotError: PlotError;
+            // let basicPlot: D3Plot;
+            // let x: D3PlotXAxis;
+            // let y: D3PlotYAxis;
+            let type: PlotType;
+            // let plot: any;
+            const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
+            this.constructBasicPlot(plotModel)
+                // .map(
+                //     // plt => {
+                //     // basicPlot = plt;
+                //     // x = basicPlot.x;
+                //     // y = basicPlot.y;
+                //     // type = plotModel.plotSettings.plotSettings.plotType;
+                //     // plot = basicPlot.root;
+                // // }
+                // )
+                .mapErr(err => plotError = err);
+            if (plotError) return err(plotError);
+            const d3Plot = plotModel.d3Plot;
 
             let dataPoints = plotModel.dataPoints;
             const filterArray = this.viewModel.defectIndices.getFilterArray(Array.from(this.defectSelection))
@@ -603,12 +619,12 @@ export class Visual implements IVisual {
             dataPoints = filterNullValues(dataPoints);
             const line = d3
                 .line<DataPoint>()
-                .x((d) => x.xScale(<number>d.xValue))
-                .y((d) => y.yScale(<number>d.yValue));
+                .x((d) => xScale(<number>d.xValue))
+                .y((d) => d3Plot.y.yScale(<number>d.yValue));
             const plotType = plotModel.plotSettings.plotSettings.plotType;
-            let plotLine;
+
             if (plotType == PlotType.LinePlot) {
-                plotLine = plot
+                d3Plot.plotLine = d3Plot.root
                     .append('path')
                     .datum(dataPoints)
                     .attr("class", "path")
@@ -620,15 +636,15 @@ export class Visual implements IVisual {
                     .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
             }
 
-            const points = plot
+            d3Plot.points = d3Plot.root
                 .selectAll(Constants.dotClass)
                 .data(dataPoints)
                 .enter()
                 .append('circle')
                 .attr('fill', (d: DataPoint) => d.color)//plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke', 'none')
-                .attr('cx', (d) => x.xScale(<number>d.xValue))
-                .attr('cy', (d) => y.yScale(<number>d.yValue))
+                .attr('cx', (d) => xScale(<number>d.xValue))
+                .attr('cy', (d) => d3Plot.y.yScale(<number>d.yValue))
                 .attr('r', 2)
                 .attr('clip-path', 'url(#clip)')
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
@@ -636,24 +652,14 @@ export class Visual implements IVisual {
             let mouseEvents: TooltipInterface;
             this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
             if (plotError) return err(plotError);
-            points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-
+            d3Plot.points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
             let heatmap = null;
             if (plotModel.plotSettings.plotSettings.showHeatmap) {
                 this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
                 if (plotError) return err(plotError);
             }
 
-            return ok(<D3Plot>{
-                yName: plotModel.yName,
-                type: type,
-                root: plot,
-                points: points,
-                plotLine,
-                x: x,
-                y: y,
-                heatmap: heatmap
-            });
+            return ok(null);
         } catch (error) {
             return err(new DrawLinePlotError(error.stack));
         }
@@ -757,9 +763,11 @@ export class Visual implements IVisual {
         }
     }
 
-    private addZoom(plots: D3Plot[], zoomingSettings: ZoomingSettings): Result<void, PlotError> {
+    private addZoom(zoomingSettings: ZoomingSettings): Result<void, PlotError> {
         try {
             const _this = this;
+            const generalPlotSettings = this.viewModel.generalPlotSettings;
+            const plots = this.viewModel.plotModels;
             let errorFunction = this.displayError;
             let zoomed = function (event) {
                 try {
@@ -769,14 +777,13 @@ export class Visual implements IVisual {
                             .call(zoom.transform, d3.zoomIdentity);
                         return;
                     }
-                    let xScaleNew = transform.rescaleX(plots[0].x.xScale);
+                    let xScaleNew = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
                     _this.svg.selectAll("." + Constants.rolloutClass)
                         .attr("x", function (d: RolloutRectangle) { return xScaleNew(d.x); })
                         .attr("width", function (d: RolloutRectangle) { return xScaleNew(d.length + d.x) - xScaleNew(d.x); });
-                    for (let plot of plots) {
+                    for (let plot of plots.map(x => x.d3Plot)) {
                         plot.x.xAxis.attr('clip-path', 'url(#clip)');
                         let xAxisValue = plot.x.xAxisValue;
-                        let xScaleNew = transform.rescaleX(plot.x.xScale);
                         xAxisValue.scale(xScaleNew);
                         plot.x.xAxis.call(xAxisValue);
                         plot.points.attr('cx', (d) => { return xScaleNew(<number>d.xValue) })

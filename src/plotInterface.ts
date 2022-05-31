@@ -21,11 +21,10 @@ export interface ViewModel {
     legend?: Legend;
     heatmapSettings: HeatmapSettings;
     defectIndices: DefectIndices;
-    rolloutRectangles:RolloutRectangles;
+    rolloutRectangles: RolloutRectangles;
 }
 export class DefectIndices {
 
-    xValues: number[];
     defectIndices: Map<string, number[]>;
 
     constructor() {
@@ -116,6 +115,16 @@ export interface GeneralPlotSettings {
     solidOpacity: number;
     transparentOpacity: number;
     margins: Margins;
+    xAxisSettings: XAxisSettings;
+}
+
+export interface XAxisSettings {
+    xName: string;
+    xRange: {
+        min: number;
+        max: number;
+    };
+    xScale: d3.ScaleLinear<number, number, never>;
 }
 
 export interface Margins {
@@ -155,7 +164,6 @@ export enum AxisInformation {
 export interface PlotModel {
     plotId: number;
     plotTop: number;
-    xName: string;
     yName: string;
     formatSettings: FormatSettings;
     labelNames: LabelNames;
@@ -163,14 +171,11 @@ export interface PlotModel {
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
     plotTitleSettings: PlotTitleSettings;
-    xRange: {
-        min: number;
-        max: number;
-    };
     yRange: {
         min: number;
         max: number;
     };
+    d3Plot: D3Plot;
 }
 
 export interface LabelNames {
@@ -307,15 +312,14 @@ export interface D3Plot {
     points: any;
     plotLine: any;
     root: any;
-    x: D3PlotXAxis;
     y: D3PlotYAxis;
+    x: D3PlotXAxis;
     heatmap: D3Heatmap;
 }
 
 export interface D3PlotXAxis {
     xAxis: any;
     xAxisValue: any;
-    xScale: any;
     xLabel: any;
 }
 
@@ -329,7 +333,7 @@ export interface D3Heatmap {
 export interface D3PlotYAxis {
     yAxis: any;
     yAxisValue: any;
-    yScale: any;
+    yScale: d3.ScaleLinear<number, number, never>;
     yLabel: any;
 }
 

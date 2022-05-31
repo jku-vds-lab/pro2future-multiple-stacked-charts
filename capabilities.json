@@ -112,7 +112,7 @@
             "conditions": [
                 {
                     "x_axis": {
-                        "max": 20
+                        "max": 1
                     },
                     "y_axis": {
                         "max": 20

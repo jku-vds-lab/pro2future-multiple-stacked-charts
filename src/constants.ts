@@ -78,5 +78,11 @@ export class ColorSchemes {
         singlehue: ["Blues", "Greens", "Greys", "Oranges", "Purples", "Reds"],
         diverging: ["BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy", "RdYlBu", "RdYlGn", "Spectral"]
     };
-    static readonly rolloutColors = ["#ffcc80","#ff8080","#ffffff"]
+    static readonly rolloutColors = ["#ffcc80","#ff8080","#ffffff"];
+    static readonly legendColors = {
+        OZE: "#e41a1c",
+        GZE: "#377eb8",
+        RAS: "#4daf4a"
+    }
+
 }
