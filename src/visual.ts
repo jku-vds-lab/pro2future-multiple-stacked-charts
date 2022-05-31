@@ -43,7 +43,7 @@ import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap } from './plotInterface';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap, RolloutRectangle } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ColorSchemes, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
@@ -280,7 +280,6 @@ export class Visual implements IVisual {
             const rolloutG = this.svg
                 .append("g")
                 .attr("transform", 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')')
-                .attr("class", Constants.rolloutClass)
 
             rolloutG.selectAll("." + Constants.rolloutClass)
                 .data(this.viewModel.rolloutRectangles.rolloutRectangles)
@@ -292,6 +291,7 @@ export class Visual implements IVisual {
                 .attr("x", d => xScale(d.x))
                 .attr("y", d => d.y)
                 .attr("fill", d => d.color)
+                .attr("clip-path","url(#rolloutClip)")
                 .style("opacity", 0.5);
             rolloutG.lower();
         }
@@ -326,6 +326,7 @@ export class Visual implements IVisual {
 
     private addClipPath(): Result<void, PlotError> {
         try {
+            const rolloutRectangle = this.viewModel.rolloutRectangles.rolloutRectangles[0];
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plotWidth = generalPlotSettings.plotWidth;
             const plotHeight = generalPlotSettings.plotHeight;
@@ -350,6 +351,13 @@ export class Visual implements IVisual {
                 .attr('x', 0)
                 .attr('width', plotWidth)
                 .attr('height', Heatmapmargins.heatmapHeight);
+            this.svg.append('defs').append('clipPath')
+                .attr('id', 'rolloutClip')
+                .append('rect')
+                .attr('y', rolloutRectangle.y)
+                .attr('x', rolloutRectangle.x)
+                .attr('width', rolloutRectangle.x + plotWidth)
+                .attr('height', rolloutRectangle.width);
             return ok(null);
         } catch (error) {
             return err(new AddClipPathError(error.stack))
@@ -761,6 +769,10 @@ export class Visual implements IVisual {
                             .call(zoom.transform, d3.zoomIdentity);
                         return;
                     }
+                    let xScaleNew = transform.rescaleX(plots[0].x.xScale);
+                    _this.svg.selectAll("." + Constants.rolloutClass)
+                        .attr("x", function (d: RolloutRectangle) { return xScaleNew(d.x); })
+                        .attr("width", function (d: RolloutRectangle) { return xScaleNew(d.length + d.x) - xScaleNew(d.x); });
                     for (let plot of plots) {
                         plot.x.xAxis.attr('clip-path', 'url(#clip)');
                         let xAxisValue = plot.x.xAxisValue;
