@@ -1,5 +1,6 @@
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
+import { ColorSchemes } from './constants';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
@@ -20,6 +21,7 @@ export interface ViewModel {
     legend?: Legend;
     heatmapSettings: HeatmapSettings;
     defectIndices: DefectIndices;
+    rolloutRectangles:RolloutRectangles;
 }
 export class DefectIndices {
 
@@ -58,10 +60,49 @@ export class DefectIndices {
     }
 }
 
-interface SortedListItem {
-    x: number;
-    defect: number;
+// interface SortedListItem {
+//     x: number;
+//     defect: number;
+// }
+
+export class RolloutRectangles {
+    rolloutRectangles: RolloutRectangle[];
+
+    constructor(xValues: number[], rollout: number[], y, width) {
+        this.rolloutRectangles = []
+        let rect = <RolloutRectangle>{
+            y, width, x: xValues[0], color: ColorSchemes.rolloutColors[rollout[0]]
+        }
+        let lastX = xValues[0];
+        let lastRollout = rollout[0];
+        for (let i = 0; i < xValues.length; i++) {
+            const x = xValues[i];
+            const r = rollout[i];
+            if (r != lastRollout) {
+                lastRollout = r;
+                rect.length = x - lastX;
+                lastX = x;
+                this.rolloutRectangles.push(rect);
+                rect = <RolloutRectangle>{
+                    y, width, x: xValues[i], color: ColorSchemes.rolloutColors[rollout[i]]
+                }
+            }
+        }
+        rect.length = xValues[xValues.length - 1] - lastX;
+        this.rolloutRectangles.push(rect);
+
+
+    }
 }
+
+export interface RolloutRectangle {
+    width: number;
+    length: number;
+    x: number;
+    y: number;
+    color: string;
+}
+
 
 export interface GeneralPlotSettings {
     plotHeight: number;
@@ -264,7 +305,7 @@ export interface D3Plot {
     yName: string;
     type: string;
     points: any;
-    plotLine:any;
+    plotLine: any;
     root: any;
     x: D3PlotXAxis;
     y: D3PlotYAxis;

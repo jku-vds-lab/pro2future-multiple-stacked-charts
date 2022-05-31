@@ -4,7 +4,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData, DefectIndices } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData, DefectIndices, RolloutRectangles } from './plotInterface';
 import { Color, stratify } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, HeatmapSettingsNames } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings'
@@ -87,6 +87,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let slabWidth: number[] = [];
     let slabLength: number[] = [];
     let legend: Legend = null;
+    let rolloutRectangles: number[];
 
     //aquire all categorical values
     if (categorical.categories !== undefined) {
@@ -135,6 +136,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
             if (roles.defectIndices) {
                 defectIndices.defectIndices.set(category.source.displayName, <number[]>category.values)
+            }
+            if (roles.rollout) {
+                rolloutRectangles = <number[]>category.values
             }
         }
     }
@@ -185,6 +189,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
             if (roles.defectIndices) {
                 defectIndices.defectIndices.set(value.source.displayName, <number[]>value.values);
+            }
+            if (roles.rollout) {
+                rolloutRectangles = <number[]>value.values
             }
 
         }
@@ -294,6 +301,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
     createSlabInformation(slabLength, slabWidth, xData[0].values, viewModel);
 
+
     let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
     //create Plotmodels
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
@@ -386,6 +394,12 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
         plotTop += plotModel.plotSettings.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
     }
+    if (rolloutRectangles) {
+        const rolloutY = viewModel.plotModels[0].plotTop;
+        const rolloutHeight = viewModel.plotModels[viewModel.plotModels.length - 1].plotTop + viewModel.generalPlotSettings.plotHeight - rolloutY;
+        viewModel.rolloutRectangles = new RolloutRectangles(xData[0].values, rolloutRectangles, rolloutY, rolloutHeight);
+    }
+
     viewModel.generalPlotSettings.legendYPostion = plotTop;
 
     return ok(viewModel);

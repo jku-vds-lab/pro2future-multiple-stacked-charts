@@ -178,7 +178,7 @@ export class Visual implements IVisual {
 
             });
 
-            
+
 
     }
 
@@ -273,6 +273,27 @@ export class Visual implements IVisual {
         const zoomingSettings = this.viewModel.zoomingSettings;
         if (zoomingSettings.enableZoom) {
             this.addZoom(plots, zoomingSettings).mapErr(err => this.displayError(err));
+        }
+        if (this.viewModel.rolloutRectangles) {
+            const xScale = plots[0].x.xScale;
+
+            const rolloutG = this.svg
+                .append("g")
+                .attr("transform", 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')')
+                .attr("class", Constants.rolloutClass)
+
+            rolloutG.selectAll("." + Constants.rolloutClass)
+                .data(this.viewModel.rolloutRectangles.rolloutRectangles)
+                .enter()
+                .append("rect")
+                .attr("class", Constants.rolloutClass)
+                .attr("width", (d) => xScale(d.length))
+                .attr("height", (d) => d.width)
+                .attr("x", d => xScale(d.x))
+                .attr("y", d => d.y)
+                .attr("fill", d => d.color)
+                .style("opacity", 0.5);
+            rolloutG.lower();
         }
     }
 
@@ -468,7 +489,7 @@ export class Visual implements IVisual {
                         .attr("x2", function (d) { return xScale(d.x); })
                         .attr("y1", 0)
                         .attr("y2", plotHeight)
-                        .attr("opacity", 1);
+                        .style("opacity", 1);
                 }
             } else {
                 plot.select(`.${Constants.slabClass}`).remove()

@@ -68,7 +68,8 @@ export enum Constants {
     verticalRulerClass = "hover-line",
     slabClass = "slabBars",
     barClass = "bar",
-    dotClass = "dot"
+    dotClass = "dot",
+    rolloutClass = "rollout"
 }
 
 export class ColorSchemes {
@@ -77,4 +78,5 @@ export class ColorSchemes {
         singlehue: ["Blues", "Greens", "Greys", "Oranges", "Purples", "Reds"],
         diverging: ["BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy", "RdYlBu", "RdYlGn", "Spectral"]
     };
+    static readonly rolloutColors = ["#ffcc80","#ff8080","#ffffff"]
 }
