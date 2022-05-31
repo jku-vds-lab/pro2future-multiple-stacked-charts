@@ -456,7 +456,7 @@ export class Visual implements IVisual {
                         .append("rect")
                         .attr("x", function (d) { return xScale(d.x); })
                         .attr("y", function (d) { return yScale(d.width - d.y); })
-                        .attr("width", function (d) { return xScale(d.length + d.x) - xScale(d.x); })
+                        .attr("width", function (d) { return xScale(d.length); })
                         .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
                         .attr("fill", "transparent")
                         .attr("stroke", colorSettings.slabColor);

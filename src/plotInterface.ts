@@ -46,14 +46,15 @@ export class DefectIndices {
                 return n + array[idx];
             })
         }
-        let sortedList: SortedListItem[] = [];
-        for (let i = 0; i < this.xValues.length; i++) {
-            sortedList.push({ x: this.xValues[i], defect: filterArray[i] });
-        }
-        sortedList = sortedList.sort((a, b) => {
-            return a.x - b.x;
-        });
-        return sortedList.map(x => x.defect);
+        // let sortedList: SortedListItem[] = [];
+        // for (let i = 0; i < this.xValues.length; i++) {
+        //     sortedList.push({ x: this.xValues[i], defect: filterArray[i] });
+        // }
+        // sortedList = sortedList.sort((a, b) => {
+        //     return a.x - b.x;
+        // });
+        // return sortedList.map(x => x.defect);
+        return filterArray;
     }
 }
 

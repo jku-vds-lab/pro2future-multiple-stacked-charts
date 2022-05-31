@@ -82,10 +82,30 @@
                     "integer": true
                 }
             ]
+        },
+        {
+            "displayName": "Rollout",
+            "name": "rollout",
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
         }
     ],
     "sorting": {
-        "default": {   }
+        "implicit": {
+            "clauses": [
+                {
+                    "role": "x_axis",
+                    "direction": 1
+                }
+            ]
+        }
     },
     "dataViewMappings": [
         {
@@ -106,8 +126,11 @@
                     "legend": {
                         "max": 1
                     },
-                    "defectIndices":{
+                    "defectIndices": {
                         "max": 10
+                    },
+                    "rollout": {
+                        "max": 1
                     },
                     "category": {
                         "max": 100
@@ -153,6 +176,11 @@
                         {
                             "for": {
                                 "in": "defectIndices"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "rollout"
                             }
                         }
                     ],

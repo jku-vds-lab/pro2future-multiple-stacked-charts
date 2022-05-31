@@ -292,7 +292,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
 
     createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
-    createSlabInformation(slabLength, slabWidth, viewModel);
+    createSlabInformation(slabLength, slabWidth, xData[0].values, viewModel);
 
     let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
     //create Plotmodels
@@ -341,9 +341,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
 
-        dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
-            return <number>a.xValue - <number>b.xValue;
-        });
+        // dataPoints = dataPoints.sort((a: DataPoint, b: DataPoint) => {
+        //     return <number>a.xValue - <number>b.xValue;
+        // });
 
 
         let plotTitle = plotTitles[plotNr]
@@ -438,32 +438,30 @@ function createTooltipModels(sharedXAxis: boolean, xData: XAxisData[], tooltipDa
     }
 }
 
-function createSlabInformation(slabLength: number[], slabWidth: number[], viewModel: ViewModel): void {
-
+function createSlabInformation(slabLength: number[], slabWidth: number[], xValues: number[], viewModel: ViewModel): void {
     if (slabLength.length == slabWidth.length && slabWidth.length > 0) {
         let slabRectangles: SlabRectangle[] = new Array<SlabRectangle>(slabLength.length);
         for (let i = 0; i < slabLength.length; i++) {
             slabRectangles[i] = {
                 width: slabWidth[i],
-                length: 0,
+                length: slabLength[i],
                 y: 0,
-                x: slabLength[i]
+                x: xValues[i]
             };
         }
-        slabRectangles = slabRectangles.filter(x => x.x != null && x.x > 0 && x.width != null && x.width > 0)
-            .sort((a, b) => { return a.x - b.x; });
+        slabRectangles = slabRectangles.filter(x => x.x != null && x.x > 0 && x.width != null && x.width > 0);
         if (slabRectangles.length == 0) {
             //TODO: create error on wrong data?
             return;
         }
-        let lastX = slabRectangles[0].x;
-        slabRectangles[0].length = lastX;
-        slabRectangles[0].x = 0;
-        for (let i = 1; i < slabRectangles.length; i++) {
-            slabRectangles[i].length = slabRectangles[i].x - lastX;
-            lastX = slabRectangles[i].x;
-            slabRectangles[i].x = lastX - slabRectangles[i].length;
-        }
+        // let lastX = slabRectangles[0].x;
+        // slabRectangles[0].length = lastX;
+        // slabRectangles[0].x = 0;
+        // for (let i = 1; i < slabRectangles.length; i++) {
+        //     slabRectangles[i].length = slabRectangles[i].x - lastX;
+        //     lastX = slabRectangles[i].x;
+        //     slabRectangles[i].x = lastX - slabRectangles[i].length;
+        // }
         viewModel.slabRectangles = slabRectangles;
     }
 }
