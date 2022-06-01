@@ -90,31 +90,33 @@ export class Visual implements IVisual {
             .enter()
             .append("text")
             .text(d => d)
-            .attr("x", function (d, i) {
-                let x = width
-                width = width + this.getComputedTextLength();
-                return x;
-            })
-            .attr("y", yPosition)
             .attr("text-anchor", "left")
             .style("alignment-baseline", "middle")
             .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+            .attr("x", function (d, i) {
+                let x = width
+                width = width + this.getComputedTextLength() + 15;
+                return x;
+            })
+            .attr("y", yPosition)
+
 
         this.svg.selectAll("legendText")
             .data(legendData)
             .enter()
             .append("text")
             .text(function (d) { return String(d.value) })
-            .attr("x", function (d, i) {
-                let x = width
-                widths.push(width);
-                width = width + 10 + this.getComputedTextLength();
-                return 10 + x;
-            })
-            .attr("y", yPosition)
             .attr("text-anchor", "left")
             .style("alignment-baseline", "middle")
             .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+            .attr("x", function (d, i) {
+                let x = width
+                widths.push(width);
+                width = width + 25 + this.getComputedTextLength();
+                return 10 + x;
+            })
+            .attr("y", yPosition)
+
 
         this.svg.selectAll("legendDots")
             .data(legendData)
@@ -124,6 +126,7 @@ export class Visual implements IVisual {
             .attr("cy", yPosition)
             .attr("r", 7)
             .style("fill", function (d) { return d.color })
+            .style("stroke", "grey")
 
         legend.legendXLength = width;
         // const checkBoxSize = 10;
@@ -278,24 +281,60 @@ export class Visual implements IVisual {
         }
         if (this.viewModel.rolloutRectangles) {
             this.drawRolloutRectangles();
-            // let width = this.viewModel.legend ? this.viewModel.legend.legendXLength : this.viewModel.generalPlotSettings.margins.left;
-            // this.svg.selectAll("legendText")
-            // .data(legendData)
-            // .enter()
-            // .append("text")
-            // .text(function (d) { return String(d.value) })
-            // .attr("x", function (d, i) {
-            //     let x = width
-            //     widths.push(width);
-            //     width = width + 10 + this.getComputedTextLength();
-            //     return 10 + x;
-            // })
-            // .attr("y", yPosition)
-            // .attr("text-anchor", "left")
-            // .style("alignment-baseline", "middle")
-            // .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+            this.drawRolloutLegend();
 
         }
+    }
+
+    private drawRolloutLegend() {
+        const margins = this.viewModel.generalPlotSettings;
+        const yPosition = margins.legendYPostion + 10;
+        const rolloutRectangles = this.viewModel.rolloutRectangles;
+        let width = this.viewModel.legend ? this.viewModel.legend.legendXLength + 50 : margins.margins.left;
+        let widths = [];
+
+        this.svg.selectAll("rolloutLegendTitle")
+            .data([rolloutRectangles.name])
+            .enter()
+            .append("text")
+            .text(d => d)
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+            .attr("x", function (d, i) {
+                let x = width;
+                width = width + this.getComputedTextLength() + 15;
+                return x;
+            })
+            .attr("y", yPosition);
+
+        this.svg.selectAll("rolloutLegendText")
+            .data(ArrayConstants.rolloutNames)
+            .enter()
+            .append("text")
+            .text(d => d)
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+            .attr("x", function (d, i) {
+                let x = width;
+                widths.push(width);
+                width = width + 25 + this.getComputedTextLength();
+                return 10 + x;
+            })
+            .attr("y", yPosition);
+
+
+        this.svg.selectAll("rolloutLegendDots")
+            .data(ArrayConstants.rolloutColors)
+            .enter()
+            .append("circle")
+            .attr("cx", function (d, i) { return widths[i]; })
+            .attr("cy", yPosition)
+            .attr("r", 7)
+            .style("fill", d => d)
+            .style("stroke", "grey")
+            .style("opacity", rolloutRectangles.opacity*2);
     }
 
     private drawRolloutRectangles() {
@@ -316,7 +355,7 @@ export class Visual implements IVisual {
             .attr("y", d => d.y)
             .attr("fill", d => d.color)
             .attr("clip-path", "url(#rolloutClip)")
-            .style("opacity", 0.1);
+            .style("opacity",this.viewModel.rolloutRectangles.opacity);
         rolloutG.lower();
     }
 

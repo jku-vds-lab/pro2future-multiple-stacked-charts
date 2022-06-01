@@ -66,9 +66,13 @@ export interface ViewModel {
 
 export class RolloutRectangles {
     rolloutRectangles: RolloutRectangle[];
+    name: string;
+    opacity: number;
 
-    constructor(xValues: number[], rollout: number[], y, width) {
-        this.rolloutRectangles = []
+    constructor(xValues: number[], rollout: number[], y, width,rolloutName = "Rollout", rolloutOpacity = 0.1) {
+        this.name = rolloutName;
+        this.rolloutRectangles = [];
+        this.opacity = rolloutOpacity;
         let rect = <RolloutRectangle>{
             y, width, x: xValues[0], color: ArrayConstants.rolloutColors[rollout[0]]
         }
