@@ -45,7 +45,7 @@ import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
 import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap, RolloutRectangle } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ColorSchemes, HeatmapSettingsNames } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ArrayConstants, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, HeatmapError, PlotError, SlabInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
@@ -61,7 +61,7 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: Selection<any>;
-    private defectSelection: Set<string>;
+    // private defectSelection: Set<string>;
 
 
     constructor(options: VisualConstructorOptions) {
@@ -70,7 +70,7 @@ export class Visual implements IVisual {
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true)
             .attr("width", this.element.clientWidth)
             .attr("height", this.element.clientHeight);
-        this.defectSelection = new Set<string>();
+        // this.defectSelection = new Set<string>();
 
     }
 
@@ -78,8 +78,9 @@ export class Visual implements IVisual {
     private drawLegend() {
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion + 10;
-        const legendData = this.viewModel.legend.legendValues;
-        const legendTitle = this.viewModel.legend.legendTitle;
+        const legend = this.viewModel.legend
+        const legendData = legend.legendValues;
+        const legendTitle = legend.legendTitle;
         const _this = this;
         let widths = [];
         let width = margins.margins.left;
@@ -91,7 +92,7 @@ export class Visual implements IVisual {
             .text(d => d)
             .attr("x", function (d, i) {
                 let x = width
-                width = width + this.getComputedTextLength() + 10;
+                width = width + this.getComputedTextLength();
                 return x;
             })
             .attr("y", yPosition)
@@ -107,7 +108,7 @@ export class Visual implements IVisual {
             .attr("x", function (d, i) {
                 let x = width
                 widths.push(width);
-                width = width + 25 + this.getComputedTextLength();
+                width = width + 10 + this.getComputedTextLength();
                 return 10 + x;
             })
             .attr("y", yPosition)
@@ -124,59 +125,60 @@ export class Visual implements IVisual {
             .attr("r", 7)
             .style("fill", function (d) { return d.color })
 
-        const checkBoxSize = 10;
-        this.svg.selectAll("legendCheckboxes")
-            .data(legendData)
-            .enter()
-            .append("rect")
-            .attr("x", function (d, i) { return widths[i] - 20 })
-            .attr("y", yPosition - 5)
-            .attr("width", checkBoxSize)
-            .attr("height", checkBoxSize)
-            .style("fill", "white")
-            .style("stroke", "black")
-            .style("stroke-width", "1px")
-            .style("pointer-events", "auto")
-            .on("click", function (event, d) {
-                const defect = d.value.toString()
-                if (_this.defectSelection.has(defect)) {
-                    _this.defectSelection.delete(defect);
-                    d3.selectAll("." + defect + "line").remove()
-                }
-                else {
-                    _this.defectSelection.add(defect);
-                    const rect = d3.select(this);
-                    const x = rect.property("x").baseVal.value;
-                    const y = rect.property("y").baseVal.value;
-                    //line1 
-                    _this.svg.append("line")
-                        .attr("class", defect + "line")
-                        .attr("x1", x)
-                        .attr("x2", x + checkBoxSize)
-                        .attr("y1", y)
-                        .attr("y2", y + checkBoxSize)
-                        .style("stroke", "black")
-                        .style("pointer-events", "none")
-                    //line2
-                    _this.svg.append("line")
-                        .attr("class", defect + "line")
-                        .attr("x1", x + checkBoxSize)
-                        .attr("x2", x)
-                        .attr("y1", y)
-                        .attr("y2", y + checkBoxSize)
-                        .style("stroke", "black")
-                        .style("pointer-events", "none")
-                }
-                _this.svg.selectAll('*').remove();
-                _this.svg.attr("width", _this.viewModel.svgWidth)
-                    .attr("height", _this.viewModel.svgHeight);
-                // this.displayError(new Error("this is a test"));
-                if (_this.viewModel.legend != null) {
-                    _this.drawLegend();
-                }
-                _this.drawPlots();
+        legend.legendXLength = width;
+        // const checkBoxSize = 10;
+        // this.svg.selectAll("legendCheckboxes")
+        //     .data(legendData)
+        //     .enter()
+        //     .append("rect")
+        //     .attr("x", function (d, i) { return widths[i] - 20 })
+        //     .attr("y", yPosition - 5)
+        //     .attr("width", checkBoxSize)
+        //     .attr("height", checkBoxSize)
+        //     .style("fill", "white")
+        //     .style("stroke", "black")
+        //     .style("stroke-width", "1px")
+        //     .style("pointer-events", "auto")
+        //     .on("click", function (event, d) {
+        //         const defect = d.value.toString()
+        //         if (_this.defectSelection.has(defect)) {
+        //             _this.defectSelection.delete(defect);
+        //             d3.selectAll("." + defect + "line").remove()
+        //         }
+        //         else {
+        //             _this.defectSelection.add(defect);
+        //             const rect = d3.select(this);
+        //             const x = rect.property("x").baseVal.value;
+        //             const y = rect.property("y").baseVal.value;
+        //             //line1 
+        //             _this.svg.append("line")
+        //                 .attr("class", defect + "line")
+        //                 .attr("x1", x)
+        //                 .attr("x2", x + checkBoxSize)
+        //                 .attr("y1", y)
+        //                 .attr("y2", y + checkBoxSize)
+        //                 .style("stroke", "black")
+        //                 .style("pointer-events", "none")
+        //             //line2
+        //             _this.svg.append("line")
+        //                 .attr("class", defect + "line")
+        //                 .attr("x1", x + checkBoxSize)
+        //                 .attr("x2", x)
+        //                 .attr("y1", y)
+        //                 .attr("y2", y + checkBoxSize)
+        //                 .style("stroke", "black")
+        //                 .style("pointer-events", "none")
+        //         }
+        //         _this.svg.selectAll('*').remove();
+        //         _this.svg.attr("width", _this.viewModel.svgWidth)
+        //             .attr("height", _this.viewModel.svgHeight);
+        //         // this.displayError(new Error("this is a test"));
+        //         if (_this.viewModel.legend != null) {
+        //             _this.drawLegend();
+        //         }
+        //         _this.drawPlots();
 
-            });
+        //     });
 
 
 
@@ -276,6 +278,23 @@ export class Visual implements IVisual {
         }
         if (this.viewModel.rolloutRectangles) {
             this.drawRolloutRectangles();
+            // let width = this.viewModel.legend ? this.viewModel.legend.legendXLength : this.viewModel.generalPlotSettings.margins.left;
+            // this.svg.selectAll("legendText")
+            // .data(legendData)
+            // .enter()
+            // .append("text")
+            // .text(function (d) { return String(d.value) })
+            // .attr("x", function (d, i) {
+            //     let x = width
+            //     widths.push(width);
+            //     width = width + 10 + this.getComputedTextLength();
+            //     return 10 + x;
+            // })
+            // .attr("y", yPosition)
+            // .attr("text-anchor", "left")
+            // .style("alignment-baseline", "middle")
+            // .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+
         }
     }
 
@@ -297,7 +316,7 @@ export class Visual implements IVisual {
             .attr("y", d => d.y)
             .attr("fill", d => d.color)
             .attr("clip-path", "url(#rolloutClip)")
-            .style("opacity", 0.5);
+            .style("opacity", 0.1);
         rolloutG.lower();
     }
 
@@ -610,12 +629,12 @@ export class Visual implements IVisual {
             const d3Plot = plotModel.d3Plot;
 
             let dataPoints = plotModel.dataPoints;
-            const filterArray = this.viewModel.defectIndices.getFilterArray(Array.from(this.defectSelection))
-            if (filterArray) {
-                dataPoints = dataPoints.filter(function (x, idx) {
-                    return filterArray[idx] > 0;
-                });
-            }
+            // const filterArray = this.viewModel.defectIndices.getFilterArray(Array.from(this.defectSelection))
+            // if (filterArray) {
+            //     dataPoints = dataPoints.filter(function (x, idx) {
+            //         return filterArray[idx] > 0;
+            //     });
+            // }
             dataPoints = filterNullValues(dataPoints);
             const line = d3
                 .line<DataPoint>()
@@ -1213,7 +1232,7 @@ export class Visual implements IVisual {
 //function to print color schemes for adding them to capabilities
 function printColorSchemes() {
     var str = "";
-    for (const scheme of ColorSchemes.schemes.sequential) {
+    for (const scheme of ArrayConstants.colorSchemes.sequential) {
         str = str + '{"displayName": "' + scheme + '",   "value": "interpolate' + scheme + '"},';
     }
     console.log(str);

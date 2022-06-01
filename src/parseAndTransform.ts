@@ -4,9 +4,9 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData, DefectIndices, RolloutRectangles, XAxisSettings } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData, RolloutRectangles, XAxisSettings } from './plotInterface';
 import { Color, scaleLinear, stratify } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, HeatmapSettingsNames, ColorSchemes } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, HeatmapSettingsNames, ArrayConstants } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
 import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
@@ -50,7 +50,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const tooltipCategoriesCount = categorical.categories === undefined ? 0 : categorical.categories.filter(cat => { return cat.source.roles.tooltip }).length;
     const tooltipValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.tooltip }).length;
     const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
-    const sharedXAxis = xCount == 1
+    const sharedXAxis = xCount == 1;
     // const yCategoriesCount = categorical.categories === undefined ? 0 : new Set(categorical.categories.filter(cat => { return cat.source.roles.y_axis }).map(x => x.source.index)).size;
     // const yValuesCount = categorical.values === undefined ? 0 : new Set(categorical.values.filter(val => { return val.source.roles.y_axis }).map(x => x.source.index)).size;
     // const yCount = yCategoriesCount + yValuesCount;
@@ -78,7 +78,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let yData = new Array<YAxisData>(yCount);
     let tooltipData = new Array<TooltipColumnData>(tooltipCount);
     let legendData: LegendData = null;
-    let defectIndices: DefectIndices = new DefectIndices();
+    // let defectIndices: DefectIndices = new DefectIndices();
 
 
     let xDataPoints: number[] = [];
@@ -116,12 +116,16 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
             if (roles.tooltip) {
 
+                let columnId = category.source.index;
+                if (!metadataColumns[columnId]) {
+                    columnId = categorical.values.filter(x => x.source.displayName === category.source.displayName)[0].source.index;
+                }
                 const tooltipId = category.source['rolesIndex']['tooltip'][0];
                 let data: TooltipColumnData = {
                     type: category.source.type,
                     name: category.source.displayName,
                     values: <number[]>category.values,
-                    columnId: category.source.index
+                    columnId
                 };
                 tooltipData[tooltipId] = data;
             }
@@ -132,9 +136,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     columnId: category.source.index
                 };
             }
-            if (roles.defectIndices) {
-                defectIndices.defectIndices.set(category.source.displayName, <number[]>category.values)
-            }
+            // if (roles.defectIndices) {
+            //     defectIndices.defectIndices.set(category.source.displayName, <number[]>category.values)
+            // }
             if (roles.rollout) {
                 rolloutRectangles = <number[]>category.values
             }
@@ -167,12 +171,17 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 slabWidth = <number[]>value.values;
             }
             if (roles.tooltip) {
+                let columnId = value.source.index;
+                if (!metadataColumns[columnId]) {
+                    columnId = categorical.categories.filter(x => x.source.displayName === value.source.displayName)[0].source.index;
+                }
+
                 const tooltipId = value.source['rolesIndex']['tooltip'][0];
                 let data: TooltipColumnData = {
                     type: value.source.type,
                     name: value.source.displayName,
                     values: <number[]>value.values,
-                    columnId: value.source.index
+                    columnId
                 };
                 tooltipData[tooltipId] = data;
             }
@@ -183,9 +192,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     columnId: value.source.index
                 };
             }
-            if (roles.defectIndices) {
-                defectIndices.defectIndices.set(value.source.displayName, <number[]>value.values);
-            }
+            // if (roles.defectIndices) {
+            //     defectIndices.defectIndices.set(value.source.displayName, <number[]>value.values);
+            // }
             if (roles.rollout) {
                 rolloutRectangles = <number[]>value.values
             }
@@ -201,7 +210,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         return err(new AxisNullValuesError(xData.name));
     }
 
-    const legendColors = ColorSchemes.legendColors;
+    const legendColors = ArrayConstants.legendColors;
     if (legendData != null) {
         let categories = categorical.categories.filter(x => x.source.roles.legend)
         let category = categories.length > 0 ? categories[0] : null;
@@ -215,7 +224,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         legend = {
             legendDataPoints: [],
             legendValues: [],
-            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName)
+            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
+            legendXLength:0
         }
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i]
@@ -228,7 +238,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 value: val
             });
         }
-    
+
         for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
             legend.legendDataPoints.push({
                 xValue: xData.values[i],
@@ -283,7 +293,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const xLabelsCount = formatSettings.filter(x => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
     const heatmapCount = plotSettings.filter(x => x.plotSettings.showHeatmap).length;
     let viewModel: ViewModel;
-    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, legend, defectIndices, xData)
+    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, legend, xData)
         .map(vm => viewModel = vm)
     if (viewModelResult.isErr()) {
         return viewModelResult.mapErr(err => { return err; });
@@ -466,7 +476,7 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], xValue
     }
 }
 
-function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, heatmapCount: number, legend: Legend, defectIndices: DefectIndices, xData: XAxisData): Result<ViewModel, ParseAndTransformError> {
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, heatmapCount: number, legend: Legend, xData: XAxisData): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings
     const svgHeight: number = options.viewport.height;
     const svgWidth: number = options.viewport.width;
@@ -531,7 +541,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,
         legend: legend,
-        defectIndices: defectIndices
+        // defectIndices: defectIndices
     };
     return ok(viewModel);
 }

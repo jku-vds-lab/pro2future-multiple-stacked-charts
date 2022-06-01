@@ -1,6 +1,6 @@
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
-import { ColorSchemes } from './constants';
+import { ArrayConstants } from './constants';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
@@ -20,44 +20,44 @@ export interface ViewModel {
     zoomingSettings: ZoomingSettings;
     legend?: Legend;
     heatmapSettings: HeatmapSettings;
-    defectIndices: DefectIndices;
+    // defectIndices: DefectIndices;
     rolloutRectangles: RolloutRectangles;
 }
-export class DefectIndices {
+// export class DefectIndices {
 
-    defectIndices: Map<string, number[]>;
+//     defectIndices: Map<string, number[]>;
 
-    constructor() {
-        this.defectIndices = new Map<string, number[]>()
-    }
+//     constructor() {
+//         this.defectIndices = new Map<string, number[]>()
+//     }
 
-    getFilterArray(defects: string[]): number[] {
-        let arrays = [];
-        let filterArray = null;
-        for (const key of defects) {
-            if (this.defectIndices.has(key)) {
-                arrays.push(this.defectIndices.get(key));
-            }
-        }
-        if (arrays.length === 0) return filterArray;
-        filterArray = arrays[0];
-        for (let i = 1; i < arrays.length; i++) {
-            const array = arrays[i];
-            filterArray = filterArray.map(function (n: number, idx: number) {
-                return n + array[idx];
-            })
-        }
-        // let sortedList: SortedListItem[] = [];
-        // for (let i = 0; i < this.xValues.length; i++) {
-        //     sortedList.push({ x: this.xValues[i], defect: filterArray[i] });
-        // }
-        // sortedList = sortedList.sort((a, b) => {
-        //     return a.x - b.x;
-        // });
-        // return sortedList.map(x => x.defect);
-        return filterArray;
-    }
-}
+//     getFilterArray(defects: string[]): number[] {
+//         let arrays = [];
+//         let filterArray = null;
+//         for (const key of defects) {
+//             if (this.defectIndices.has(key)) {
+//                 arrays.push(this.defectIndices.get(key));
+//             }
+//         }
+//         if (arrays.length === 0) return filterArray;
+//         filterArray = arrays[0];
+//         for (let i = 1; i < arrays.length; i++) {
+//             const array = arrays[i];
+//             filterArray = filterArray.map(function (n: number, idx: number) {
+//                 return n + array[idx];
+//             })
+//         }
+//         // let sortedList: SortedListItem[] = [];
+//         // for (let i = 0; i < this.xValues.length; i++) {
+//         //     sortedList.push({ x: this.xValues[i], defect: filterArray[i] });
+//         // }
+//         // sortedList = sortedList.sort((a, b) => {
+//         //     return a.x - b.x;
+//         // });
+//         // return sortedList.map(x => x.defect);
+//         return filterArray;
+//     }
+// }
 
 // interface SortedListItem {
 //     x: number;
@@ -70,7 +70,7 @@ export class RolloutRectangles {
     constructor(xValues: number[], rollout: number[], y, width) {
         this.rolloutRectangles = []
         let rect = <RolloutRectangle>{
-            y, width, x: xValues[0], color: ColorSchemes.rolloutColors[rollout[0]]
+            y, width, x: xValues[0], color: ArrayConstants.rolloutColors[rollout[0]]
         }
         let lastX = xValues[0];
         let lastRollout = rollout[0];
@@ -83,7 +83,7 @@ export class RolloutRectangles {
                 lastX = x;
                 this.rolloutRectangles.push(rect);
                 rect = <RolloutRectangle>{
-                    y, width, x: xValues[i], color: ColorSchemes.rolloutColors[rollout[i]]
+                    y, width, x: xValues[i], color: ArrayConstants.rolloutColors[rollout[i]]
                 }
             }
         }
@@ -226,6 +226,7 @@ export interface Legend {
     legendDataPoints: LegendDataPoint[];
     legendValues: LegendValue[];
     legendTitle: string;
+    legendXLength:number;
 }
 
 export interface DataPoint extends SelectableDataPoint {

@@ -71,19 +71,6 @@
             "kind": "Grouping"
         },
         {
-            "displayName": "Defect Indices",
-            "name": "defectIndices",
-            "kind": "GroupingOrMeasure",
-            "preferredTypes": [
-                {
-                    "numeric": true
-                },
-                {
-                    "integer": true
-                }
-            ]
-        },
-        {
             "displayName": "Rollout",
             "name": "rollout",
             "kind": "GroupingOrMeasure",
@@ -125,9 +112,6 @@
                     },
                     "legend": {
                         "max": 1
-                    },
-                    "defectIndices": {
-                        "max": 10
                     },
                     "rollout": {
                         "max": 1
@@ -171,11 +155,6 @@
                         {
                             "for": {
                                 "in": "legend"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "defectIndices"
                             }
                         },
                         {

@@ -69,11 +69,11 @@ export enum Constants {
     slabClass = "slabBars",
     barClass = "bar",
     dotClass = "dot",
-    rolloutClass = "rollout"
+    rolloutClass = "rollout",
 }
 
-export class ColorSchemes {
-    static readonly schemes = {
+export class ArrayConstants {
+    static readonly colorSchemes = {
         sequential: ["BuGn", "BuPu", "GnBu", "OrRd", "PuBu", "PuBuGn", "PuRd", "RdPu", "YlGn", "YlGnBu", "YlOrBr", "YlOrRd"],
         singlehue: ["Blues", "Greens", "Greys", "Oranges", "Purples", "Reds"],
         diverging: ["BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy", "RdYlBu", "RdYlGn", "Spectral"]
@@ -84,5 +84,5 @@ export class ColorSchemes {
         GZE: "#377eb8",
         RAS: "#4daf4a"
     }
-
+    static readonly rolloutNames = ["Rolled", "Rolled with error", "Not rolled"];
 }
