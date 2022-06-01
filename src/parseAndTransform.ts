@@ -88,6 +88,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let slabLength: number[] = [];
     let legend: Legend = null;
     let rolloutRectangles: number[];
+    let rolloutName: string;
 
     //aquire all categorical values
     if (categorical.categories !== undefined) {
@@ -140,7 +141,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             //     defectIndices.defectIndices.set(category.source.displayName, <number[]>category.values)
             // }
             if (roles.rollout) {
-                rolloutRectangles = <number[]>category.values
+                rolloutRectangles = <number[]>category.values;
+                rolloutName = category.source.displayName;
             }
         }
     }
@@ -196,7 +198,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             //     defectIndices.defectIndices.set(value.source.displayName, <number[]>value.values);
             // }
             if (roles.rollout) {
-                rolloutRectangles = <number[]>value.values
+                rolloutRectangles = <number[]>value.values;
+                rolloutName = value.source.displayName;
             }
 
         }
@@ -225,7 +228,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             legendDataPoints: [],
             legendValues: [],
             legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
-            legendXLength:0
+            legendXLength: 0
         }
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i]
@@ -394,7 +397,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     if (rolloutRectangles) {
         const rolloutY = viewModel.plotModels[0].plotTop;
         const rolloutHeight = viewModel.plotModels[viewModel.plotModels.length - 1].plotTop + viewModel.generalPlotSettings.plotHeight - rolloutY;
-        viewModel.rolloutRectangles = new RolloutRectangles(xData.values, rolloutRectangles, rolloutY, rolloutHeight);
+        viewModel.rolloutRectangles = new RolloutRectangles(xData.values, rolloutRectangles, rolloutY, rolloutHeight,rolloutName);
     }
 
     viewModel.generalPlotSettings.legendYPostion = plotTop;
