@@ -43,13 +43,14 @@ import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap } from './plotInterface';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap, RolloutRectangle } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ColorSchemes, HeatmapSettingsNames } from './constants';
+import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ArrayConstants, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, HeatmapError, PlotError, SlabInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 import { Heatmapmargins, MarginSettings } from './marginSettings';
+import { line } from 'd3';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 
@@ -60,6 +61,7 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: Selection<any>;
+    // private defectSelection: Set<string>;
 
 
     constructor(options: VisualConstructorOptions) {
@@ -68,14 +70,18 @@ export class Visual implements IVisual {
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true)
             .attr("width", this.element.clientWidth)
             .attr("height", this.element.clientHeight);
+        // this.defectSelection = new Set<string>();
+
     }
 
 
     private drawLegend() {
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion + 10;
-        const legendData = this.viewModel.legend.legendValues;
-        const legendTitle = this.viewModel.legend.legendTitle;
+        const legend = this.viewModel.legend
+        const legendData = legend.legendValues;
+        const legendTitle = legend.legendTitle;
+        const _this = this;
         let widths = [];
         let width = margins.margins.left;
 
@@ -84,21 +90,25 @@ export class Visual implements IVisual {
             .enter()
             .append("text")
             .text(d => d)
-            .attr("x", function (d, i) {
-                let x = width
-                width = width + this.getComputedTextLength();
-                return x;
-            })
-            .attr("y", yPosition)
             .attr("text-anchor", "left")
             .style("alignment-baseline", "middle")
             .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+            .attr("x", function (d, i) {
+                let x = width
+                width = width + this.getComputedTextLength() + 15;
+                return x;
+            })
+            .attr("y", yPosition)
+
 
         this.svg.selectAll("legendText")
             .data(legendData)
             .enter()
             .append("text")
             .text(function (d) { return String(d.value) })
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
             .attr("x", function (d, i) {
                 let x = width
                 widths.push(width);
@@ -106,9 +116,7 @@ export class Visual implements IVisual {
                 return 10 + x;
             })
             .attr("y", yPosition)
-            .attr("text-anchor", "left")
-            .style("alignment-baseline", "middle")
-            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+
 
         this.svg.selectAll("legendDots")
             .data(legendData)
@@ -118,6 +126,64 @@ export class Visual implements IVisual {
             .attr("cy", yPosition)
             .attr("r", 7)
             .style("fill", function (d) { return d.color })
+            .style("stroke", "grey")
+
+        legend.legendXLength = width;
+        // const checkBoxSize = 10;
+        // this.svg.selectAll("legendCheckboxes")
+        //     .data(legendData)
+        //     .enter()
+        //     .append("rect")
+        //     .attr("x", function (d, i) { return widths[i] - 20 })
+        //     .attr("y", yPosition - 5)
+        //     .attr("width", checkBoxSize)
+        //     .attr("height", checkBoxSize)
+        //     .style("fill", "white")
+        //     .style("stroke", "black")
+        //     .style("stroke-width", "1px")
+        //     .style("pointer-events", "auto")
+        //     .on("click", function (event, d) {
+        //         const defect = d.value.toString()
+        //         if (_this.defectSelection.has(defect)) {
+        //             _this.defectSelection.delete(defect);
+        //             d3.selectAll("." + defect + "line").remove()
+        //         }
+        //         else {
+        //             _this.defectSelection.add(defect);
+        //             const rect = d3.select(this);
+        //             const x = rect.property("x").baseVal.value;
+        //             const y = rect.property("y").baseVal.value;
+        //             //line1 
+        //             _this.svg.append("line")
+        //                 .attr("class", defect + "line")
+        //                 .attr("x1", x)
+        //                 .attr("x2", x + checkBoxSize)
+        //                 .attr("y1", y)
+        //                 .attr("y2", y + checkBoxSize)
+        //                 .style("stroke", "black")
+        //                 .style("pointer-events", "none")
+        //             //line2
+        //             _this.svg.append("line")
+        //                 .attr("class", defect + "line")
+        //                 .attr("x1", x + checkBoxSize)
+        //                 .attr("x2", x)
+        //                 .attr("y1", y)
+        //                 .attr("y2", y + checkBoxSize)
+        //                 .style("stroke", "black")
+        //                 .style("pointer-events", "none")
+        //         }
+        //         _this.svg.selectAll('*').remove();
+        //         _this.svg.attr("width", _this.viewModel.svgWidth)
+        //             .attr("height", _this.viewModel.svgHeight);
+        //         // this.displayError(new Error("this is a test"));
+        //         if (_this.viewModel.legend != null) {
+        //             _this.drawLegend();
+        //         }
+        //         _this.drawPlots();
+
+        //     });
+
+
 
     }
 
@@ -151,7 +217,7 @@ export class Visual implements IVisual {
                 if (this.viewModel.legend != null) {
                     this.drawLegend();
                 }
-                this.drawPlots(options);
+                this.drawPlots();
 
 
             }).mapErr(err => this.displayError(err));
@@ -185,22 +251,22 @@ export class Visual implements IVisual {
         }
     }
 
-    private drawPlots(options: VisualUpdateOptions) {
-        let plots: D3Plot[] = [];
+    private drawPlots() {
+        this.addClipPath().mapErr(err => this.displayError(err));
         for (let plotModel of this.viewModel.plotModels) {
 
             const plotType = plotModel.plotSettings.plotSettings.plotType;
-            if (plotType == PlotType.LinePlot) {
-                this.drawLinePlot(plotModel)
-                    .map(linePlot => plots.push(linePlot))
-                    .mapErr(err => this.displayError(err));
 
-            }
-            else if (plotType == PlotType.ScatterPlot) {
-                this.drawScatterPlot(plotModel)
-                    .map(scatterPlot => plots.push(scatterPlot))
-                    .mapErr(err => this.displayError(err));
-            }
+            this.drawPlot(plotModel)
+                //.map(linePlot => plots.push(linePlot))
+                .mapErr(err => this.displayError(err));
+
+            // }
+            // else if (plotType == PlotType.ScatterPlot) {
+            //     this.drawScatterPlot(plotModel)
+            //         .map(scatterPlot => plots.push(scatterPlot))
+            //         .mapErr(err => this.displayError(err));
+            // }
             //could be used later
             // else if (plotType == PlotType.BarPlot) {
             //     //TODO: add bar plot to plots?
@@ -211,39 +277,119 @@ export class Visual implements IVisual {
 
         const zoomingSettings = this.viewModel.zoomingSettings;
         if (zoomingSettings.enableZoom) {
-            this.addZoom(plots, zoomingSettings).mapErr(err => this.displayError(err));
+            this.addZoom(zoomingSettings).mapErr(err => this.displayError(err));
+        }
+        if (this.viewModel.rolloutRectangles) {
+            this.drawRolloutRectangles();
+            this.drawRolloutLegend();
+
         }
     }
 
-    private constructBasicPlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
+    private drawRolloutLegend() {
+        const margins = this.viewModel.generalPlotSettings;
+        const yPosition = margins.legendYPostion + 10;
+        const rolloutRectangles = this.viewModel.rolloutRectangles;
+        let width = this.viewModel.legend ? this.viewModel.legend.legendXLength + 50 : margins.margins.left;
+        let widths = [];
+
+        this.svg.selectAll("rolloutLegendTitle")
+            .data([rolloutRectangles.name])
+            .enter()
+            .append("text")
+            .text(d => d)
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+            .attr("x", function (d, i) {
+                let x = width;
+                width = width + this.getComputedTextLength() + 15;
+                return x;
+            })
+            .attr("y", yPosition);
+
+        this.svg.selectAll("rolloutLegendText")
+            .data(ArrayConstants.rolloutNames)
+            .enter()
+            .append("text")
+            .text(d => d)
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+            .style("font-size", this.viewModel.generalPlotSettings.fontSize)
+            .attr("x", function (d, i) {
+                let x = width;
+                widths.push(width);
+                width = width + 25 + this.getComputedTextLength();
+                return 10 + x;
+            })
+            .attr("y", yPosition);
+
+
+        this.svg.selectAll("rolloutLegendDots")
+            .data(ArrayConstants.rolloutColors)
+            .enter()
+            .append("circle")
+            .attr("cx", function (d, i) { return widths[i]; })
+            .attr("cy", yPosition)
+            .attr("r", 7)
+            .style("fill", d => d)
+            .style("stroke", "grey")
+            .style("opacity", rolloutRectangles.opacity*2);
+    }
+
+    private drawRolloutRectangles() {
+        const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
+
+        const rolloutG = this.svg
+            .append("g")
+            .attr("transform", 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')');
+
+        rolloutG.selectAll("." + Constants.rolloutClass)
+            .data(this.viewModel.rolloutRectangles.rolloutRectangles)
+            .enter()
+            .append("rect")
+            .attr("class", Constants.rolloutClass)
+            .attr("width", (d) => xScale(d.length))
+            .attr("height", (d) => d.width)
+            .attr("x", d => xScale(d.x))
+            .attr("y", d => d.y)
+            .attr("fill", d => d.color)
+            .attr("clip-path", "url(#rolloutClip)")
+            .style("opacity",this.viewModel.rolloutRectangles.opacity);
+        rolloutG.lower();
+    }
+
+    private constructBasicPlot(plotModel: PlotModel): Result<void, PlotError> {
         const plotType = plotModel.plotSettings.plotSettings.plotType
-        let plot: d3.Selection<SVGGElement, any, any, any>;
+        let root: d3.Selection<SVGGElement, any, any, any>;
         let x: D3PlotXAxis;
         let y: D3PlotYAxis;
         let plotError: PlotError;
         const PlotResult = this.buildBasicPlot(plotModel).map(plt => {
-            plot = plt;
-            plot.append("g").attr("class", Constants.slabClass).attr('clip-path', 'url(#slabClip)');
+            root = plt;
+            root.append("g").attr("class", Constants.slabClass).attr('clip-path', 'url(#slabClip)');
         }).mapErr(error => this.displayError(error));
         if (PlotResult.isErr()) {
             return err(plotError);
         }
 
-        this.buildXAxis(plotModel, plot).map(axis => x = axis).mapErr(err => plotError = err);
-        this.buildYAxis(plotModel, plot).map(axis => y = axis).mapErr(err => plotError = err);
-        this.addClipPath().mapErr(err => plotError = err);
-        this.addPlotTitles(plotModel, plot).mapErr(err => plotError = err);
-        this.addVerticalRuler(plot).mapErr(err => plotError = err);
-        this.drawSlabs(plotModel, plot, x.xScale, y.yScale).mapErr(err => plotError = err);
+        this.buildXAxis(plotModel, root).map(axis => x = axis).mapErr(err => plotError = err);
+        this.buildYAxis(plotModel, root).map(axis => y = axis).mapErr(err => plotError = err);
+        plotModel.d3Plot = <D3Plot>{ yName: plotModel.yName, type: plotType, root, points: null, x, y };
+        this.addPlotTitles(plotModel, root).mapErr(err => plotError = err);
+        this.addVerticalRuler(root).mapErr(err => plotError = err);
+        this.drawSlabs(plotModel).mapErr(err => plotError = err);
         if (plotError) {
             return err(plotError);
         }
-        return ok(<D3Plot>{ yName: plotModel.yName, type: plotType, plot, points: null, x, y });
+
+        return ok(null);
 
     }
 
     private addClipPath(): Result<void, PlotError> {
         try {
+
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plotWidth = generalPlotSettings.plotWidth;
             const plotHeight = generalPlotSettings.plotHeight;
@@ -268,6 +414,16 @@ export class Visual implements IVisual {
                 .attr('x', 0)
                 .attr('width', plotWidth)
                 .attr('height', Heatmapmargins.heatmapHeight);
+            if (this.viewModel.rolloutRectangles) {
+                const rolloutRectangle = this.viewModel.rolloutRectangles.rolloutRectangles[0];
+                this.svg.append('defs').append('clipPath')
+                    .attr('id', 'rolloutClip')
+                    .append('rect')
+                    .attr('y', rolloutRectangle.y)
+                    .attr('x', rolloutRectangle.x)
+                    .attr('width', rolloutRectangle.x + plotWidth)
+                    .attr('height', rolloutRectangle.width);
+            }
             return ok(null);
         } catch (error) {
             return err(new AddClipPathError(error.stack))
@@ -313,10 +469,10 @@ export class Visual implements IVisual {
     private buildXAxis(plotModel: PlotModel, plot: any): Result<D3PlotXAxis, PlotError> {
 
         try {
-            const generalPlotSettings = this.viewModel.generalPlotSettings
+            const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxis = plot.append('g').classed('xAxis', true);
-            const xScale = scaleLinear().domain([plotModel.xRange.min, plotModel.xRange.max]).range([0, generalPlotSettings.plotWidth]);
-            const xAxisValue = axisBottom(xScale);
+
+            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScale);
             let xLabel = null;
             if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
                 xAxisValue.tickValues([]);
@@ -338,7 +494,7 @@ export class Visual implements IVisual {
                 .attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')')
                 .call(xAxisValue);
 
-            return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xScale, xLabel: xLabel });
+            return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xLabel: xLabel });
         } catch (error) {
             return err(new BuildXAxisError(error.stack))
         }
@@ -379,13 +535,16 @@ export class Visual implements IVisual {
     }
 
 
-    private drawSlabs(plotModel: PlotModel, plot: Selection<any, any>, xScale: d3.ScaleLinear<number, number, never>, yScale: d3.ScaleLinear<number, number, never>): Result<void, PlotError> {
+    private drawSlabs(plotModel: PlotModel): Result<void, PlotError> {
 
         try {
             const colorSettings = this.viewModel.colorSettings.colorSettings;
             const slabtype = plotModel.overlayPlotSettings.overlayPlotSettings.slabType;
             const slabRectangles = this.viewModel.slabRectangles;
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
+            const plot = plotModel.d3Plot.root;
+            const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
+            const yScale = plotModel.d3Plot.y.yScale;
             if (slabtype != SlabType.None && slabRectangles != null) {
                 if (slabRectangles.length == 0) {
                     return err(new SlabInformationError());
@@ -395,7 +554,7 @@ export class Visual implements IVisual {
                         .append("rect")
                         .attr("x", function (d) { return xScale(d.x); })
                         .attr("y", function (d) { return yScale(d.width - d.y); })
-                        .attr("width", function (d) { return xScale(d.length + d.x) - xScale(d.x); })
+                        .attr("width", function (d) { return xScale(d.length); })
                         .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
                         .attr("fill", "transparent")
                         .attr("stroke", colorSettings.slabColor);
@@ -407,7 +566,7 @@ export class Visual implements IVisual {
                         .attr("x2", function (d) { return xScale(d.x); })
                         .attr("y1", 0)
                         .attr("y2", plotHeight)
-                        .attr("opacity", 1);
+                        .style("opacity", 1);
                 }
             } else {
                 plot.select(`.${Constants.slabClass}`).remove()
@@ -435,99 +594,115 @@ export class Visual implements IVisual {
         }
     }
 
-    private drawScatterPlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
+    // private drawScatterPlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
+    //     try {
+    //         let basicPlot: D3Plot;
+    //         let plotError: PlotError;
+    //         let x: D3PlotXAxis;
+    //         let y: D3PlotYAxis;
+    //         let type: PlotType;
+    //         let plot: any;
+    //         this.constructBasicPlot(plotModel)
+    //             .map(plt => {
+    //                 basicPlot = plt;
+    //                 x = basicPlot.x;
+    //                 y = basicPlot.y;
+    //                 type = plotModel.plotSettings.plotSettings.plotType;
+    //                 plot = basicPlot.root;
+    //             }).mapErr(err => plotError = err);
+    //         if (plotError) return err(plotError);
+    //         const dataPoints = filterNullValues(plotModel.dataPoints);
+    //         const points = plot
+    //             .selectAll(Constants.dotClass)
+    //             .data(dataPoints)
+    //             .enter()
+    //             .append('circle')
+    //             .attr('fill', (d: DataPoint) => d.color)
+    //             .attr('stroke', 'none')
+    //             .attr('cx', (d) => x.xScale(<number>d.xValue))
+    //             .attr('cy', (d) => y.yScale(<number>d.yValue))
+    //             .attr('r', 2)
+    //             .attr('clip-path', 'url(#clip)')
+    //             .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
+
+    //         let mouseEvents: TooltipInterface;
+    //         this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
+    //         if (plotError) return err(plotError);
+    //         points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
+    //         let heatmap = null;
+    //         if (plotModel.plotSettings.plotSettings.showHeatmap) {
+    //             this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
+    //             if (plotError) return err(plotError);
+    //         }
+
+    //         return ok(<D3Plot>{ yName: plotModel.yName, type, plotLine, plot, root: plot, points, x, y, heatmap });
+
+    //     } catch (error) {
+    //         return err(new DrawScatterPlotError(error.stack));
+    //     }
+    // }
+
+
+    private drawPlot(plotModel: PlotModel): Result<void, PlotError> {
         try {
-            let basicPlot: D3Plot;
+
             let plotError: PlotError;
-            let x: D3PlotXAxis;
-            let y: D3PlotYAxis;
+            // let basicPlot: D3Plot;
+            // let x: D3PlotXAxis;
+            // let y: D3PlotYAxis;
             let type: PlotType;
-            let plot: any;
+            // let plot: any;
+            const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
             this.constructBasicPlot(plotModel)
-                .map(plt => {
-                    basicPlot = plt;
-                    x = basicPlot.x;
-                    y = basicPlot.y;
-                    type = plotModel.plotSettings.plotSettings.plotType;
-                    plot = basicPlot.plot;
-                }).mapErr(err => plotError = err);
+                // .map(
+                //     // plt => {
+                //     // basicPlot = plt;
+                //     // x = basicPlot.x;
+                //     // y = basicPlot.y;
+                //     // type = plotModel.plotSettings.plotSettings.plotType;
+                //     // plot = basicPlot.root;
+                // // }
+                // )
+                .mapErr(err => plotError = err);
             if (plotError) return err(plotError);
-            const dataPoints = filterNullValues(plotModel.dataPoints);
-            const points = plot
-                .selectAll(Constants.dotClass)
-                .data(dataPoints)
-                .enter()
-                .append('circle')
-                .attr('fill', (d: DataPoint) => d.color)
-                .attr('stroke', 'none')
-                .attr('cx', (d) => x.xScale(<number>d.xValue))
-                .attr('cy', (d) => y.yScale(<number>d.yValue))
-                .attr('r', 2)
-                .attr('clip-path', 'url(#clip)')
-                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
+            const d3Plot = plotModel.d3Plot;
 
-            let mouseEvents: TooltipInterface;
-            this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
-            if (plotError) return err(plotError);
-            points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-            let heatmap = null;
-            if (plotModel.plotSettings.plotSettings.showHeatmap) {
-                this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
-                if (plotError) return err(plotError);
-            }
-
-            return ok(<D3Plot>{ yName: plotModel.yName, type, plot, root: plot, points, x, y, heatmap });
-
-        } catch (error) {
-            return err(new DrawScatterPlotError(error.stack));
-        }
-    }
-
-
-    private drawLinePlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
-        try {
-            let basicPlot: D3Plot;
-            let plotError: PlotError;
-            let x: D3PlotXAxis;
-            let y: D3PlotYAxis;
-            let type: PlotType;
-            let plot: any;
-            this.constructBasicPlot(plotModel)
-                .map(plt => {
-                    basicPlot = plt;
-                    x = basicPlot.x;
-                    y = basicPlot.y;
-                    type = plotModel.plotSettings.plotSettings.plotType;
-                    plot = basicPlot.plot;
-                }).mapErr(err => plotError = err);
-            if (plotError) return err(plotError);
-            const dataPoints = filterNullValues(plotModel.dataPoints);
+            let dataPoints = plotModel.dataPoints;
+            // const filterArray = this.viewModel.defectIndices.getFilterArray(Array.from(this.defectSelection))
+            // if (filterArray) {
+            //     dataPoints = dataPoints.filter(function (x, idx) {
+            //         return filterArray[idx] > 0;
+            //     });
+            // }
+            dataPoints = filterNullValues(dataPoints);
             const line = d3
                 .line<DataPoint>()
-                .x((d) => x.xScale(<number>d.xValue))
-                .y((d) => y.yScale(<number>d.yValue));
+                .x((d) => xScale(<number>d.xValue))
+                .y((d) => d3Plot.y.yScale(<number>d.yValue));
+            const plotType = plotModel.plotSettings.plotSettings.plotType;
 
-            const linePath = plot
-                .append('path')
-                .datum(dataPoints)
-                .attr("class", "path")
-                .attr('d', line)
-                .attr('fill', 'none')
-                .attr('stroke', plotModel.plotSettings.plotSettings.fill)
-                .attr('stroke-width', 1.5)
-                .attr('clip-path', 'url(#clip)')
-                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
+            if (plotType == PlotType.LinePlot) {
+                d3Plot.plotLine = d3Plot.root
+                    .append('path')
+                    .datum(dataPoints)
+                    .attr("class", "path")
+                    .attr('d', line)
+                    .attr('fill', 'none')
+                    .attr('stroke', plotModel.plotSettings.plotSettings.fill)
+                    .attr('stroke-width', 1.5)
+                    .attr('clip-path', 'url(#clip)')
+                    .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
+            }
 
-
-            const points = plot
+            d3Plot.points = d3Plot.root
                 .selectAll(Constants.dotClass)
                 .data(dataPoints)
                 .enter()
                 .append('circle')
                 .attr('fill', (d: DataPoint) => d.color)//plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke', 'none')
-                .attr('cx', (d) => x.xScale(<number>d.xValue))
-                .attr('cy', (d) => y.yScale(<number>d.yValue))
+                .attr('cx', (d) => xScale(<number>d.xValue))
+                .attr('cy', (d) => d3Plot.y.yScale(<number>d.yValue))
                 .attr('r', 2)
                 .attr('clip-path', 'url(#clip)')
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
@@ -535,24 +710,14 @@ export class Visual implements IVisual {
             let mouseEvents: TooltipInterface;
             this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
             if (plotError) return err(plotError);
-            points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-
+            d3Plot.points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
             let heatmap = null;
             if (plotModel.plotSettings.plotSettings.showHeatmap) {
                 this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
                 if (plotError) return err(plotError);
             }
 
-            return ok(<D3Plot>{
-                yName: plotModel.yName,
-                type: type,
-                plot: linePath,
-                root: plot,
-                points: points,
-                x: x,
-                y: y,
-                heatmap: heatmap
-            });
+            return ok(null);
         } catch (error) {
             return err(new DrawLinePlotError(error.stack));
         }
@@ -656,20 +821,27 @@ export class Visual implements IVisual {
         }
     }
 
-    private addZoom(plots: D3Plot[], zoomingSettings: ZoomingSettings): Result<void, PlotError> {
+    private addZoom(zoomingSettings: ZoomingSettings): Result<void, PlotError> {
         try {
             const _this = this;
+            const generalPlotSettings = this.viewModel.generalPlotSettings;
+            const plots = this.viewModel.plotModels;
             let errorFunction = this.displayError;
             let zoomed = function (event) {
                 try {
                     let transform: d3.ZoomTransform = event.transform;
-                    if (transform.k == 1) {
-                        transform = d3.zoomIdentity.translate(0, transform.y).scale(transform.k);
+                    if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
+                        _this.svg
+                            .call(zoom.transform, d3.zoomIdentity);
+                        return;
                     }
-                    for (let plot of plots) {
+                    let xScaleNew = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
+                    _this.svg.selectAll("." + Constants.rolloutClass)
+                        .attr("x", function (d: RolloutRectangle) { return xScaleNew(d.x); })
+                        .attr("width", function (d: RolloutRectangle) { return xScaleNew(d.length + d.x) - xScaleNew(d.x); });
+                    for (let plot of plots.map(x => x.d3Plot)) {
                         plot.x.xAxis.attr('clip-path', 'url(#clip)');
                         let xAxisValue = plot.x.xAxisValue;
-                        let xScaleNew = transform.rescaleX(plot.x.xScale);
                         xAxisValue.scale(xScaleNew);
                         plot.x.xAxis.call(xAxisValue);
                         plot.points.attr('cx', (d) => { return xScaleNew(<number>d.xValue) })
@@ -709,14 +881,14 @@ export class Visual implements IVisual {
                             .attr("x2", function (d: SlabRectangle) { return xScaleNew(d.x); })
 
                         if (plot.type === 'LinePlot') {
-                            plot.plot.attr('clip-path', 'url(#clip)');
+                            plot.plotLine.attr('clip-path', 'url(#clip)');
 
                             let line = d3
                                 .line<DataPoint>()
                                 .x((d) => xScaleNew(<number>d.xValue))
                                 .y((d) => plot.y.yScale(<number>d.yValue));
 
-                            plot.plot.attr('d', line);
+                            plot.plotLine.attr('d', line);
                         }
                         if (plot.heatmap) {
                             let values = plot.heatmap.values;
@@ -1099,7 +1271,7 @@ export class Visual implements IVisual {
 //function to print color schemes for adding them to capabilities
 function printColorSchemes() {
     var str = "";
-    for (const scheme of ColorSchemes.schemes.sequential) {
+    for (const scheme of ArrayConstants.colorSchemes.sequential) {
         str = str + '{"displayName": "' + scheme + '",   "value": "interpolate' + scheme + '"},';
     }
     console.log(str);

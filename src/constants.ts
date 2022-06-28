@@ -68,13 +68,21 @@ export enum Constants {
     verticalRulerClass = "hover-line",
     slabClass = "slabBars",
     barClass = "bar",
-    dotClass = "dot"
+    dotClass = "dot",
+    rolloutClass = "rollout",
 }
 
-export class ColorSchemes {
-    static readonly schemes = {
+export class ArrayConstants {
+    static readonly colorSchemes = {
         sequential: ["BuGn", "BuPu", "GnBu", "OrRd", "PuBu", "PuBuGn", "PuRd", "RdPu", "YlGn", "YlGnBu", "YlOrBr", "YlOrRd"],
         singlehue: ["Blues", "Greens", "Greys", "Oranges", "Purples", "Reds"],
         diverging: ["BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy", "RdYlBu", "RdYlGn", "Spectral"]
     };
+    static readonly rolloutColors = ["#fa8e00", "#ff0000", "#ffffff"];
+    static readonly legendColors = {
+        OZE: "#e41a1c",
+        GZE: "#377eb8",
+        RAS: "#4daf4a"
+    }
+    static readonly rolloutNames = ["Rolled", "Rolled with error", "Not rolled"];
 }
