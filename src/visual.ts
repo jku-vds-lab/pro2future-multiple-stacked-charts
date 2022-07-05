@@ -132,16 +132,24 @@ export class Visual implements IVisual {
             .style("stroke", "grey")
             .attr("class", d => Constants.defectLegendClass + " " + d.value)
         this.svg.selectAll("." + Constants.defectLegendClass)
-            .on("click", function (e, d: LegendValue) {
+            .on("click", function (e: Event, d: LegendValue) {
+                e.stopPropagation();
+                e.preventDefault();
+                e.stopImmediatePropagation();
                 const def = d.value.toString();
                 const selection = _this.svg.selectAll("." + Constants.defectLegendClass + "." + def);
-                debugger;
                 if (Object.keys(_this.defectSelection).includes(def)) {
                     delete _this.defectSelection[def];
                     selection.style("opacity", 0.3);
                 } else {
                     _this.defectSelection[def] = d.color;
                     selection.style("opacity", 1);
+                }
+                for (const plotModel of _this.viewModel.plotModels) {
+                    if (plotModel.yName.includes("DEF")) {
+                        _this.svg.selectAll("." + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                        _this.drawPlot(plotModel);
+                    }
                 }
             })
 
@@ -663,6 +671,7 @@ export class Visual implements IVisual {
     private drawPlot(plotModel: PlotModel): Result<void, PlotError> {
         try {
 
+            let dotSize = 2;
             let plotError: PlotError;
             // let basicPlot: D3Plot;
             // let x: D3PlotXAxis;
@@ -693,6 +702,12 @@ export class Visual implements IVisual {
             // }
             dataPoints = filterNullValues(dataPoints);
 
+            if (plotModel.yName.includes("DEF")) {
+                const colors = Object.values(this.defectSelection);
+                dataPoints = dataPoints.filter(x => colors.includes(x.color));
+                dotSize = 2.5;
+            }
+
             const plotType = plotModel.plotSettings.plotSettings.plotType;
 
             if (plotType == PlotType.LinePlot) {
@@ -721,7 +736,7 @@ export class Visual implements IVisual {
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
-                .attr('r', 2)
+                .attr('r', dotSize)
                 .attr('clip-path', 'url(#clip)')
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
 
@@ -958,8 +973,10 @@ export class Visual implements IVisual {
                 try {
                     lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
                     Tooltip.style("visibility", "visible");
-                    d3.select(this)
-                        .attr('r', 4)
+                    const element = d3.select(this);
+                    debugger;
+                    element
+                        .attr('r', Number(element.attr('r')) * 2)
                         .style("stroke", "black")
                         .style("opacity", 1);
                     lines.style("opacity", 1);
@@ -1019,8 +1036,9 @@ export class Visual implements IVisual {
             let mouseout = function () {
                 try {
                     Tooltip.style("visibility", "hidden");
-                    d3.select(this)
-                        .attr('r', 2)
+                    const element = d3.select(this);
+                    element
+                        .attr('r', Number(element.attr('r')) / 2)
                         .style("stroke", "none")
                         .style("opacity", 0.8);
                     lines.style("opacity", 0);
