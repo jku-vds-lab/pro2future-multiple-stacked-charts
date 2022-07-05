@@ -43,7 +43,7 @@ import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap, RolloutRectangle } from './plotInterface';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap, RolloutRectangle, LegendValue } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ArrayConstants, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
@@ -61,7 +61,7 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: Selection<any>;
-    // private defectSelection: Set<string>;
+    private defectSelection: { [key: string]: string } = null;//Set<string> = null;
 
 
     constructor(options: VisualConstructorOptions) {
@@ -70,8 +70,6 @@ export class Visual implements IVisual {
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true)
             .attr("width", this.element.clientWidth)
             .attr("height", this.element.clientHeight);
-        // this.defectSelection = new Set<string>();
-
     }
 
 
@@ -84,7 +82,11 @@ export class Visual implements IVisual {
         const _this = this;
         let widths = [];
         let width = margins.margins.left;
-
+        if (this.defectSelection === null) {
+            this.defectSelection = {}
+            legendData.forEach(x => this.defectSelection[x.value.toString()] = x.color);
+            // this.defectSelection = new Set(legendData.map(x => x.value.toString()));
+        }
         this.svg.selectAll("legendTitle")
             .data([legendTitle])
             .enter()
@@ -107,6 +109,7 @@ export class Visual implements IVisual {
             .append("text")
             .text(function (d) { return String(d.value) })
             .attr("text-anchor", "left")
+            .attr("class", d => Constants.defectLegendClass + " " + d.value)
             .style("alignment-baseline", "middle")
             .style("font-size", this.viewModel.generalPlotSettings.fontSize)
             .attr("x", function (d, i) {
@@ -127,6 +130,20 @@ export class Visual implements IVisual {
             .attr("r", 7)
             .style("fill", function (d) { return d.color })
             .style("stroke", "grey")
+            .attr("class", d => Constants.defectLegendClass + " " + d.value)
+        this.svg.selectAll("." + Constants.defectLegendClass)
+            .on("click", function (e, d: LegendValue) {
+                const def = d.value.toString();
+                const selection = _this.svg.selectAll("." + Constants.defectLegendClass + "." + def);
+                debugger;
+                if (Object.keys(_this.defectSelection).includes(def)) {
+                    delete _this.defectSelection[def];
+                    selection.style("opacity", 0.3);
+                } else {
+                    _this.defectSelection[def] = d.color;
+                    selection.style("opacity", 1);
+                }
+            })
 
         legend.legendXLength = width;
         // const checkBoxSize = 10;
@@ -334,7 +351,7 @@ export class Visual implements IVisual {
             .attr("r", 7)
             .style("fill", d => d)
             .style("stroke", "grey")
-            .style("opacity", rolloutRectangles.opacity*2);
+            .style("opacity", rolloutRectangles.opacity * 2);
     }
 
     private drawRolloutRectangles() {
@@ -355,7 +372,7 @@ export class Visual implements IVisual {
             .attr("y", d => d.y)
             .attr("fill", d => d.color)
             .attr("clip-path", "url(#rolloutClip)")
-            .style("opacity",this.viewModel.rolloutRectangles.opacity);
+            .style("opacity", this.viewModel.rolloutRectangles.opacity);
         rolloutG.lower();
     }
 
@@ -526,7 +543,7 @@ export class Visual implements IVisual {
 
             yAxis.call(yAxisValue);
 
-            return ok(<D3PlotYAxis>{ yAxis, yAxisValue, yLabel, yScale });
+            return ok(<D3PlotYAxis>{ yAxis, yAxisValue, yLabel, yScale, yScaleZoomed: yScale });
         } catch (error) {
             return err(new BuildYAxisError(error.stack))
         }
@@ -652,7 +669,7 @@ export class Visual implements IVisual {
             // let y: D3PlotYAxis;
             let type: PlotType;
             // let plot: any;
-            const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
+            const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
             this.constructBasicPlot(plotModel)
                 // .map(
                 //     // plt => {
@@ -666,7 +683,7 @@ export class Visual implements IVisual {
                 .mapErr(err => plotError = err);
             if (plotError) return err(plotError);
             const d3Plot = plotModel.d3Plot;
-
+            const yScale = d3Plot.y.yScaleZoomed;
             let dataPoints = plotModel.dataPoints;
             // const filterArray = this.viewModel.defectIndices.getFilterArray(Array.from(this.defectSelection))
             // if (filterArray) {
@@ -675,13 +692,14 @@ export class Visual implements IVisual {
             //     });
             // }
             dataPoints = filterNullValues(dataPoints);
-            const line = d3
-                .line<DataPoint>()
-                .x((d) => xScale(<number>d.xValue))
-                .y((d) => d3Plot.y.yScale(<number>d.yValue));
+
             const plotType = plotModel.plotSettings.plotSettings.plotType;
 
             if (plotType == PlotType.LinePlot) {
+                const line = d3
+                    .line<DataPoint>()
+                    .x((d) => xScale(<number>d.xValue))
+                    .y((d) => yScale(<number>d.yValue));
                 d3Plot.plotLine = d3Plot.root
                     .append('path')
                     .datum(dataPoints)
@@ -702,7 +720,7 @@ export class Visual implements IVisual {
                 .attr('fill', (d: DataPoint) => d.color)//plotModel.plotSettings.plotSettings.fill)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
-                .attr('cy', (d) => d3Plot.y.yScale(<number>d.yValue))
+                .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', 2)
                 .attr('clip-path', 'url(#clip)')
                 .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
@@ -864,6 +882,7 @@ export class Visual implements IVisual {
                             const yMin = Math.min(yScaleNew.domain()[0], ...yDataPoints);
                             const yMax = Math.max(yScaleNew.domain()[1], ...yDataPoints);
                             yScaleNew.domain([yMin, yMax]);
+                            plot.y.yScaleZoomed = yScaleNew;
                             plot.points.attr('cy', (d) => { return yScaleNew(<number>d.yValue) })
                                 .attr('r', 2);
                             let yAxisValue = plot.y.yAxisValue;
@@ -886,7 +905,7 @@ export class Visual implements IVisual {
                             let line = d3
                                 .line<DataPoint>()
                                 .x((d) => xScaleNew(<number>d.xValue))
-                                .y((d) => plot.y.yScale(<number>d.yValue));
+                                .y((d) => plot.y.yScaleZoomed(<number>d.yValue));
 
                             plot.plotLine.attr('d', line);
                         }

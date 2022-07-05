@@ -129,6 +129,7 @@ export interface XAxisSettings {
         max: number;
     };
     xScale: d3.ScaleLinear<number, number, never>;
+    xScaleZoomed: d3.ScaleLinear<number, number, never>;
 }
 
 export interface Margins {
@@ -339,6 +340,7 @@ export interface D3PlotYAxis {
     yAxis: any;
     yAxisValue: any;
     yScale: d3.ScaleLinear<number, number, never>;
+    yScaleZoomed: d3.ScaleLinear<number, number, never>;
     yLabel: any;
 }
 

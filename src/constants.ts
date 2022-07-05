@@ -70,6 +70,7 @@ export enum Constants {
     barClass = "bar",
     dotClass = "dot",
     rolloutClass = "rollout",
+    defectLegendClass = "defectLegend"
 }
 
 export class ArrayConstants {
