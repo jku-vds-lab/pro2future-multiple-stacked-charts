@@ -90,6 +90,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let rolloutRectangles: number[];
     let rolloutName: string;
 
+
     //aquire all categorical values
     if (categorical.categories !== undefined) {
         for (let category of categorical.categories) {
@@ -204,7 +205,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         }
     }
-
 
 
 
@@ -397,7 +397,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     if (rolloutRectangles) {
         const rolloutY = viewModel.plotModels[0].plotTop;
         const rolloutHeight = viewModel.plotModels[viewModel.plotModels.length - 1].plotTop + viewModel.generalPlotSettings.plotHeight - rolloutY;
-        viewModel.rolloutRectangles = new RolloutRectangles(xData.values, rolloutRectangles, rolloutY, rolloutHeight,rolloutName);
+        viewModel.rolloutRectangles = new RolloutRectangles(xData.values, rolloutRectangles, rolloutY, rolloutHeight, rolloutName);
     }
 
     viewModel.generalPlotSettings.legendYPostion = plotTop;
@@ -499,11 +499,12 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         min: Math.min(...xData.values),
         max: Math.max(...xData.values),
     }
-
+    const xScale = scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
     const xAxisSettings = <XAxisSettings>{
         xName: xData.name,
         xRange: xRange,
-        xScale: scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth])
+        xScale,
+        xScaleZoomed: xScale
     }
     let generalPlotSettings: GeneralPlotSettings = {
         plotTitleHeight: margins.plotTitleHeight,
