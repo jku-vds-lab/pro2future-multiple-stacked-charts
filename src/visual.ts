@@ -61,7 +61,7 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: Selection<any>;
-    private defectSelection: { [key: string]: string } = null;//Set<string> = null;
+    private defectSelection = new Set(Object.keys(ArrayConstants.legendColors)) //{ [key: string]: string } = null;
 
 
     constructor(options: VisualConstructorOptions) {
@@ -74,6 +74,7 @@ export class Visual implements IVisual {
 
 
     private drawLegend() {
+        const unselectedOpacity = 0.3;
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion + 10;
         const legend = this.viewModel.legend
@@ -82,11 +83,6 @@ export class Visual implements IVisual {
         const _this = this;
         let widths = [];
         let width = margins.margins.left;
-        if (this.defectSelection === null) {
-            this.defectSelection = {}
-            legendData.forEach(x => this.defectSelection[x.value.toString()] = x.color);
-            // this.defectSelection = new Set(legendData.map(x => x.value.toString()));
-        }
         this.svg.selectAll("legendTitle")
             .data([legendTitle])
             .enter()
@@ -101,6 +97,7 @@ export class Visual implements IVisual {
                 return x;
             })
             .attr("y", yPosition)
+
 
 
         this.svg.selectAll("legendText")
@@ -119,6 +116,7 @@ export class Visual implements IVisual {
                 return 10 + x;
             })
             .attr("y", yPosition)
+            .style("opacity", (d) => _this.defectSelection.has(d.value.toString()) ? 1 : unselectedOpacity)
 
 
         this.svg.selectAll("legendDots")
@@ -131,6 +129,7 @@ export class Visual implements IVisual {
             .style("fill", function (d) { return d.color })
             .style("stroke", "grey")
             .attr("class", d => Constants.defectLegendClass + " " + d.value)
+            .style("opacity", (d) => _this.defectSelection.has(d.value.toString()) ? 1 : unselectedOpacity)
         this.svg.selectAll("." + Constants.defectLegendClass)
             .on("click", function (e: Event, d: LegendValue) {
                 e.stopPropagation();
@@ -138,11 +137,11 @@ export class Visual implements IVisual {
                 e.stopImmediatePropagation();
                 const def = d.value.toString();
                 const selection = _this.svg.selectAll("." + Constants.defectLegendClass + "." + def);
-                if (Object.keys(_this.defectSelection).includes(def)) {
-                    delete _this.defectSelection[def];
-                    selection.style("opacity", 0.3);
+                if (_this.defectSelection.has(def)) {
+                    _this.defectSelection.delete(def);
+                    selection.style("opacity", unselectedOpacity);
                 } else {
-                    _this.defectSelection[def] = d.color;
+                    _this.defectSelection.add(def);
                     selection.style("opacity", 1);
                 }
                 for (const plotModel of _this.viewModel.plotModels) {
@@ -374,7 +373,7 @@ export class Visual implements IVisual {
             .enter()
             .append("rect")
             .attr("class", Constants.rolloutClass)
-            .attr("width", (d) => xScale(d.length))
+            .attr("width", (d) => xScale(d.length + d.x) - xScale(d.x))
             .attr("height", (d) => d.width)
             .attr("x", d => xScale(d.x))
             .attr("y", d => d.y)
@@ -441,12 +440,13 @@ export class Visual implements IVisual {
                 .attr('height', Heatmapmargins.heatmapHeight);
             if (this.viewModel.rolloutRectangles) {
                 const rolloutRectangle = this.viewModel.rolloutRectangles.rolloutRectangles[0];
+                const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
                 this.svg.append('defs').append('clipPath')
                     .attr('id', 'rolloutClip')
                     .append('rect')
                     .attr('y', rolloutRectangle.y)
-                    .attr('x', rolloutRectangle.x)
-                    .attr('width', rolloutRectangle.x + plotWidth)
+                    .attr('x', xScale(rolloutRectangle.x))
+                    .attr('width', plotWidth)
                     .attr('height', rolloutRectangle.width);
             }
             return ok(null);
@@ -568,7 +568,7 @@ export class Visual implements IVisual {
             const slabRectangles = this.viewModel.slabRectangles;
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
             const plot = plotModel.d3Plot.root;
-            const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
+            const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
             const yScale = plotModel.d3Plot.y.yScale;
             if (slabtype != SlabType.None && slabRectangles != null) {
                 if (slabRectangles.length == 0) {
@@ -579,7 +579,7 @@ export class Visual implements IVisual {
                         .append("rect")
                         .attr("x", function (d) { return xScale(d.x); })
                         .attr("y", function (d) { return yScale(d.width - d.y); })
-                        .attr("width", function (d) { return xScale(d.length); })
+                        .attr("width", function (d) { return xScale(d.length + d.x) - xScale(d.x); })
                         .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
                         .attr("fill", "transparent")
                         .attr("stroke", colorSettings.slabColor);
@@ -673,39 +673,21 @@ export class Visual implements IVisual {
 
             let dotSize = 2;
             let plotError: PlotError;
-            // let basicPlot: D3Plot;
-            // let x: D3PlotXAxis;
-            // let y: D3PlotYAxis;
-            let type: PlotType;
-            // let plot: any;
             const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
             this.constructBasicPlot(plotModel)
-                // .map(
-                //     // plt => {
-                //     // basicPlot = plt;
-                //     // x = basicPlot.x;
-                //     // y = basicPlot.y;
-                //     // type = plotModel.plotSettings.plotSettings.plotType;
-                //     // plot = basicPlot.root;
-                // // }
-                // )
                 .mapErr(err => plotError = err);
             if (plotError) return err(plotError);
             const d3Plot = plotModel.d3Plot;
             const yScale = d3Plot.y.yScaleZoomed;
             let dataPoints = plotModel.dataPoints;
-            // const filterArray = this.viewModel.defectIndices.getFilterArray(Array.from(this.defectSelection))
-            // if (filterArray) {
-            //     dataPoints = dataPoints.filter(function (x, idx) {
-            //         return filterArray[idx] > 0;
-            //     });
-            // }
             dataPoints = filterNullValues(dataPoints);
 
             if (plotModel.yName.includes("DEF")) {
-                const colors = Object.values(this.defectSelection);
-                dataPoints = dataPoints.filter(x => colors.includes(x.color));
-                dotSize = 2.5;
+                dataPoints = dataPoints.filter(x => {
+                    const def = this.viewModel.legend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString();
+                    return this.defectSelection.has(def);
+                });
+                dotSize = 3;
             }
 
             const plotType = plotModel.plotSettings.plotSettings.plotType;
@@ -878,7 +860,6 @@ export class Visual implements IVisual {
                         xAxisValue.scale(xScaleNew);
                         plot.x.xAxis.call(xAxisValue);
                         plot.points.attr('cx', (d) => { return xScaleNew(<number>d.xValue) })
-                            .attr('r', 2);
 
                         //y-zoom for 212
                         if (plot.yName.includes("212")) {
@@ -974,7 +955,6 @@ export class Visual implements IVisual {
                     lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
                     Tooltip.style("visibility", "visible");
                     const element = d3.select(this);
-                    debugger;
                     element
                         .attr('r', Number(element.attr('r')) * 2)
                         .style("stroke", "black")
