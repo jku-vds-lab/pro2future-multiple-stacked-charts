@@ -4,7 +4,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData, RolloutRectangles, XAxisSettings } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData, RolloutRectangles, XAxisSettings, LegendDataPoint } from './plotInterface';
 import { Color, scaleLinear, stratify } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, HeatmapSettingsNames, ArrayConstants } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings'
@@ -242,13 +242,19 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             });
         }
 
-        for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
-            legend.legendDataPoints.push({
+        legend.legendDataPoints = legendData.values.map((val, i) =>
+            <LegendDataPoint>{
                 xValue: xData.values[i],
-                yValue: legendData.values[i]
-            });
+                yValue: val
+            }).filter(x => x.yValue !== null);
 
-        }
+        // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
+        //     legend.legendDataPoints.push({
+        //         xValue: xData.values[i],
+        //         yValue: legendData.values[i]
+        //     });
+
+        // }
 
 
     }
@@ -332,8 +338,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             const xVal = xDataPoints[pointNr];
             if (plotSettings.plotSettings.useLegendColor) {
                 if (legend != null) {
-                    const legendVal = legend.legendDataPoints.find(x => x.xValue == xVal).yValue;
-                    color = legendVal == null ? color : legend.legendValues.find(x => x.value == legendVal).color;
+                    if (yDataPoints[pointNr] !== null) debugger;
+                    const legendVal = legend.legendDataPoints.find(x => x.xValue === xVal)?.yValue;
+                    color = legendVal === undefined ? color : legend.legendValues.find(x => x.value === legendVal).color;
                 } else {
                     return err(new PlotLegendError(yAxis.name));
                 }
