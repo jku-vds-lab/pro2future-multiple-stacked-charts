@@ -931,15 +931,16 @@ export class Visual implements IVisual {
 
     private addTooltips(): Result<TooltipInterface, PlotError> { // needs to be adjusted with vertical ruler method
         try {
+
             const tooltipOffset = 10;
-            const plotModels = this.viewModel.plotModels;
+            const viewModel = this.viewModel;
             const visualContainer = this.svg.node();
             const margins = this.viewModel.generalPlotSettings.margins;
             const tooltipModels = this.viewModel.tooltipModels;
             const legend = this.viewModel.legend;
             const errorFunction = this.displayError;
             var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
-            var Tooltip = d3.select(this.element)
+            var tooltip = d3.select(this.element)
                 .append('div')
                 .style("position", "absolute")
                 .style("visibility", "hidden")
@@ -953,7 +954,7 @@ export class Visual implements IVisual {
             let mouseover = function () {
                 try {
                     lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
-                    Tooltip.style("visibility", "visible");
+                    tooltip.style("visibility", "visible");
                     const element = d3.select(this);
                     element
                         .attr('r', Number(element.attr('r')) * 2)
@@ -971,8 +972,10 @@ export class Visual implements IVisual {
                     const height = visualContainer.clientHeight;
                     const width = visualContainer.clientWidth;
                     const x = event.clientX - margins.left;
-                    const tooltipX = event.clientX > width / 2 ? event.clientX - Tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
-                    const tooltipY = event.clientY > height / 2 ? event.clientY - Tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
+                    const tooltipX = event.clientX > width / 2 ? event.clientX - tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
+                    let tooltipY = event.clientY > height / 2 ? event.clientY - tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
+                    
+
                     let tooltipData: TooltipData[] = [];
 
 
@@ -981,7 +984,7 @@ export class Visual implements IVisual {
                         model.tooltipData.filter(modelData => {
                             if (modelData.xValue == data.xValue) {
                                 tooltipData.push({
-                                    yValue: modelData.yValue,
+                                    yValue: modelData.yValue === null ? '-' : modelData.yValue,
                                     title: model.tooltipName
                                 });
                             }
@@ -999,8 +1002,12 @@ export class Visual implements IVisual {
                     //     }
                     // }
 
-                    Tooltip
+                    tooltip
                         .html(Array.from(tooltipSet).join(''))
+                    const tooltipHeight = tooltip.node().getBoundingClientRect().height;
+                    tooltipY = Math.max(tooltipY, 0);
+                    tooltipY = Math.min(tooltipY, viewModel.svgHeight - tooltipHeight);
+                    tooltip
                         .style("left", (tooltipX) + "px")
                         .style("top", (tooltipY) + "px")
                         .style("color", "#F0F0F0");
@@ -1015,7 +1022,7 @@ export class Visual implements IVisual {
 
             let mouseout = function () {
                 try {
-                    Tooltip.style("visibility", "hidden");
+                    tooltip.style("visibility", "hidden");
                     const element = d3.select(this);
                     element
                         .attr('r', Number(element.attr('r')) / 2)
