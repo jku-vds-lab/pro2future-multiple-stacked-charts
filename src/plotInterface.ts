@@ -5,8 +5,6 @@ import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
 
-// TODO #11: Make the bar chart transparent
-// TODO #n: Add point selection (for future)
 
 export interface ViewModel {
     plotModels: PlotModel[];

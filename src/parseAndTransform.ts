@@ -9,10 +9,10 @@ import { Color, scaleLinear, stratify } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, HeatmapSettingsNames, ArrayConstants } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
-import { AxisError, AxisNullValuesError, GetAxisInformationError, NoAxisError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
+import { AxisError, AxisNullValuesError, GetAxisInformationError, SlabDataError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
 import { isString } from 'vega';
 
-// TODO #n: Allow user to change bars colors
+
 
 /**
  * Function that converts queried data into a viewmodel that will be used by the visual.
@@ -24,13 +24,10 @@ import { isString } from 'vega';
  * @param {IVisualHost} host            - Contains references to the host which contains services
  */
 
-function f(): number {
-    return 2;
-}
-
 export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Result<ViewModel, ParseAndTransformError> {
 
     // try {
+    let parseAndTransformError: ParseAndTransformError;
     const dataViews = options.dataViews;
     if (!dataViews || !dataViews[0] || !dataViews[0].categorical || !dataViews[0].metadata) {
         return err(new ParseAndTransformError("No categorical data in Axis or Values"));
@@ -51,24 +48,14 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const tooltipValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.tooltip }).length;
     const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
     const sharedXAxis = xCount == 1;
-    // const yCategoriesCount = categorical.categories === undefined ? 0 : new Set(categorical.categories.filter(cat => { return cat.source.roles.y_axis }).map(x => x.source.index)).size;
-    // const yValuesCount = categorical.values === undefined ? 0 : new Set(categorical.values.filter(val => { return val.source.roles.y_axis }).map(x => x.source.index)).size;
-    // const yCount = yCategoriesCount + yValuesCount;
-    // const xCategoriesCount = categorical.categories === undefined ? 0 : new Set(categorical.categories.filter(cat => { return cat.source.roles.x_axis }).map(x => x.source.index)).size;
-    // const xValuesCount = categorical.values === undefined ? 0 : new Set(categorical.values.filter(val => { return val.source.roles.x_axis }).map(x => x.source.index)).size;
-    // const xCount = xCategoriesCount + xValuesCount;
-    // const tooltipCategoriesCount = categorical.categories === undefined ? 0 : new Set(categorical.categories.filter(cat => { return cat.source.roles.tooltip }).map(x => x.source.index)).size;
-    // const tooltipValuesCount = categorical.values === undefined ? 0 : new Set(categorical.values.filter(val => { return val.source.roles.tooltip }).map(x => x.source.index)).size;
-    // const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
-    // console.log(tooltipCount);
-    // const sharedXAxis = xCount == 1
+   
 
     //check if input data count is ok
     if (yCount == 0) {
         return err(new NoValuesError());
     }
     if (xCount == 0) {
-        return err(new NoAxisError());
+        return err(new SlabDataError());
     }
     if (xCount != yCount && !sharedXAxis) {
         return err(new AxisError());
@@ -309,7 +296,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
 
     createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
-    createSlabInformation(slabLength, slabWidth, xData.values, viewModel);
+    createSlabInformation(slabLength, slabWidth, xData.values, viewModel).mapErr(err => parseAndTransformError = err);
+    if (parseAndTransformError) { return err(parseAndTransformError); }
 
 
     let plotTop = MarginSettings.svgTopPadding + MarginSettings.margins.top;
@@ -389,7 +377,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 }
             },
             yRange: {
-                min: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),//TODO: default Math.min(...yDataPoints)?
+                min: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),
                 max: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, Math.max(...yDataPoints)),
             },
             dataPoints: dataPoints,
@@ -458,7 +446,7 @@ function createTooltipModels(sharedXAxis: boolean, xData: XAxisData, tooltipData
     }
 }
 
-function createSlabInformation(slabLength: number[], slabWidth: number[], xValues: number[], viewModel: ViewModel): void {
+function createSlabInformation(slabLength: number[], slabWidth: number[], xValues: number[], viewModel: ViewModel): Result<void, SlabDataError> {
     if (slabLength.length == slabWidth.length && slabWidth.length > 0) {
         let slabRectangles: SlabRectangle[] = new Array<SlabRectangle>(slabLength.length);
         for (let i = 0; i < slabLength.length; i++) {
@@ -470,20 +458,13 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], xValue
             };
         }
         slabRectangles = slabRectangles.filter(x => x.x != null && x.x > 0 && x.width != null && x.width > 0);
+        debugger;
         if (slabRectangles.length == 0) {
-            //TODO: create error on wrong data?
-            return;
+            return err(new SlabDataError());
         }
-        // let lastX = slabRectangles[0].x;
-        // slabRectangles[0].length = lastX;
-        // slabRectangles[0].x = 0;
-        // for (let i = 1; i < slabRectangles.length; i++) {
-        //     slabRectangles[i].length = slabRectangles[i].x - lastX;
-        //     lastX = slabRectangles[i].x;
-        //     slabRectangles[i].x = lastX - slabRectangles[i].length;
-        // }
         viewModel.slabRectangles = slabRectangles;
     }
+    return ok(null);
 }
 
 function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, heatmapCount: number, legend: Legend, xData: XAxisData): Result<ViewModel, ParseAndTransformError> {
@@ -530,7 +511,7 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
 
     const zoomingSettings: ZoomingSettings = {
         enableZoom: <boolean>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.show, true),
-        maximumZoom: <number>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.maximum, 10)
+        maximumZoom: <number>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.maximum, 30)
     }
 
     let viewModel: ViewModel = <ViewModel>{
