@@ -61,7 +61,7 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: Selection<any>;
-    private defectSelection = new Set(Object.keys(ArrayConstants.legendColors)) //{ [key: string]: string } = null;
+    private defectSelection = new Set(Object.keys(ArrayConstants.legendColors));
 
 
     constructor(options: VisualConstructorOptions) {
@@ -153,68 +153,10 @@ export class Visual implements IVisual {
             })
 
         legend.legendXLength = width;
-        // const checkBoxSize = 10;
-        // this.svg.selectAll("legendCheckboxes")
-        //     .data(legendData)
-        //     .enter()
-        //     .append("rect")
-        //     .attr("x", function (d, i) { return widths[i] - 20 })
-        //     .attr("y", yPosition - 5)
-        //     .attr("width", checkBoxSize)
-        //     .attr("height", checkBoxSize)
-        //     .style("fill", "white")
-        //     .style("stroke", "black")
-        //     .style("stroke-width", "1px")
-        //     .style("pointer-events", "auto")
-        //     .on("click", function (event, d) {
-        //         const defect = d.value.toString()
-        //         if (_this.defectSelection.has(defect)) {
-        //             _this.defectSelection.delete(defect);
-        //             d3.selectAll("." + defect + "line").remove()
-        //         }
-        //         else {
-        //             _this.defectSelection.add(defect);
-        //             const rect = d3.select(this);
-        //             const x = rect.property("x").baseVal.value;
-        //             const y = rect.property("y").baseVal.value;
-        //             //line1 
-        //             _this.svg.append("line")
-        //                 .attr("class", defect + "line")
-        //                 .attr("x1", x)
-        //                 .attr("x2", x + checkBoxSize)
-        //                 .attr("y1", y)
-        //                 .attr("y2", y + checkBoxSize)
-        //                 .style("stroke", "black")
-        //                 .style("pointer-events", "none")
-        //             //line2
-        //             _this.svg.append("line")
-        //                 .attr("class", defect + "line")
-        //                 .attr("x1", x + checkBoxSize)
-        //                 .attr("x2", x)
-        //                 .attr("y1", y)
-        //                 .attr("y2", y + checkBoxSize)
-        //                 .style("stroke", "black")
-        //                 .style("pointer-events", "none")
-        //         }
-        //         _this.svg.selectAll('*').remove();
-        //         _this.svg.attr("width", _this.viewModel.svgWidth)
-        //             .attr("height", _this.viewModel.svgHeight);
-        //         // this.displayError(new Error("this is a test"));
-        //         if (_this.viewModel.legend != null) {
-        //             _this.drawLegend();
-        //         }
-        //         _this.drawPlots();
-
-        //     });
-
-
-
     }
 
     public update(options: VisualUpdateOptions) {
-
         try {
-
             this.dataview = options.dataViews[0];
             let categoryIndices = new Set()
             if (this.dataview.categorical.categories) {
@@ -237,7 +179,6 @@ export class Visual implements IVisual {
                 this.svg.selectAll('*').remove();
                 this.svg.attr("width", this.viewModel.svgWidth)
                     .attr("height", this.viewModel.svgHeight);
-                // this.displayError(new Error("this is a test"));
                 if (this.viewModel.legend != null) {
                     this.drawLegend();
                 }
@@ -278,27 +219,9 @@ export class Visual implements IVisual {
     private drawPlots() {
         this.addClipPath().mapErr(err => this.displayError(err));
         for (let plotModel of this.viewModel.plotModels) {
-
-            const plotType = plotModel.plotSettings.plotSettings.plotType;
-
             this.drawPlot(plotModel)
-                //.map(linePlot => plots.push(linePlot))
                 .mapErr(err => this.displayError(err));
-
-            // }
-            // else if (plotType == PlotType.ScatterPlot) {
-            //     this.drawScatterPlot(plotModel)
-            //         .map(scatterPlot => plots.push(scatterPlot))
-            //         .mapErr(err => this.displayError(err));
-            // }
-            //could be used later
-            // else if (plotType == PlotType.BarPlot) {
-            //     //TODO: add bar plot to plots?
-            //     this.drawBarPlot(plotModel)
-            //         .mapErr(err => this.displayError(err));
-            // }
         }
-
         const zoomingSettings = this.viewModel.zoomingSettings;
         if (zoomingSettings.enableZoom) {
             this.addZoom(zoomingSettings).mapErr(err => this.displayError(err));
@@ -306,7 +229,6 @@ export class Visual implements IVisual {
         if (this.viewModel.rolloutRectangles) {
             this.drawRolloutRectangles();
             this.drawRolloutLegend();
-
         }
     }
 
@@ -497,7 +419,7 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxis = plot.append('g').classed('xAxis', true);
 
-            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScale);
+            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed);
             let xLabel = null;
             if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
                 xAxisValue.tickValues([]);
@@ -705,8 +627,7 @@ export class Visual implements IVisual {
                     .attr('fill', 'none')
                     .attr('stroke', plotModel.plotSettings.plotSettings.fill)
                     .attr('stroke-width', 1.5)
-                    .attr('clip-path', 'url(#clip)')
-                    .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
+                    .attr('clip-path', 'url(#clip)');
             }
 
             d3Plot.points = d3Plot.root
@@ -719,16 +640,14 @@ export class Visual implements IVisual {
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', dotSize)
-                .attr('clip-path', 'url(#clip)')
-                .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
+                .attr('clip-path', 'url(#clip)');
 
             let mouseEvents: TooltipInterface;
             this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
             if (plotError) return err(plotError);
             d3Plot.points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-            let heatmap = null;
             if (plotModel.plotSettings.plotSettings.showHeatmap) {
-                this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
+                this.drawHeatmap(dataPoints, plotModel).map(x => plotModel.d3Plot.heatmap = x).mapErr(err => plotError = err);
                 if (plotError) return err(plotError);
             }
 
@@ -850,16 +769,18 @@ export class Visual implements IVisual {
                             .call(zoom.transform, d3.zoomIdentity);
                         return;
                     }
-                    let xScaleNew = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
+
+                    const xScaleZoomed = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
+                    _this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed = xScaleZoomed;
                     _this.svg.selectAll("." + Constants.rolloutClass)
-                        .attr("x", function (d: RolloutRectangle) { return xScaleNew(d.x); })
-                        .attr("width", function (d: RolloutRectangle) { return xScaleNew(d.length + d.x) - xScaleNew(d.x); });
+                        .attr("x", function (d: RolloutRectangle) { return xScaleZoomed(d.x); })
+                        .attr("width", function (d: RolloutRectangle) { return xScaleZoomed(d.length + d.x) - xScaleZoomed(d.x); });
                     for (let plot of plots.map(x => x.d3Plot)) {
                         plot.x.xAxis.attr('clip-path', 'url(#clip)');
                         let xAxisValue = plot.x.xAxisValue;
-                        xAxisValue.scale(xScaleNew);
+                        xAxisValue.scale(xScaleZoomed);
                         plot.x.xAxis.call(xAxisValue);
-                        plot.points.attr('cx', (d) => { return xScaleNew(<number>d.xValue) })
+                        plot.points.attr('cx', (d) => { return xScaleZoomed(<number>d.xValue) })
 
                         //y-zoom for 212
                         if (plot.yName.includes("212")) {
@@ -872,8 +793,8 @@ export class Visual implements IVisual {
                             domain = yScaleNew.domain();
                             yScaleNew = yScaleNew.domain([domain[1], domain[0]]);
                             const plotModel = _this.viewModel.plotModels.filter(x => x.yName === plot.yName)[0];
-                            const xMin = xScaleNew.domain()[0];
-                            const xMax = xScaleNew.domain()[1];
+                            const xMin = xScaleZoomed.domain()[0];
+                            const xMax = xScaleZoomed.domain()[1];
                             const yDataPoints = plotModel.dataPoints.filter(x => x.xValue >= xMin && x.xValue <= xMax).map(x => Number(x.yValue));
                             const yMin = Math.min(yScaleNew.domain()[0], ...yDataPoints);
                             const yMax = Math.max(yScaleNew.domain()[1], ...yDataPoints);
@@ -889,18 +810,18 @@ export class Visual implements IVisual {
                         plot.points.attr('clip-path', 'url(#clip)');
                         var slabBars = plot.root.select(`.${Constants.slabClass}`);
                         slabBars.selectAll('rect')
-                            .attr("x", function (d: SlabRectangle) { return xScaleNew(d.x); })
-                            .attr("width", function (d: SlabRectangle) { return xScaleNew(d.length + d.x) - xScaleNew(d.x); });
+                            .attr("x", function (d: SlabRectangle) { return xScaleZoomed(d.x); })
+                            .attr("width", function (d: SlabRectangle) { return xScaleZoomed(d.length + d.x) - xScaleZoomed(d.x); });
                         slabBars.selectAll('line')
-                            .attr("x1", function (d: SlabRectangle) { return xScaleNew(d.x); })
-                            .attr("x2", function (d: SlabRectangle) { return xScaleNew(d.x); })
+                            .attr("x1", function (d: SlabRectangle) { return xScaleZoomed(d.x); })
+                            .attr("x2", function (d: SlabRectangle) { return xScaleZoomed(d.x); })
 
                         if (plot.type === 'LinePlot') {
                             plot.plotLine.attr('clip-path', 'url(#clip)');
 
                             let line = d3
                                 .line<DataPoint>()
-                                .x((d) => xScaleNew(<number>d.xValue))
+                                .x((d) => xScaleZoomed(<number>d.xValue))
                                 .y((d) => plot.y.yScaleZoomed(<number>d.yValue));
 
                             plot.plotLine.attr('d', line);
@@ -929,7 +850,7 @@ export class Visual implements IVisual {
 
     }
 
-    private addTooltips(): Result<TooltipInterface, PlotError> { // needs to be adjusted with vertical ruler method
+    private addTooltips(): Result<TooltipInterface, PlotError> { 
         try {
 
             const tooltipOffset = 10;
@@ -937,7 +858,6 @@ export class Visual implements IVisual {
             const visualContainer = this.svg.node();
             const margins = this.viewModel.generalPlotSettings.margins;
             const tooltipModels = this.viewModel.tooltipModels;
-            const legend = this.viewModel.legend;
             const errorFunction = this.displayError;
             var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
             var tooltip = d3.select(this.element)
@@ -974,7 +894,7 @@ export class Visual implements IVisual {
                     const x = event.clientX - margins.left;
                     const tooltipX = event.clientX > width / 2 ? event.clientX - tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
                     let tooltipY = event.clientY > height / 2 ? event.clientY - tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
-                    
+
 
                     let tooltipData: TooltipData[] = [];
 
@@ -992,15 +912,6 @@ export class Visual implements IVisual {
                     });
                     let tooltipSet = new Set(tooltipData.map(tooltip => "<b> " + tooltip.title + "</b> : " + tooltip.yValue + " <br> "))
 
-                    //TODO: check if there is a performance difference
-                    // for (let plotModel of plotModels) {
-                    //     for (let point of plotModel.dataPoints) {
-                    //         if (point.xValue == data.xValue) {
-                    //             tooltipText += "<b> " + plotModel.yName + "</b> : " + point.yValue + " <br> ";
-                    //             break;
-                    //         }
-                    //     }
-                    // }
 
                     tooltip
                         .html(Array.from(tooltipSet).join(''))
@@ -1035,53 +946,13 @@ export class Visual implements IVisual {
                     errorFunction(error);
                 }
             }
-            //TODO: check if this is needed
             return ok(<TooltipInterface>{ mouseover, mousemove, mouseout });
         } catch (error) {
             return err(new CustomTooltipError(error.stack));
         }
     }
 
-    // //TODO: improve bar plot or remove it
-    // private drawBarPlot(options: VisualUpdateOptions, plotModel: PlotModel): Result<d3.Selection<SVGRectElement, DataPoint, any, any>, PlotError> {
-    //     const generalPlotSettings = this.viewModel.generalPlotSettings;
-    //     let plotWidth = generalPlotSettings.plotWidth;
-    //     let plotHeight = generalPlotSettings.plotHeight;
-    //     let basicPlot: D3Plot;
-    //     let plotError: PlotError;
-    //     let x: D3PlotXAxis;
-    //     let y: D3PlotYAxis;
-    //     let type: PlotType;
-    //     let plot: any;
-    //     this.constructBasicPlot(plotModel)
-    //         .map(plt => {
-    //             basicPlot = plt;
-    //             x = basicPlot.x;
-    //             y = basicPlot.y;
-    //             type = plotModel.plotSettings.plotSettings.plotType;
-    //             plot = basicPlot.plot;
-    //         }).mapErr(err => plotError = err);
-    //     if (plotError) return err(plotError);
-
-    //     try {
-    //         const dataPoints = filterNullValues(plotModel.dataPoints);
-    //         const bar = plot.selectAll(`.${Constants.barClass}`).data(dataPoints);
-
-    //         const mergedBars: d3.Selection<SVGRectElement, DataPoint, any, any> = bar
-    //             .enter()
-    //             .append('rect')
-    //             .merge(<any>bar);
-    //         mergedBars.classed(Constants.barClass, true)
-    //             .attr('width', plotWidth / dataPoints.length - 1)
-    //             .attr('height', (d) => plotHeight - y.yScale(<number>d.yValue))
-    //             .attr('y', (d) => y.yScale(<number>d.yValue))
-    //             .attr('x', (d) => x.xScale(<number>d.xValue))
-    //             .style('fill', (dataPoint: DataPoint) => dataPoint.color);
-    //         return ok(mergedBars);
-    //     } catch (error) {
-    //         return err(new DrawBarPlotError(error.stack));
-    //     }
-    // }
+    
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
@@ -1249,7 +1120,7 @@ export class Visual implements IVisual {
                                 max: column.displayName + " Maximum Value",
                             };
                             properties = {
-                                min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),//TODO: change to yRange.min?
+                                min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),
                                 max: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, yRange.max)
                             };
 

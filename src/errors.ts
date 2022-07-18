@@ -48,6 +48,19 @@ export class NoAxisError extends ParseAndTransformError {
 
     }
 }
+
+export class SlabDataError extends ParseAndTransformError {
+    /**
+     *
+     */
+    constructor() {
+        const name = "Slab Data Error";
+        const message = "There was an Error creating the slab information with the provided Data. Pleas check the specifications.";
+        super(message, name);
+
+    }
+}
+
 export class AxisNullValuesError extends ParseAndTransformError {
     /**
      *
