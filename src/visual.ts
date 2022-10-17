@@ -981,6 +981,8 @@ export class Visual implements IVisual {
                     break;
                 case Settings.axisLabelSettings:
                 case Settings.axisSettings:
+                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 2);
+                    break;
                 case Settings.yRangeSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns, 4);
                     break;
