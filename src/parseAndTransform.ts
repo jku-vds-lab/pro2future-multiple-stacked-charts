@@ -48,7 +48,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const tooltipValuesCount = categorical.values === undefined ? 0 : categorical.values.filter(val => { return val.source.roles.tooltip }).length;
     const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
     const sharedXAxis = xCount == 1;
-   
+
 
     //check if input data count is ok
     if (yCount == 0) {
@@ -326,7 +326,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             const xVal = xDataPoints[pointNr];
             if (plotSettings.plotSettings.useLegendColor) {
                 if (legend != null) {
-                    if (yDataPoints[pointNr] !== null) debugger;
+                    // if (yDataPoints[pointNr] !== null) debugger;
                     const legendVal = legend.legendDataPoints.find(x => x.xValue === xVal)?.yValue;
                     color = legendVal === undefined ? color : legend.legendValues.find(x => x.value === legendVal).color;
                 } else {
@@ -379,6 +379,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             yRange: {
                 min: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),
                 max: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, Math.max(...yDataPoints)),
+                minFixed: <boolean>getValue(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.minFixed, true),
+                maxFixed: <boolean>getValue(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.maxFixed, false)
             },
             dataPoints: dataPoints,
             d3Plot: null
@@ -458,7 +460,6 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], xValue
             };
         }
         slabRectangles = slabRectangles.filter(x => x.x != null && x.x > 0 && x.width != null && x.width > 0);
-        debugger;
         if (slabRectangles.length == 0) {
             return err(new SlabDataError());
         }

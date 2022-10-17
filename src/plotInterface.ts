@@ -177,6 +177,8 @@ export interface PlotModel {
     yRange: {
         min: number;
         max: number;
+        maxFixed: boolean;
+        minFixed: boolean;
     };
     d3Plot: D3Plot;
 }
