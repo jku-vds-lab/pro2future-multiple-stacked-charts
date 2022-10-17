@@ -468,6 +468,18 @@
                     "type": {
                         "numeric": true
                     }
+                },
+                "minFixed": {
+                    "displayName": "Fixed Minimum",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "maxFixed": {
+                    "displayName": "Fixed Maximum",
+                    "type": {
+                        "bool": true
+                    }
                 }
             }
         },

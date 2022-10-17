@@ -23,7 +23,9 @@ export enum HeatmapSettingsNames {
 
 export enum YRangeSettingsNames {
     min = "min",
-    max = "max"
+    max = "max",
+    minFixed = "minFixed",
+    maxFixed = "maxFixed"
 }
 export enum LegendSettingsNames {
     legendTitle = "legendTitle",

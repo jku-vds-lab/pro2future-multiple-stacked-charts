@@ -771,6 +771,8 @@ export class Visual implements IVisual {
                     }
 
                     const xScaleZoomed = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
+                    const xMin = xScaleZoomed.domain()[0];
+                    const xMax = xScaleZoomed.domain()[1];
                     _this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed = xScaleZoomed;
                     _this.svg.selectAll("." + Constants.rolloutClass)
                         .attr("x", function (d: RolloutRectangle) { return xScaleZoomed(d.x); })
@@ -782,30 +784,39 @@ export class Visual implements IVisual {
                         plot.x.xAxis.call(xAxisValue);
                         plot.points.attr('cx', (d) => { return xScaleZoomed(<number>d.xValue) })
 
-                        //y-zoom for 212
-                        if (plot.yName.includes("212")) {
-                            const yScale = plot.y.yScale;
-                            let domain = yScale.domain();
-                            const invertScale = yScale.domain([domain[1], domain[0]]);
-                            const t = d3.zoomIdentity.translate(0, 0).scale(transform.k);
-                            let yScaleNew = t.rescaleY(invertScale);
-                            yScale.domain(domain);
-                            domain = yScaleNew.domain();
-                            yScaleNew = yScaleNew.domain([domain[1], domain[0]]);
-                            const plotModel = _this.viewModel.plotModels.filter(x => x.yName === plot.yName)[0];
-                            const xMin = xScaleZoomed.domain()[0];
-                            const xMax = xScaleZoomed.domain()[1];
-                            const yDataPoints = plotModel.dataPoints.filter(x => x.xValue >= xMin && x.xValue <= xMax).map(x => Number(x.yValue));
-                            const yMin = Math.min(yScaleNew.domain()[0], ...yDataPoints);
-                            const yMax = Math.max(yScaleNew.domain()[1], ...yDataPoints);
-                            yScaleNew.domain([yMin, yMax]);
-                            plot.y.yScaleZoomed = yScaleNew;
-                            plot.points.attr('cy', (d) => { return yScaleNew(<number>d.yValue) })
-                                .attr('r', 2);
-                            let yAxisValue = plot.y.yAxisValue;
-                            yAxisValue.scale(yScaleNew);
-                            plot.y.yAxis.call(yAxisValue);
-                        }
+                        // //y-zoom for 212
+                        // if (plot.yName.includes("212")) {
+                        //     const yScale = plot.y.yScale;
+                        //     let domain = yScale.domain();
+                        //     const invertScale = yScale.domain([domain[1], domain[0]]);
+                        //     const t = d3.zoomIdentity.translate(0, 0).scale(transform.k);
+                        //     let yScaleNew = t.rescaleY(invertScale);
+                        //     yScale.domain(domain);
+                        //     domain = yScaleNew.domain();
+                        //     yScaleNew = yScaleNew.domain([domain[1], domain[0]]);
+                        //     const plotModel = _this.viewModel.plotModels.filter(x => x.yName === plot.yName)[0];
+                        //     const yDataPoints = plotModel.dataPoints.filter(x => x.xValue >= xMin && x.xValue <= xMax).map(x => Number(x.yValue));
+                        //     const yMin = Math.min(yScaleNew.domain()[0], ...yDataPoints);
+                        //     const yMax = Math.max(yScaleNew.domain()[1], ...yDataPoints);
+                        //     yScaleNew.domain([yMin, yMax]);
+                        //     plot.y.yScaleZoomed = yScaleNew;
+                        //     plot.points.attr('cy', (d) => { return yScaleNew(<number>d.yValue) })
+                        //         .attr('r', 2);
+                        //     let yAxisValue = plot.y.yAxisValue;
+                        //     yAxisValue.scale(yScaleNew);
+                        //     plot.y.yAxis.call(yAxisValue);
+                        // } 
+                        // else {
+                        const plotModel = _this.viewModel.plotModels.filter(x => x.yName === plot.yName)[0];
+                        const yDataPoints = plotModel.dataPoints.filter(x => x.xValue >= xMin && x.xValue <= xMax).map(x => Number(x.yValue));
+                        const yMin = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
+                        const yMax = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
+                        plot.y.yScaleZoomed = plot.y.yScaleZoomed.domain([yMin, yMax]);
+                        plot.points.attr('cy', (d) => { return plot.y.yScaleZoomed(<number>d.yValue) })
+                        let yAxisValue = plot.y.yAxisValue;
+                        yAxisValue.scale(plot.y.yScaleZoomed);
+                        plot.y.yAxis.call(yAxisValue);
+                        // }
 
                         plot.points.attr('clip-path', 'url(#clip)');
                         var slabBars = plot.root.select(`.${Constants.slabClass}`);
@@ -850,7 +861,7 @@ export class Visual implements IVisual {
 
     }
 
-    private addTooltips(): Result<TooltipInterface, PlotError> { 
+    private addTooltips(): Result<TooltipInterface, PlotError> {
         try {
 
             const tooltipOffset = 10;
@@ -952,7 +963,7 @@ export class Visual implements IVisual {
         }
     }
 
-    
+
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
@@ -971,7 +982,7 @@ export class Visual implements IVisual {
                 case Settings.axisLabelSettings:
                 case Settings.axisSettings:
                 case Settings.yRangeSettings:
-                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 2);
+                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 4);
                     break;
                 case Settings.overlayPlotSettings:
                 case Settings.plotTitleSettings:
@@ -1118,12 +1129,15 @@ export class Visual implements IVisual {
                             displayNames = {
                                 min: column.displayName + " Minimum Value",
                                 max: column.displayName + " Maximum Value",
+                                minFixed: column.displayName + " Fixed Minimum",
+                                maxFixed: column.displayName + " Fixed Maximum",
                             };
                             properties = {
                                 min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),
-                                max: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, yRange.max)
+                                max: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, yRange.max),
+                                minFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.minFixed, true),
+                                maxFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.maxFixed, false)
                             };
-
                             break;
                         case Settings.overlayPlotSettings:
                             displayNames = {
@@ -1142,8 +1156,10 @@ export class Visual implements IVisual {
                             };
                             break;
                     }
+                    
                     const propertyEntries = Object.entries(properties);
                     const displayNamesEntries = Object.entries(displayNames);
+                   
                     for (let i = 0; i < propertyEntries.length; i++) {
                         const [key, value] = propertyEntries[i];
                         var props = {};
@@ -1157,8 +1173,10 @@ export class Visual implements IVisual {
 
                     }
 
+
                 }
             }
+            if (objectName === Settings.yRangeSettings)debugger;
         }
     }
 }
