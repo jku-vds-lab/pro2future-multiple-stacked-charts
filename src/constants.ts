@@ -88,5 +88,10 @@ export class ArrayConstants {
         RAS: "#4daf4a",
         EOZ: "#a42ee8"
     }
+    static readonly groupValues = {
+        Kontrolleur: "Kontrolleur",
+        OIG: "OIG"
+    }
+
     static readonly rolloutNames = ["nicht gewalzt", "BBS gewalzt", "Beize gewalzt", "KB gewalzt ohne Fehler", "KB gewalzt mit Fehler"];
 }

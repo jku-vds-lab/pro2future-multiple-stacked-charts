@@ -68,7 +68,12 @@
         {
             "displayName": "Legend",
             "name": "legend",
-            "kind": "Grouping"
+            "kind": "GroupingOrMeasure"
+        },
+        {
+            "displayName": "Defect Group",
+            "name": "defectGroup",
+            "kind": "GroupingOrMeasure"
         },
         {
             "displayName": "Rollout",
@@ -113,6 +118,9 @@
                     "legend": {
                         "max": 1
                     },
+                    "defectGroup": {
+                        "max": 1
+                    },
                     "rollout": {
                         "max": 1
                     },
@@ -155,6 +163,11 @@
                         {
                             "for": {
                                 "in": "legend"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "defectGroup"
                             }
                         },
                         {

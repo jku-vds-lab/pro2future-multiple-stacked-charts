@@ -65,6 +65,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let yData = new Array<YAxisData>(yCount);
     let tooltipData = new Array<TooltipColumnData>(tooltipCount);
     let legendData: LegendData = null;
+    let controlLegendData: LegendData = null;
     // let defectIndices: DefectIndices = new DefectIndices();
 
 
@@ -73,7 +74,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let dataPoints: DataPoint[] = [];
     let slabWidth: number[] = [];
     let slabLength: number[] = [];
-    let legend: Legend = null;
+    let errorLegend: Legend = null;
+    let controlLegend: Legend = null;
     let rolloutRectangles: number[];
     let rolloutName: string;
 
@@ -120,6 +122,14 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
             if (roles.legend) {
                 legendData = {
+                    name: category.source.displayName,
+                    values: <string[]>category.values,
+                    columnId: category.source.index
+                };
+            }
+
+            if (roles.defectGroup) {
+                controlLegendData = {
                     name: category.source.displayName,
                     values: <string[]>category.values,
                     columnId: category.source.index
@@ -182,6 +192,13 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     columnId: value.source.index
                 };
             }
+            if (roles.defectGroup) {
+                controlLegendData = {
+                    name: value.source.displayName,
+                    values: <string[]>value.values,
+                    columnId: value.source.index
+                };
+            }
             // if (roles.defectIndices) {
             //     defectIndices.defectIndices.set(value.source.displayName, <number[]>value.values);
             // }
@@ -211,25 +228,26 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             legendSet.delete(null);
         }
         let legendValues = Array.from(legendSet);
-        legend = {
+        errorLegend = {
             legendDataPoints: [],
             legendValues: [],
             legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
-            legendXLength: 0
+            legendXLength: 0,
+            legendXPosition: 0
         }
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i]
             const defaultColor = legendColors[val] ? legendColors[val] : "FFFFFF"
             const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
 
-            legend.legendValues.push({
+            errorLegend.legendValues.push({
                 color: getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
                 selectionId: selectionId,
                 value: val
             });
         }
 
-        legend.legendDataPoints = legendData.values.map((val, i) =>
+        errorLegend.legendDataPoints = legendData.values.map((val, i) =>
             <LegendDataPoint>{
                 xValue: xData.values[i],
                 yValue: val
@@ -242,9 +260,52 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         //     });
 
         // }
-
-
     }
+    if (controlLegendData != null) {
+        let categories = categorical.categories.filter(x => x.source.roles.defectGroup)
+        let category = categories.length > 0 ? categories[0] : null;
+        let legendSet = new Set(controlLegendData.values);
+        const defaultLegendName = category ? category.source.displayName : "Legend";
+
+        if (legendSet.has(null)) {
+            legendSet.delete(null);
+        }
+        let legendValues = Array.from(legendSet);
+        controlLegend = {
+            legendDataPoints: [],
+            legendValues: [],
+            legendTitle: "test",//<string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
+            legendXLength: 0,
+            legendXPosition: 300
+        }
+        for (let i = 0; i < legendValues.length; i++) {
+            const val = legendValues[i]
+            const defaultColor = legendColors[val] ? legendColors[val] : "FFFFFF"
+            const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
+
+            controlLegend.legendValues.push({
+                color: "black",//getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
+                selectionId: selectionId,
+                value: val
+            });
+        }
+
+        controlLegend.legendDataPoints = controlLegendData.values.map((val, i) =>
+            <LegendDataPoint>{
+                xValue: xData.values[i],
+                yValue: val
+            }).filter(x => x.yValue !== null);
+
+        // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
+        //     legend.legendDataPoints.push({
+        //         xValue: xData.values[i],
+        //         yValue: legendData.values[i]
+        //     });
+
+        // }
+    }
+
+
     let formatSettings: FormatSettings[] = [];
     let plotTitles: string[] = [];
     let plotSettings: PlotSettings[] = [];
@@ -289,7 +350,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const xLabelsCount = formatSettings.filter(x => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
     const heatmapCount = plotSettings.filter(x => x.plotSettings.showHeatmap).length;
     let viewModel: ViewModel;
-    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, legend, xData)
+    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, errorLegend, controlLegend, xData)
         .map(vm => viewModel = vm)
     if (viewModelResult.isErr()) {
         return viewModelResult.mapErr(err => { return err; });
@@ -325,10 +386,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             let color = plotSettings.plotSettings.fill;
             const xVal = xDataPoints[pointNr];
             if (plotSettings.plotSettings.useLegendColor) {
-                if (legend != null) {
+                if (errorLegend != null) {
                     // if (yDataPoints[pointNr] !== null) debugger;
-                    const legendVal = legend.legendDataPoints.find(x => x.xValue === xVal)?.yValue;
-                    color = legendVal === undefined ? color : legend.legendValues.find(x => x.value === legendVal).color;
+                    const legendVal = errorLegend.legendDataPoints.find(x => x.xValue === xVal)?.yValue;
+                    color = legendVal === undefined ? color : errorLegend.legendValues.find(x => x.value === legendVal).color;
                 } else {
                     return err(new PlotLegendError(yAxis.name));
                 }
@@ -468,11 +529,11 @@ function createSlabInformation(slabLength: number[], slabWidth: number[], xValue
     return ok(null);
 }
 
-function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, heatmapCount: number, legend: Legend, xData: XAxisData): Result<ViewModel, ParseAndTransformError> {
+function createViewModel(options: VisualUpdateOptions, yCount: number, objects: powerbi.DataViewObjects, colorPalette: ISandboxExtendedColorPalette, plotTitlesCount: number, xLabelsCount: number, heatmapCount: number, errorLegend: Legend, controlLegend: Legend, xData: XAxisData): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings
     const svgHeight: number = options.viewport.height;
     const svgWidth: number = options.viewport.width;
-    const legendHeight = legend ? margins.legendHeight : 0;
+    const legendHeight = errorLegend ? margins.legendHeight : 0;
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
     }
@@ -533,7 +594,8 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,
-        legend: legend,
+        errorLegend: errorLegend,
+        controlLegend: controlLegend
         // defectIndices: defectIndices
     };
     return ok(viewModel);
