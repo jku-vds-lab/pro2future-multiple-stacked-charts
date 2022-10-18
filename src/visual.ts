@@ -47,7 +47,7 @@ import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, 
 import { visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ArrayConstants, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
-import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, HeatmapError, PlotError, SlabInformationError } from './errors';
+import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawPlotError, DrawScatterPlotError, HeatmapError, PlotError, SlabInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { line } from 'd3';
@@ -612,9 +612,14 @@ export class Visual implements IVisual {
 
             if (plotModel.yName.includes("DEF")) {
                 dataPoints = dataPoints.filter(x => {
-                    const def = this.viewModel.errorLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString();
-                    const grp = this.viewModel.controlLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString();
-                    return this.legendSelection.has(def) && this.legendSelection.has(grp);
+                    let draw = true;
+                    if (this.viewModel.errorLegend != null) {
+                        draw = draw && this.legendSelection.has(this.viewModel.errorLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString());
+                    }
+                    if (this.viewModel.controlLegend != null) {
+                        draw = draw && this.legendSelection.has(this.viewModel.controlLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString());
+                    }
+                    return draw;
                 });
                 dotSize = 3;
             }
@@ -660,7 +665,7 @@ export class Visual implements IVisual {
 
             return ok(null);
         } catch (error) {
-            return err(new DrawLinePlotError(error.stack));
+            return err(new DrawPlotError(error.stack));
         }
     }
 
