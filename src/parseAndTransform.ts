@@ -231,9 +231,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         errorLegend = {
             legendDataPoints: [],
             legendValues: [],
-            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
-            legendXLength: 0,
-            legendXPosition: 0
+            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.errorLegendTitle, defaultLegendName),
+            legendXEndPosition: 0,
+            legendXPosition: MarginSettings.margins.left
         }
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i]
@@ -265,7 +265,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         let categories = categorical.categories.filter(x => x.source.roles.defectGroup)
         let category = categories.length > 0 ? categories[0] : null;
         let legendSet = new Set(controlLegendData.values);
-        const defaultLegendName = category ? category.source.displayName : "Legend";
+        const defaultLegendName = category ? category.source.displayName : "Control Legend";
 
         if (legendSet.has(null)) {
             legendSet.delete(null);
@@ -274,9 +274,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         controlLegend = {
             legendDataPoints: [],
             legendValues: [],
-            legendTitle: "test",//<string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
-            legendXLength: 0,
-            legendXPosition: 300
+            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.controlLegendTitle, defaultLegendName),
+            legendXEndPosition: 0,
+            legendXPosition: MarginSettings.margins.left
         }
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i]
@@ -284,7 +284,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
 
             controlLegend.legendValues.push({
-                color: "black",//getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
+                color: "white",//getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
                 selectionId: selectionId,
                 value: val
             });

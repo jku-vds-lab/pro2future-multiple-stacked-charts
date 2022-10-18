@@ -350,8 +350,14 @@
         "legendSettings": {
             "displayName": "Legend Settings",
             "properties": {
-                "legendTitle": {
-                    "displayName": "Legend Title",
+                "errorLegendTitle": {
+                    "displayName": "Error Legend Title",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "controlLegendTitle": {
+                    "displayName": "Control Legend Title",
                     "type": {
                         "text": true
                     }

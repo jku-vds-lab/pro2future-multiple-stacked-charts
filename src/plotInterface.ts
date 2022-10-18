@@ -232,7 +232,7 @@ export interface Legend {
     legendDataPoints: LegendDataPoint[];
     legendValues: LegendValue[];
     legendTitle: string;
-    legendXLength:number;
+    legendXEndPosition:number;
     legendXPosition:number;
 }
 

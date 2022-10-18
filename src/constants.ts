@@ -28,7 +28,8 @@ export enum YRangeSettingsNames {
     maxFixed = "maxFixed"
 }
 export enum LegendSettingsNames {
-    legendTitle = "legendTitle",
+    errorLegendTitle = "errorLegendTitle",
+    controlLegendTitle = "controlLegendTitle",
     legendColor = "legendColor"
 }
 

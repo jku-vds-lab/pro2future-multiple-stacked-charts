@@ -5,6 +5,7 @@ export class MarginSettings {
     static readonly svgBottomPadding = 15;
     static readonly plotTitleHeight = 10;
     static readonly legendHeight = 20;
+    static readonly legendSeparationMargin = 50;
     static readonly dotMargin = 4;
     static readonly xLabelSpace = 10;
 

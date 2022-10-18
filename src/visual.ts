@@ -81,7 +81,7 @@ export class Visual implements IVisual {
         const legendTitle = legend.legendTitle;
         const _this = this;
         let widths = [];
-        let width = margins.margins.left + legend.legendXPosition;
+        let width = legend.legendXPosition;
         this.svg.selectAll("legendTitle")
             .data([legendTitle])
             .enter()
@@ -151,7 +151,8 @@ export class Visual implements IVisual {
                 }
             })
 
-        legend.legendXLength = width;
+        legend.legendXEndPosition = width;
+        console.log(legend.legendTitle + " " + width)
     }
 
     public update(options: VisualUpdateOptions) {
@@ -181,6 +182,7 @@ export class Visual implements IVisual {
                 this.drawPlots();
                 if (this.viewModel.errorLegend != null) {
                     this.drawLegend(this.viewModel.errorLegend);
+                    if (this.viewModel.controlLegend != null) { this.viewModel.controlLegend.legendXPosition = this.viewModel.errorLegend.legendXEndPosition + MarginSettings.legendSeparationMargin }
                 }
                 if (this.viewModel.controlLegend != null) {
                     this.drawLegend(this.viewModel.controlLegend);
@@ -237,9 +239,9 @@ export class Visual implements IVisual {
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion + 10;
         const rolloutRectangles = this.viewModel.rolloutRectangles;
-        let width = this.viewModel.errorLegend ? this.viewModel.errorLegend.legendXLength + 50 : margins.margins.left;
+        let width = this.viewModel.errorLegend ? this.viewModel.errorLegend.legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
         if (this.viewModel.controlLegend) {
-            width = this.viewModel.controlLegend.legendXLength + 50;
+            width = this.viewModel.controlLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
         }
         let widths = [];
 
@@ -610,7 +612,6 @@ export class Visual implements IVisual {
 
             if (plotModel.yName.includes("DEF")) {
                 dataPoints = dataPoints.filter(x => {
-                    debugger;
                     const def = this.viewModel.errorLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString();
                     const grp = this.viewModel.controlLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString();
                     return this.legendSelection.has(def) && this.legendSelection.has(grp);
@@ -1044,7 +1045,8 @@ export class Visual implements IVisual {
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
-                            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, this.viewModel.errorLegend.legendTitle),
+                            errorLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.errorLegendTitle, this.viewModel.errorLegend.legendTitle),
+                            controlLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.controlLegendTitle, this.viewModel.controlLegend.legendTitle)
                         },
                         selector: null
                     });
