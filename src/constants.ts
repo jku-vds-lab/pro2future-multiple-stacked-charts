@@ -28,7 +28,8 @@ export enum YRangeSettingsNames {
     maxFixed = "maxFixed"
 }
 export enum LegendSettingsNames {
-    legendTitle = "legendTitle",
+    errorLegendTitle = "errorLegendTitle",
+    controlLegendTitle = "controlLegendTitle",
     legendColor = "legendColor"
 }
 
@@ -81,11 +82,17 @@ export class ArrayConstants {
         singlehue: ["Blues", "Greens", "Greys", "Oranges", "Purples", "Reds"],
         diverging: ["BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy", "RdYlBu", "RdYlGn", "Spectral"]
     };
-    static readonly rolloutColors = ["#fa8e00", "#ff0000", "#ffffff"];
+    static readonly rolloutColors = ["#ffffff", "#a8a8a8", "#222222", "#4daf4a", "#ff0000"];
     static readonly legendColors = {
         OZE: "#e41a1c",
         GZE: "#377eb8",
-        RAS: "#4daf4a"
+        RAS: "#4daf4a",
+        EOZ: "#a42ee8"
     }
-    static readonly rolloutNames = ["Rolled", "Rolled with error", "Not rolled"];
+    static readonly groupValues = {
+        Kontrolleur: "Kontrolleur",
+        OIG: "OIG"
+    }
+
+    static readonly rolloutNames = ["nicht gewalzt", "BBS gewalzt", "Beize gewalzt", "KB gewalzt ohne Fehler", "KB gewalzt mit Fehler"];
 }

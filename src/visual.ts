@@ -43,11 +43,11 @@ import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap, RolloutRectangle, LegendValue } from './plotInterface';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap, RolloutRectangle, LegendValue, Legend } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ArrayConstants, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
-import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawLinePlotError, DrawScatterPlotError, HeatmapError, PlotError, SlabInformationError } from './errors';
+import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawPlotError, DrawScatterPlotError, HeatmapError, PlotError, SlabInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { line } from 'd3';
@@ -61,7 +61,7 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: Selection<any>;
-    private defectSelection = new Set(Object.keys(ArrayConstants.legendColors));
+    private legendSelection = new Set(Object.keys(ArrayConstants.legendColors).concat(Object.keys(ArrayConstants.groupValues)));
 
 
     constructor(options: VisualConstructorOptions) {
@@ -73,16 +73,15 @@ export class Visual implements IVisual {
     }
 
 
-    private drawLegend() {
+    private drawLegend(legend: Legend) {
         const unselectedOpacity = 0.3;
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion + 10;
-        const legend = this.viewModel.legend
         const legendData = legend.legendValues;
         const legendTitle = legend.legendTitle;
         const _this = this;
         let widths = [];
-        let width = margins.margins.left;
+        let width = legend.legendXPosition;
         this.svg.selectAll("legendTitle")
             .data([legendTitle])
             .enter()
@@ -116,7 +115,7 @@ export class Visual implements IVisual {
                 return 10 + x;
             })
             .attr("y", yPosition)
-            .style("opacity", (d) => _this.defectSelection.has(d.value.toString()) ? 1 : unselectedOpacity)
+            .style("opacity", (d) => _this.legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity)
 
 
         this.svg.selectAll("legendDots")
@@ -129,7 +128,7 @@ export class Visual implements IVisual {
             .style("fill", function (d) { return d.color })
             .style("stroke", "grey")
             .attr("class", d => Constants.defectLegendClass + " " + d.value)
-            .style("opacity", (d) => _this.defectSelection.has(d.value.toString()) ? 1 : unselectedOpacity)
+            .style("opacity", (d) => _this.legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity)
         this.svg.selectAll("." + Constants.defectLegendClass)
             .on("click", function (e: Event, d: LegendValue) {
                 e.stopPropagation();
@@ -137,11 +136,11 @@ export class Visual implements IVisual {
                 e.stopImmediatePropagation();
                 const def = d.value.toString();
                 const selection = _this.svg.selectAll("." + Constants.defectLegendClass + "." + def);
-                if (_this.defectSelection.has(def)) {
-                    _this.defectSelection.delete(def);
+                if (_this.legendSelection.has(def)) {
+                    _this.legendSelection.delete(def);
                     selection.style("opacity", unselectedOpacity);
                 } else {
-                    _this.defectSelection.add(def);
+                    _this.legendSelection.add(def);
                     selection.style("opacity", 1);
                 }
                 for (const plotModel of _this.viewModel.plotModels) {
@@ -152,7 +151,8 @@ export class Visual implements IVisual {
                 }
             })
 
-        legend.legendXLength = width;
+        legend.legendXEndPosition = width;
+        console.log(legend.legendTitle + " " + width)
     }
 
     public update(options: VisualUpdateOptions) {
@@ -179,11 +179,18 @@ export class Visual implements IVisual {
                 this.svg.selectAll('*').remove();
                 this.svg.attr("width", this.viewModel.svgWidth)
                     .attr("height", this.viewModel.svgHeight);
-                if (this.viewModel.legend != null) {
-                    this.drawLegend();
-                }
                 this.drawPlots();
-
+                if (this.viewModel.errorLegend != null) {
+                    this.drawLegend(this.viewModel.errorLegend);
+                    if (this.viewModel.controlLegend != null) { this.viewModel.controlLegend.legendXPosition = this.viewModel.errorLegend.legendXEndPosition + MarginSettings.legendSeparationMargin }
+                }
+                if (this.viewModel.controlLegend != null) {
+                    this.drawLegend(this.viewModel.controlLegend);
+                }
+                if (this.viewModel.rolloutRectangles) {
+                    this.drawRolloutRectangles();
+                    this.drawRolloutLegend();
+                }
 
             }).mapErr(err => this.displayError(err));
 
@@ -226,17 +233,16 @@ export class Visual implements IVisual {
         if (zoomingSettings.enableZoom) {
             this.addZoom(zoomingSettings).mapErr(err => this.displayError(err));
         }
-        if (this.viewModel.rolloutRectangles) {
-            this.drawRolloutRectangles();
-            this.drawRolloutLegend();
-        }
     }
 
     private drawRolloutLegend() {
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion + 10;
         const rolloutRectangles = this.viewModel.rolloutRectangles;
-        let width = this.viewModel.legend ? this.viewModel.legend.legendXLength + 50 : margins.margins.left;
+        let width = this.viewModel.errorLegend ? this.viewModel.errorLegend.legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
+        if (this.viewModel.controlLegend) {
+            width = this.viewModel.controlLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+        }
         let widths = [];
 
         this.svg.selectAll("rolloutLegendTitle")
@@ -606,8 +612,14 @@ export class Visual implements IVisual {
 
             if (plotModel.yName.includes("DEF")) {
                 dataPoints = dataPoints.filter(x => {
-                    const def = this.viewModel.legend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString();
-                    return this.defectSelection.has(def);
+                    let draw = true;
+                    if (this.viewModel.errorLegend != null) {
+                        draw = draw && this.legendSelection.has(this.viewModel.errorLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString());
+                    }
+                    if (this.viewModel.controlLegend != null) {
+                        draw = draw && this.legendSelection.has(this.viewModel.controlLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString());
+                    }
+                    return draw;
                 });
                 dotSize = 3;
             }
@@ -653,7 +665,7 @@ export class Visual implements IVisual {
 
             return ok(null);
         } catch (error) {
-            return err(new DrawLinePlotError(error.stack));
+            return err(new DrawPlotError(error.stack));
         }
     }
 
@@ -1030,15 +1042,16 @@ export class Visual implements IVisual {
                     });
                     break;
                 case Settings.legendSettings:
-                    if (!this.viewModel.legend) break;
-                    let legendValues = this.viewModel.legend.legendValues;
+                    if (!this.viewModel.errorLegend) break;
+                    let legendValues = this.viewModel.errorLegend.legendValues;
                     let categories = this.dataview.categorical.categories.filter(x => x.source.roles.legend)
                     let category = categories.length > 0 ? categories[0] : null;
 
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
-                            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.legendTitle, this.viewModel.legend.legendTitle),
+                            errorLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.errorLegendTitle, this.viewModel.errorLegend.legendTitle),
+                            controlLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.controlLegendTitle, this.viewModel.controlLegend.legendTitle)
                         },
                         selector: null
                     });
@@ -1158,10 +1171,10 @@ export class Visual implements IVisual {
                             };
                             break;
                     }
-                    
+
                     const propertyEntries = Object.entries(properties);
                     const displayNamesEntries = Object.entries(displayNames);
-                   
+
                     for (let i = 0; i < propertyEntries.length; i++) {
                         const [key, value] = propertyEntries[i];
                         var props = {};
@@ -1178,7 +1191,7 @@ export class Visual implements IVisual {
 
                 }
             }
-            if (objectName === Settings.yRangeSettings)debugger;
+            if (objectName === Settings.yRangeSettings) debugger;
         }
     }
 }

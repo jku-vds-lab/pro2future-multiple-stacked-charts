@@ -239,13 +239,13 @@ export class AddVerticalRulerError extends PlotError {
     }
 }
 
-export class DrawLinePlotError extends PlotError {
+export class DrawPlotError extends PlotError {
     /**
      *
      */
     constructor(stack?: string) {
-        const name = "DrawLinePlotError";
-        const message = "Error on drawing line plot. This should not have happended.";
+        const name = "DrawPlotError";
+        const message = "Error on drawing plot. This should not have happended.";
         super(message, name);
         this.stack = stack;
 
