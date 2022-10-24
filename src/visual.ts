@@ -38,6 +38,7 @@ import VisualObjectInstance = powerbi.VisualObjectInstance;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
+import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
@@ -62,7 +63,8 @@ export class Visual implements IVisual {
     private viewModel: ViewModel;
     private svg: Selection<any>;
     private legendSelection = new Set(Object.keys(ArrayConstants.legendColors).concat(Object.keys(ArrayConstants.groupValues)));
-
+    private storage: ILocalVisualStorageService;
+    private zoom: d3.ZoomBehavior<Element, unknown>
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -70,6 +72,7 @@ export class Visual implements IVisual {
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true)
             .attr("width", this.element.clientWidth)
             .attr("height", this.element.clientHeight);
+        this.storage = this.host.storageService;
     }
 
 
@@ -152,11 +155,11 @@ export class Visual implements IVisual {
             })
 
         legend.legendXEndPosition = width;
-        console.log(legend.legendTitle + " " + width)
     }
 
     public update(options: VisualUpdateOptions) {
         try {
+
             this.dataview = options.dataViews[0];
             let categoryIndices = new Set()
             if (this.dataview.categorical.categories) {
@@ -191,27 +194,42 @@ export class Visual implements IVisual {
                     this.drawRolloutRectangles();
                     this.drawRolloutLegend();
                 }
-
             }).mapErr(err => this.displayError(err));
 
+            
+            this.restoreZoomState();
         } catch (error) {
             //try catch can be removed in the end, should not display any errors
             console.log(error);
         }
     }
 
-    public displayError(error: Error) {
-        this.svg.selectAll('*').remove();
-        this.svg
+    private restoreZoomState() {
+        //TODO: publish on AppSource to save zoom state https://learn.microsoft.com/en-us/power-bi/developer/visuals/local-storage
+        const _this = this;
+        this.storage.get(Constants.zoomState).then(state => {
+            const zoomState = state.split(';');
+            if (zoomState.length === 3) {
+                const transform = d3.zoomIdentity.translate(Number(zoomState[0]), Number(zoomState[1])).scale(Number(zoomState[2]));
+                _this.svg.call(_this.zoom.transform, transform);
+            }
+        }).catch(() => {
+            this.storage.set(Constants.zoomState, "0;0;1");
+        });
+    }
+
+    public displayError(error: Error, _this = this) {
+        _this.svg.selectAll('*').remove();
+        _this.svg
             .append("text")
-            .attr("width", this.element.clientWidth)
+            .attr("width", _this.element.clientWidth)
             .attr("x", 0)
             .attr("y", 20)
             .text("ERROR: " + error.name);
-        this.svg
+        _this.svg
             .append("foreignObject")
-            .attr("width", this.element.clientWidth)
-            .attr("height", this.element.clientHeight - 40)
+            .attr("width", _this.element.clientWidth)
+            .attr("height", _this.element.clientHeight - 40)
             .attr("x", 0)
             .attr("y", 30)
             .html("<p style='font-size:12px;'>" + error.message + "</p>");
@@ -778,10 +796,10 @@ export class Visual implements IVisual {
                     let transform: d3.ZoomTransform = event.transform;
                     if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
                         _this.svg
-                            .call(zoom.transform, d3.zoomIdentity);
+                            .call(_this.zoom.transform, d3.zoomIdentity);
                         return;
                     }
-
+                    _this.storage.set(Constants.zoomState, transform.x + ";" + transform.y + ";" + transform.k);
                     const xScaleZoomed = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
                     const xMin = xScaleZoomed.domain()[0];
                     const xMax = xScaleZoomed.domain()[1];
@@ -859,13 +877,14 @@ export class Visual implements IVisual {
                     }
                 } catch (error) {
                     error.message = "error in zoom function: " + error.message;
-                    errorFunction(error);
+                    errorFunction(error, _this);
                 }
             }
 
-            let zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed); // with scale extent you can control how much you scale
+            this.zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed); // with scale extent you can control how much you scale
 
-            this.svg.call(zoom);
+
+            this.svg.call(this.zoom);
             return ok(null);
         } catch (error) {
             return err(new AddZoomError(error.stack));
@@ -1191,7 +1210,6 @@ export class Visual implements IVisual {
 
                 }
             }
-            if (objectName === Settings.yRangeSettings) debugger;
         }
     }
 }
