@@ -222,7 +222,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         let categories = categorical.categories.filter(x => x.source.roles.legend)
         let category = categories.length > 0 ? categories[0] : null;
         let legendSet = new Set(legendData.values);
-        const defaultLegendName = category ? category.source.displayName : "Legend";
+        const defaultLegendName = category ? category.source.displayName : "Error Legend";
 
         if (legendSet.has(null)) {
             legendSet.delete(null);

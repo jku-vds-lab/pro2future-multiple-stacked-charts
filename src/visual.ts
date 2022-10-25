@@ -184,6 +184,7 @@ export class Visual implements IVisual {
                     .attr("height", this.viewModel.svgHeight);
                 this.drawPlots();
                 if (this.viewModel.errorLegend != null) {
+                    this.viewModel.errorLegend.legendValues.map(val => this.legendSelection.add(val.value.toString()));
                     this.drawLegend(this.viewModel.errorLegend);
                     if (this.viewModel.controlLegend != null) { this.viewModel.controlLegend.legendXPosition = this.viewModel.errorLegend.legendXEndPosition + MarginSettings.legendSeparationMargin }
                 }
@@ -196,7 +197,7 @@ export class Visual implements IVisual {
                 }
             }).mapErr(err => this.displayError(err));
 
-            
+
             this.restoreZoomState();
         } catch (error) {
             //try catch can be removed in the end, should not display any errors
@@ -1069,8 +1070,8 @@ export class Visual implements IVisual {
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
-                            errorLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.errorLegendTitle, this.viewModel.errorLegend.legendTitle),
-                            controlLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.controlLegendTitle, this.viewModel.controlLegend.legendTitle)
+                            errorLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.errorLegendTitle, this.viewModel.errorLegend ? this.viewModel.errorLegend.legendTitle : "Error Legend"),
+                            controlLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.controlLegendTitle, this.viewModel.controlLegend ? this.viewModel.controlLegend.legendTitle : "Control Legend")
                         },
                         selector: null
                     });
