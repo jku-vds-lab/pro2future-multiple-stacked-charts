@@ -183,12 +183,13 @@ export class Visual implements IVisual {
                 this.svg.attr("width", this.viewModel.svgWidth)
                     .attr("height", this.viewModel.svgHeight);
                 this.drawPlots();
-                if (this.viewModel.errorLegend != null) {
-                    this.drawLegend(this.viewModel.errorLegend);
-                    if (this.viewModel.controlLegend != null) { this.viewModel.controlLegend.legendXPosition = this.viewModel.errorLegend.legendXEndPosition + MarginSettings.legendSeparationMargin }
+                if (this.viewModel.defectLegend != null) {
+                    this.viewModel.defectLegend.legendValues.map(val => this.legendSelection.add(val.value.toString()));
+                    this.drawLegend(this.viewModel.defectLegend);
+                    if (this.viewModel.defectGroupLegend != null) { this.viewModel.defectGroupLegend.legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin }
                 }
-                if (this.viewModel.controlLegend != null) {
-                    this.drawLegend(this.viewModel.controlLegend);
+                if (this.viewModel.defectGroupLegend != null) {
+                    this.drawLegend(this.viewModel.defectGroupLegend);
                 }
                 if (this.viewModel.rolloutRectangles) {
                     this.drawRolloutRectangles();
@@ -196,7 +197,7 @@ export class Visual implements IVisual {
                 }
             }).mapErr(err => this.displayError(err));
 
-            
+
             this.restoreZoomState();
         } catch (error) {
             //try catch can be removed in the end, should not display any errors
@@ -257,9 +258,9 @@ export class Visual implements IVisual {
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion + 10;
         const rolloutRectangles = this.viewModel.rolloutRectangles;
-        let width = this.viewModel.errorLegend ? this.viewModel.errorLegend.legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
-        if (this.viewModel.controlLegend) {
-            width = this.viewModel.controlLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+        let width = this.viewModel.defectLegend ? this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
+        if (this.viewModel.defectGroupLegend) {
+            width = this.viewModel.defectGroupLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
         }
         let widths = [];
 
@@ -515,7 +516,7 @@ export class Visual implements IVisual {
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
             const plot = plotModel.d3Plot.root;
             const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
-            const yScale = plotModel.d3Plot.y.yScale;
+            const yScale = plotModel.d3Plot.y.yScaleZoomed;
             if (slabtype != SlabType.None && slabRectangles != null) {
                 if (slabRectangles.length == 0) {
                     return err(new SlabInformationError());
@@ -631,11 +632,11 @@ export class Visual implements IVisual {
             if (plotModel.yName.includes("DEF")) {
                 dataPoints = dataPoints.filter(x => {
                     let draw = true;
-                    if (this.viewModel.errorLegend != null) {
-                        draw = draw && this.legendSelection.has(this.viewModel.errorLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString());
+                    if (this.viewModel.defectLegend != null) {
+                        draw = draw && this.legendSelection.has(this.viewModel.defectLegend.legendDataPoints.find(ldp => ldp.i === x.pointNr)?.yValue.toString());
                     }
-                    if (this.viewModel.controlLegend != null) {
-                        draw = draw && this.legendSelection.has(this.viewModel.controlLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString());
+                    if (this.viewModel.defectGroupLegend != null) {
+                        draw = draw && this.legendSelection.has(this.viewModel.defectGroupLegend.legendDataPoints.find(ldp => ldp.i === x.pointNr)?.yValue.toString());
                     }
                     return draw;
                 });
@@ -793,6 +794,7 @@ export class Visual implements IVisual {
             let errorFunction = this.displayError;
             let zoomed = function (event) {
                 try {
+
                     let transform: d3.ZoomTransform = event.transform;
                     if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
                         _this.svg
@@ -1061,16 +1063,16 @@ export class Visual implements IVisual {
                     });
                     break;
                 case Settings.legendSettings:
-                    if (!this.viewModel.errorLegend) break;
-                    let legendValues = this.viewModel.errorLegend.legendValues;
+                    if (!this.viewModel.defectLegend) break;
+                    let legendValues = this.viewModel.defectLegend.legendValues;
                     let categories = this.dataview.categorical.categories.filter(x => x.source.roles.legend)
                     let category = categories.length > 0 ? categories[0] : null;
 
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
-                            errorLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.errorLegendTitle, this.viewModel.errorLegend.legendTitle),
-                            controlLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.controlLegendTitle, this.viewModel.controlLegend.legendTitle)
+                            errorLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.defectLegendTitle, this.viewModel.defectLegend ? this.viewModel.defectLegend.legendTitle : "Error Legend"),
+                            controlLegendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.defectGroupLegendTitle, this.viewModel.defectGroupLegend ? this.viewModel.defectGroupLegend.legendTitle : "Control Legend")
                         },
                         selector: null
                     });
@@ -1167,7 +1169,7 @@ export class Visual implements IVisual {
                                 maxFixed: column.displayName + " Fixed Maximum",
                             };
                             properties = {
-                                min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),
+                                min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, yRange.min),
                                 max: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, yRange.max),
                                 minFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.minFixed, true),
                                 maxFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.maxFixed, false)

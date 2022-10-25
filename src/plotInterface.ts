@@ -16,8 +16,8 @@ export interface ViewModel {
     generalPlotSettings: GeneralPlotSettings;
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
-    errorLegend?: Legend;
-    controlLegend?: Legend;
+    defectLegend?: Legend;
+    defectGroupLegend?: Legend;
     heatmapSettings: HeatmapSettings;
     // defectIndices: DefectIndices;
     rolloutRectangles: RolloutRectangles;
@@ -220,6 +220,7 @@ export interface TooltipDataPoint {
 export interface LegendDataPoint {
     xValue: PrimitiveValue;
     yValue: PrimitiveValue;
+    i:number;
 }
 
 export interface LegendValue {
@@ -242,6 +243,7 @@ export interface DataPoint extends SelectableDataPoint {
     color?: string;
     highlight?: boolean;
     opacity?: number;
+    pointNr:number;
 }
 
 export interface FormatSettings {
