@@ -16,8 +16,8 @@ export interface ViewModel {
     generalPlotSettings: GeneralPlotSettings;
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
-    errorLegend?: Legend;
-    controlLegend?: Legend;
+    defectLegend?: Legend;
+    defectGroupLegend?: Legend;
     heatmapSettings: HeatmapSettings;
     // defectIndices: DefectIndices;
     rolloutRectangles: RolloutRectangles;
