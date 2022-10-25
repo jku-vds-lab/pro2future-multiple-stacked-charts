@@ -633,10 +633,10 @@ export class Visual implements IVisual {
                 dataPoints = dataPoints.filter(x => {
                     let draw = true;
                     if (this.viewModel.errorLegend != null) {
-                        draw = draw && this.legendSelection.has(this.viewModel.errorLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString());
+                        draw = draw && this.legendSelection.has(this.viewModel.errorLegend.legendDataPoints.find(ldp => ldp.i === x.pointNr)?.yValue.toString());
                     }
                     if (this.viewModel.controlLegend != null) {
-                        draw = draw && this.legendSelection.has(this.viewModel.controlLegend.legendDataPoints.find(ldp => ldp.xValue === x.xValue)?.yValue.toString());
+                        draw = draw && this.legendSelection.has(this.viewModel.controlLegend.legendDataPoints.find(ldp => ldp.i === x.pointNr)?.yValue.toString());
                     }
                     return draw;
                 });
@@ -794,6 +794,7 @@ export class Visual implements IVisual {
             let errorFunction = this.displayError;
             let zoomed = function (event) {
                 try {
+
                     let transform: d3.ZoomTransform = event.transform;
                     if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
                         _this.svg

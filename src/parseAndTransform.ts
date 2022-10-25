@@ -246,11 +246,11 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 value: val
             });
         }
-
         errorLegend.legendDataPoints = legendData.values.map((val, i) =>
             <LegendDataPoint>{
                 xValue: xData.values[i],
-                yValue: val
+                yValue: val,
+                i: i
             }).filter(x => x.yValue !== null);
 
         // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
@@ -293,7 +293,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         controlLegend.legendDataPoints = controlLegendData.values.map((val, i) =>
             <LegendDataPoint>{
                 xValue: xData.values[i],
-                yValue: val
+                yValue: val,
+                i: i
             }).filter(x => x.yValue !== null);
 
         // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
@@ -380,6 +381,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false)
             }
         }
+        debugger;
         //create datapoints
         for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
@@ -388,7 +390,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             if (plotSettings.plotSettings.useLegendColor) {
                 if (errorLegend != null) {
                     // if (yDataPoints[pointNr] !== null) debugger;
-                    const legendVal = errorLegend.legendDataPoints.find(x => x.xValue === xVal)?.yValue;
+                    const legendVal = errorLegend.legendDataPoints.find(x => x.i === pointNr)?.yValue;
                     color = legendVal === undefined ? color : errorLegend.legendValues.find(x => x.value === legendVal).color;
                 } else {
                     return err(new PlotLegendError(yAxis.name));
@@ -401,7 +403,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 yValue: yDataPoints[pointNr],
                 identity: selectionId,
                 selected: false,
-                color: color
+                color: color,
+                pointNr: pointNr
             };
             dataPoints.push(dataPoint);
         }
