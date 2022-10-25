@@ -446,6 +446,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             dataPoints: dataPoints,
             d3Plot: null
         };
+        plotModel.yRange.min = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
+        plotModel.yRange.max = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
         viewModel.plotModels[plotNr] = plotModel;
         const formatXAxis = plotModel.formatSettings.axisSettings.xAxis
         plotTop = formatXAxis.lables && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;

@@ -515,7 +515,7 @@ export class Visual implements IVisual {
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
             const plot = plotModel.d3Plot.root;
             const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
-            const yScale = plotModel.d3Plot.y.yScale;
+            const yScale = plotModel.d3Plot.y.yScaleZoomed;
             if (slabtype != SlabType.None && slabRectangles != null) {
                 if (slabRectangles.length == 0) {
                     return err(new SlabInformationError());
@@ -1167,7 +1167,7 @@ export class Visual implements IVisual {
                                 maxFixed: column.displayName + " Fixed Maximum",
                             };
                             properties = {
-                                min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),
+                                min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, yRange.min),
                                 max: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, yRange.max),
                                 minFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.minFixed, true),
                                 maxFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.maxFixed, false)
