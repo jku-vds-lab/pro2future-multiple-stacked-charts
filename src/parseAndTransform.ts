@@ -391,7 +391,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             const xVal = xDataPoints[pointNr];
             if (plotSettings.plotSettings.useLegendColor) {
                 if (defectLegend != null) {
-                    // if (yDataPoints[pointNr] !== null) debugger;
                     const legendVal = defectLegend.legendDataPoints.find(x => x.i === pointNr)?.yValue;
                     color = legendVal === undefined ? color : defectLegend.legendValues.find(x => x.value === legendVal).color;
                 } else {
@@ -501,7 +500,7 @@ function createTooltipModels(sharedXAxis: boolean, xData: XAxisData, tooltipData
             //create datapoints
             for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
                 let dataPoint: TooltipDataPoint = {
-                    xValue: xData.values[pointNr],
+                    pointNr: pointNr,
                     yValue: tooltip.values[pointNr]
                 };
                 tooltipPoints.push(dataPoint);

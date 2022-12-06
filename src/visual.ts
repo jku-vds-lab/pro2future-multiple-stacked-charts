@@ -939,22 +939,22 @@ export class Visual implements IVisual {
                 }
             };
 
-            let mousemove = function (event, data) {
+            let mousemove = function (event, dataPoint:DataPoint) {
                 try {
                     const height = visualContainer.clientHeight;
                     const width = visualContainer.clientWidth;
                     const x = event.clientX - margins.left;
                     const tooltipX = event.clientX > width / 2 ? event.clientX - tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
                     let tooltipY = event.clientY > height / 2 ? event.clientY - tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
-
+                    debugger;
 
                     let tooltipData: TooltipData[] = [];
 
-
+                    
                     //add tooltips
                     tooltipModels.filter((model: TooltipModel) => {
                         model.tooltipData.filter(modelData => {
-                            if (modelData.xValue == data.xValue) {
+                            if (modelData.pointNr == dataPoint.pointNr) {
                                 tooltipData.push({
                                     yValue: modelData.yValue === null ? '-' : modelData.yValue,
                                     title: model.tooltipName
@@ -962,6 +962,7 @@ export class Visual implements IVisual {
                             }
                         })
                     });
+                    debugger;
                     let tooltipSet = new Set(tooltipData.map(tooltip => "<b> " + tooltip.title + "</b> : " + tooltip.yValue + " <br> "))
 
 
@@ -1011,9 +1012,8 @@ export class Visual implements IVisual {
         const colorPalette = this.host.colorPalette;
         const objects = this.dataview.metadata.objects;
         let objectEnumeration: VisualObjectInstance[] = [];
-        debugger;
         const zoomingSettings = this.viewModel ? this.viewModel.zoomingSettings : SettingsGetter.getZoomingSettings(objects);
-        const plotmodles: PlotModel[] = this.viewModel.plotModels;
+        const plotmodles: PlotModel[] = this.viewModel ? this.viewModel.plotModels : [];
         try {
             let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
             let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;

@@ -212,7 +212,7 @@ export interface TooltipData {
 }
 
 export interface TooltipDataPoint {
-    xValue: PrimitiveValue;
+    pointNr: PrimitiveValue;
     yValue: PrimitiveValue;
 }
 
