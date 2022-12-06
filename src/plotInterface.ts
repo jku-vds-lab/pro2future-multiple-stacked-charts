@@ -9,7 +9,7 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 export interface ViewModel {
     plotModels: PlotModel[];
     colorSettings: ColorSettings;
-    slabRectangles?: SlabRectangle[];
+    overlayRectangles?: OverlayRectangle[];
     svgHeight: number;
     svgWidth: number;
     svgTopPadding: number;
@@ -150,7 +150,7 @@ export enum PlotType {
     LinePlot = "LinePlot"
 }
 
-export enum SlabType {
+export enum OverlayType {
     Rectangle = "Rectangle",
     Line = "Line",
     None = "None"
@@ -199,7 +199,7 @@ export interface PlotTitleSettings {
     title: string;
 }
 
-export interface SlabRectangle {
+export interface OverlayRectangle {
     width: number;
     length: number;
     x: number;
@@ -262,7 +262,7 @@ export interface AxisInformationInterface {
 export interface ColorSettings {
     colorSettings: {
         verticalRulerColor: string;
-        slabColor: string;
+        overlayColor: string;
         heatmapColorScheme: string;
     }
 }
@@ -281,7 +281,7 @@ export interface PlotSettings {
 
 export interface OverlayPlotSettings {
     overlayPlotSettings: {
-        slabType: SlabType;
+        overlayType: OverlayType;
     };
 }
 

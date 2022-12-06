@@ -44,11 +44,11 @@ import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
 import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, SlabType, D3Plot, D3PlotXAxis, D3PlotYAxis, SlabRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap, RolloutRectangle, LegendValue, Legend } from './plotInterface';
-import { visualTransform } from './parseAndTransform';
+import { TooltipInterface, ViewModel, DataPoint, PlotModel, PlotType, OverlayType as OverlayType, D3Plot, D3PlotXAxis, D3PlotYAxis, OverlayRectangle as OverlayRectangle, AxisInformation, TooltipModel, TooltipData, ZoomingSettings, GeneralPlotSettings, D3Heatmap, RolloutRectangle, LegendValue, Legend } from './plotInterface';
+import { SettingsGetter, visualTransform } from './parseAndTransform';
 import { OverlayPlotSettingsNames, ColorSettingsNames, Constants, AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, ArrayConstants, HeatmapSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
-import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawPlotError, DrawScatterPlotError, HeatmapError, PlotError, SlabInformationError } from './errors';
+import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawPlotError, DrawScatterPlotError, HeatmapError, PlotError, OverlayInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { line } from 'd3';
@@ -161,7 +161,7 @@ export class Visual implements IVisual {
         try {
 
             this.dataview = options.dataViews[0];
-            let categoryIndices = new Set()
+            let categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
                 this.dataview.categorical.categories = this.dataview.categorical.categories.filter(cat => {
                     const duplicate = categoryIndices.has(cat.source.index);
@@ -178,7 +178,7 @@ export class Visual implements IVisual {
                 });
             }
             visualTransform(options, this.host).map(model => {
-                this.viewModel = model
+                this.viewModel = model;
                 this.svg.selectAll('*').remove();
                 this.svg.attr("width", this.viewModel.svgWidth)
                     .attr("height", this.viewModel.svgHeight);
@@ -243,10 +243,19 @@ export class Visual implements IVisual {
     }
 
     private drawPlots() {
-        this.addClipPath().mapErr(err => this.displayError(err));
+        let error = false;
+        this.addClipPath().mapErr(err => {
+            this.displayError(err);
+            error = true;
+        });
+        if (error) return;
         for (let plotModel of this.viewModel.plotModels) {
             this.drawPlot(plotModel)
-                .mapErr(err => this.displayError(err));
+                .mapErr(err => {
+                    this.displayError(err);
+                    error = true;
+                });
+            if (error) return;
         }
         const zoomingSettings = this.viewModel.zoomingSettings;
         if (zoomingSettings.enableZoom) {
@@ -338,7 +347,7 @@ export class Visual implements IVisual {
         let plotError: PlotError;
         const PlotResult = this.buildBasicPlot(plotModel).map(plt => {
             root = plt;
-            root.append("g").attr("class", Constants.slabClass).attr('clip-path', 'url(#slabClip)');
+            root.append("g").attr("class", Constants.overlayClass).attr('clip-path', 'url(#overlayClip)');
         }).mapErr(error => this.displayError(error));
         if (PlotResult.isErr()) {
             return err(plotError);
@@ -349,7 +358,7 @@ export class Visual implements IVisual {
         plotModel.d3Plot = <D3Plot>{ yName: plotModel.yName, type: plotType, root, points: null, x, y };
         this.addPlotTitles(plotModel, root).mapErr(err => plotError = err);
         this.addVerticalRuler(root).mapErr(err => plotError = err);
-        this.drawSlabs(plotModel).mapErr(err => plotError = err);
+        this.drawOverlay(plotModel).mapErr(err => plotError = err);
         if (plotError) {
             return err(plotError);
         }
@@ -372,7 +381,7 @@ export class Visual implements IVisual {
                 .attr('width', plotWidth + 2 * generalPlotSettings.dotMargin)
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
             this.svg.append('defs').append('clipPath')
-                .attr('id', 'slabClip')
+                .attr('id', 'overlayClip')
                 .append('rect')
                 .attr('y', 0)
                 .attr('x', 0)
@@ -507,33 +516,33 @@ export class Visual implements IVisual {
     }
 
 
-    private drawSlabs(plotModel: PlotModel): Result<void, PlotError> {
+    private drawOverlay(plotModel: PlotModel): Result<void, PlotError> {
 
         try {
             const colorSettings = this.viewModel.colorSettings.colorSettings;
-            const slabtype = plotModel.overlayPlotSettings.overlayPlotSettings.slabType;
-            const slabRectangles = this.viewModel.slabRectangles;
+            const overlaytype = plotModel.overlayPlotSettings.overlayPlotSettings.overlayType;
+            const overlayRectangles = this.viewModel.overlayRectangles;
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
             const plot = plotModel.d3Plot.root;
             const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
             const yScale = plotModel.d3Plot.y.yScaleZoomed;
-            if (slabtype != SlabType.None && slabRectangles != null) {
-                if (slabRectangles.length == 0) {
-                    return err(new SlabInformationError());
+            if (overlaytype != OverlayType.None && overlayRectangles != null) {
+                if (overlayRectangles.length == 0) {
+                    return err(new OverlayInformationError());
                 }
-                if (slabtype == SlabType.Rectangle) {
-                    plot.select(`.${Constants.slabClass}`).selectAll('rect').data(slabRectangles).enter()
+                if (overlaytype == OverlayType.Rectangle) {
+                    plot.select(`.${Constants.overlayClass}`).selectAll('rect').data(overlayRectangles).enter()
                         .append("rect")
                         .attr("x", function (d) { return xScale(d.x); })
                         .attr("y", function (d) { return yScale(d.width - d.y); })
                         .attr("width", function (d) { return xScale(d.length + d.x) - xScale(d.x); })
                         .attr("height", function (d) { return yScale(d.y) - yScale(d.width); })
                         .attr("fill", "transparent")
-                        .attr("stroke", colorSettings.slabColor);
-                } else if (slabtype == SlabType.Line) {
-                    plot.select(`.${Constants.slabClass}`).selectAll('line').data(slabRectangles).enter()
+                        .attr("stroke", colorSettings.overlayColor);
+                } else if (overlaytype == OverlayType.Line) {
+                    plot.select(`.${Constants.overlayClass}`).selectAll('line').data(overlayRectangles).enter()
                         .append("line")
-                        .attr("stroke", colorSettings.slabColor)
+                        .attr("stroke", colorSettings.overlayColor)
                         .attr("x1", function (d) { return xScale(d.x); })
                         .attr("x2", function (d) { return xScale(d.x); })
                         .attr("y1", 0)
@@ -541,7 +550,7 @@ export class Visual implements IVisual {
                         .style("opacity", 1);
                 }
             } else {
-                plot.select(`.${Constants.slabClass}`).remove()
+                plot.select(`.${Constants.overlayClass}`).remove()
             }
             return ok(null);
         } catch (error) {
@@ -794,7 +803,6 @@ export class Visual implements IVisual {
             let errorFunction = this.displayError;
             let zoomed = function (event) {
                 try {
-
                     let transform: d3.ZoomTransform = event.transform;
                     if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
                         _this.svg
@@ -851,13 +859,13 @@ export class Visual implements IVisual {
                         // }
 
                         plot.points.attr('clip-path', 'url(#clip)');
-                        var slabBars = plot.root.select(`.${Constants.slabClass}`);
-                        slabBars.selectAll('rect')
-                            .attr("x", function (d: SlabRectangle) { return xScaleZoomed(d.x); })
-                            .attr("width", function (d: SlabRectangle) { return xScaleZoomed(d.length + d.x) - xScaleZoomed(d.x); });
-                        slabBars.selectAll('line')
-                            .attr("x1", function (d: SlabRectangle) { return xScaleZoomed(d.x); })
-                            .attr("x2", function (d: SlabRectangle) { return xScaleZoomed(d.x); })
+                        var overlayBars = plot.root.select(`.${Constants.overlayClass}`);
+                        overlayBars.selectAll('rect')
+                            .attr("x", function (d: OverlayRectangle) { return xScaleZoomed(d.x); })
+                            .attr("width", function (d: OverlayRectangle) { return xScaleZoomed(d.length + d.x) - xScaleZoomed(d.x); });
+                        overlayBars.selectAll('line')
+                            .attr("x1", function (d: OverlayRectangle) { return xScaleZoomed(d.x); })
+                            .attr("x2", function (d: OverlayRectangle) { return xScaleZoomed(d.x); })
 
                         if (plot.type === 'LinePlot') {
                             plot.plotLine.attr('clip-path', 'url(#clip)');
@@ -1003,7 +1011,8 @@ export class Visual implements IVisual {
         const colorPalette = this.host.colorPalette;
         const objects = this.dataview.metadata.objects;
         let objectEnumeration: VisualObjectInstance[] = [];
-        const zoomingSettings = this.viewModel.zoomingSettings;
+        debugger;
+        const zoomingSettings = this.viewModel ? this.viewModel.zoomingSettings : SettingsGetter.getZoomingSettings(objects);
         const plotmodles: PlotModel[] = this.viewModel.plotModels;
         try {
             let yCount: number = this.dataview.metadata.columns.filter(x => { return x.roles.y_axis }).length;
@@ -1046,7 +1055,7 @@ export class Visual implements IVisual {
                         objectName: objectName,
                         properties: {
                             verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
-                            slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#0000FF'),
+                            overlayColor: getColorSettings(objects, ColorSettingsNames.overlayColor, colorPalette, '#0000FF'),
                             heatmapColorScheme: <string>getValue(objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme, 'interpolateBlues')
                         },
                         selector: null
@@ -1180,7 +1189,7 @@ export class Visual implements IVisual {
                                 overlayType: column.displayName + " Overlay Type"
                             };
                             properties = {
-                                slabType: SlabType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
+                                overlayType: OverlayType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.overlayType, OverlayType.None)]
                             };
                             break;
                         case Settings.plotTitleSettings:

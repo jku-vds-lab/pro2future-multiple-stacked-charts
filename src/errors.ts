@@ -4,7 +4,7 @@ export class ParseAndTransformError implements Error {
     stack?: string;
 
     constructor(message: string, name?: string) {
-        this.message = message + "<br><br> If you are not sure why this error occurs, please contact the authors.";
+        this.message = message //+ "<br><br> If you are not sure why this error occurs, please contact the authors.";
         if (name !== undefined && name) {
             this.name = name;
         } else {
@@ -26,13 +26,25 @@ export class AxisError extends ParseAndTransformError {
     }
 }
 
-export class NoValuesError extends ParseAndTransformError {
+export class NoDataError extends ParseAndTransformError {
     /**
      *
      */
     constructor() {
-        const name = "No Values Error";
-        const message = "There is no data in Values.";
+        const name = "No Data error";
+        const message = "Keine Daten vorhanden (Gießdatum < 100 Tage)";
+        super(message, name);
+
+    }
+}
+
+export class NoDataColumnsError extends ParseAndTransformError {
+    /**
+     *
+     */
+    constructor() {
+        const name = "No Data Columns Error";
+        const message = "There were no data columns provided.";
         super(message, name);
 
     }
@@ -49,13 +61,25 @@ export class NoAxisError extends ParseAndTransformError {
     }
 }
 
-export class SlabDataError extends ParseAndTransformError {
+export class OverlayDataError extends ParseAndTransformError {
     /**
      *
      */
     constructor() {
-        const name = "Slab Data Error";
-        const message = "There was an Error creating the slab information with the provided Data. Pleas check the specifications.";
+        const name = "Overlay Data Error";
+        const message = "There was an Error creating the overlay information with the provided Data. Pleas check the specifications.";
+        super(message, name);
+
+    }
+}
+
+export class XDataError extends ParseAndTransformError {
+    /**
+     *
+     */
+    constructor() {
+        const name = "X-Data Error";
+        const message = "There was no data column provided for X-Axis.";
         super(message, name);
 
     }
@@ -176,23 +200,23 @@ export class BuildYAxisError extends PlotError {
     }
 }
 
-export class SlabInformationError extends PlotError {
+export class OverlayInformationError extends PlotError {
     /**
      *
      */
     constructor() {
-        const name = "Slab Information Error";
-        const message = "Error on drawing slab overlays: no slab information is provided. <br/> Please drag correct data into the slab length and slab width field";
+        const name = "Overlay Information Error";
+        const message = "Error on drawing overlays: no overlay information is provided. <br/> Please drag correct data into the overlay length and overlay width field";
         super(message, name);
     }
 }
 
-export class DrawSlabsError extends PlotError {
+export class DrawOverlayError extends PlotError {
     /**
      *
      */
     constructor(stack?: string) {
-        const name = "Draw Slabs Error";
+        const name = "Draw Overlay Error";
         const message = "Error in drawing. This should not have happended.";
         super(message, name);
         this.stack = stack;

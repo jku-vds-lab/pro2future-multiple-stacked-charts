@@ -28,7 +28,7 @@
         },
         {
             "displayName": "Overlay Length",
-            "name": "slabX",
+            "name": "overlayX",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
@@ -41,7 +41,7 @@
         },
         {
             "displayName": "Overlay Width",
-            "name": "slabY",
+            "name": "overlayY",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
@@ -109,10 +109,10 @@
                     "y_axis": {
                         "max": 20
                     },
-                    "slabX": {
+                    "overlayX": {
                         "max": 1
                     },
-                    "slabY": {
+                    "overlayY": {
                         "max": 1
                     },
                     "legend": {
@@ -147,12 +147,12 @@
                         },
                         {
                             "for": {
-                                "in": "slabX"
+                                "in": "overlayX"
                             }
                         },
                         {
                             "for": {
-                                "in": "slabY"
+                                "in": "overlayY"
                             }
                         },
                         {
@@ -268,7 +268,7 @@
                         }
                     }
                 },
-                "slabColor": {
+                "overlayColor": {
                     "displayName": "Plot Overlay Color",
                     "description": "The stroke color of the plot overlay lines.",
                     "type": {
@@ -420,7 +420,7 @@
         "overlayPlotSettings": {
             "displayName": "Plot Overlay Settings",
             "properties": {
-                "slabType": {
+                "overlayType": {
                     "displayName": "Choose Type",
                     "type": {
                         "enumeration": [
