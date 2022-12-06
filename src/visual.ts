@@ -159,7 +159,7 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         try {
-
+            console.log("update",Date.now());
             this.dataview = options.dataViews[0];
             let categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
@@ -939,18 +939,15 @@ export class Visual implements IVisual {
                 }
             };
 
-            let mousemove = function (event, dataPoint:DataPoint) {
+            let mousemove = function (event, dataPoint: DataPoint) {
                 try {
                     const height = visualContainer.clientHeight;
                     const width = visualContainer.clientWidth;
                     const x = event.clientX - margins.left;
                     const tooltipX = event.clientX > width / 2 ? event.clientX - tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
                     let tooltipY = event.clientY > height / 2 ? event.clientY - tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
-                    debugger;
-
                     let tooltipData: TooltipData[] = [];
 
-                    
                     //add tooltips
                     tooltipModels.filter((model: TooltipModel) => {
                         model.tooltipData.filter(modelData => {
@@ -962,9 +959,7 @@ export class Visual implements IVisual {
                             }
                         })
                     });
-                    debugger;
                     let tooltipSet = new Set(tooltipData.map(tooltip => "<b> " + tooltip.title + "</b> : " + tooltip.yValue + " <br> "))
-
 
                     tooltip
                         .html(Array.from(tooltipSet).join(''))

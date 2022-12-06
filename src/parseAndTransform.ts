@@ -111,9 +111,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             if (roles.tooltip) {
 
                 let columnId = category.source.index;
-                if (!metadataColumns[columnId]) {
-                    columnId = categorical.values.filter(x => x.source.displayName === category.source.displayName)[0].source.index;
-                }
                 const tooltipId = category.source['rolesIndex']['tooltip'][0];
                 let data: TooltipColumnData = {
                     type: category.source.type,
@@ -175,10 +172,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
             if (roles.tooltip) {
                 let columnId = value.source.index;
-                if (!metadataColumns[columnId]) {
-                    columnId = categorical.categories.filter(x => x.source.displayName === value.source.displayName)[0].source.index;
-                }
-
                 const tooltipId = value.source['rolesIndex']['tooltip'][0];
                 let data: TooltipColumnData = {
                     type: value.source.type,
@@ -317,7 +310,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
         let yAxis: YAxisData = yData[plotNr]
         let yColumnId = yData[plotNr].columnId;
-        let yColumnObjects = metadataColumns[yColumnId].objects;
+        let yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
         plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name))
 
         const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
@@ -375,7 +368,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
         dataPoints = [];
         const yColumnId = yData[plotNr].columnId;
-        const yColumnObjects = metadataColumns[yColumnId].objects;
+        const yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
         const plotSettings: PlotSettings = {
             plotSettings: {
                 fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
@@ -468,12 +461,18 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
     return ok(viewModel);
 
+
+
+}
+
+function getMetadataColumn(metadataColumns: powerbi.DataViewMetadataColumn[], yColumnId: number) {
+    return metadataColumns.filter(x => x.index === yColumnId)[0];
 }
 
 function createTooltipModels(sharedXAxis: boolean, xData: XAxisData, tooltipData: TooltipColumnData[], viewModel: ViewModel, metadataColumns: powerbi.DataViewMetadataColumn[]): void {
     if (sharedXAxis) {
         for (const tooltip of tooltipData) {
-            const column: powerbi.DataViewMetadataColumn = metadataColumns[tooltip.columnId];
+            const column: powerbi.DataViewMetadataColumn = getMetadataColumn(metadataColumns, tooltip.columnId);
             const maxLengthAttributes: number = Math.min(xData.values.length, tooltip.values.length);
 
             let tooltipPoints: TooltipDataPoint[] = <TooltipDataPoint[]>[];
