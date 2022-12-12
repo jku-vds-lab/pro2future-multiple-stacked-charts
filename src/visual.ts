@@ -162,7 +162,6 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         try {
-            console.log("update", Date.now());
             this.dataview = options.dataViews[0];
             let categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
@@ -202,6 +201,15 @@ export class Visual implements IVisual {
                     this.drawRolloutRectangles();
                     this.drawRolloutLegend();
                 }
+                this.svg.on('contextmenu', (event, d) => {
+                    debugger;
+                    let dataPoint: any = d3.select(event.target).datum();//d3Select(event.target).datum();
+                    this.selectionManager.showContextMenu((dataPoint && (<DataPoint>dataPoint).selectionId) ? (<DataPoint>dataPoint).selectionId : {}, {
+                        x: event.clientX,
+                        y: event.clientY
+                    });
+                    event.preventDefault();
+                });
             }).mapErr(err => this.displayError(err));
 
 
@@ -703,7 +711,7 @@ export class Visual implements IVisual {
                 .attr('clip-path', 'url(#clip)')
                 .on("click", (event, d: DataPoint) => {
                     const multiSelect = (event as MouseEvent).ctrlKey;
-                    this.selectionManager.select(d.selectionId,multiSelect);
+                    this.selectionManager.select(d.selectionId, multiSelect);
                 });
 
 
