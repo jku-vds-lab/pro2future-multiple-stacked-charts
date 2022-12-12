@@ -4,12 +4,12 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
-import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, SlabRectangle, SlabType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData, RolloutRectangles, XAxisSettings, LegendDataPoint } from './plotInterface';
+import { ViewModel, DataPoint, FormatSettings, PlotSettings, PlotModel, TooltipDataPoint, XAxisData, YAxisData, PlotType, OverlayRectangle, OverlayType, GeneralPlotSettings, Margins, AxisInformation, AxisInformationInterface, TooltipModel, ZoomingSettings, LegendData, Legend, LegendValue, TooltipData, TooltipColumnData, RolloutRectangles, XAxisSettings, LegendDataPoint } from './plotInterface';
 import { Color, scaleLinear, stratify } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, OverlayPlotSettingsNames, PlotTitleSettingsNames, TooltipTitleSettingsNames, YRangeSettingsNames, ZoomingSettingsNames, LegendSettingsNames, AxisLabelSettingsNames, HeatmapSettingsNames, ArrayConstants } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
-import { AxisError, AxisNullValuesError, GetAxisInformationError, SlabDataError, NoValuesError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError } from './errors'
+import { AxisError, AxisNullValuesError, GetAxisInformationError, OverlayDataError, NoDataColumnsError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError, NoDataError, XDataError } from './errors'
 import { isString } from 'vega';
 
 
@@ -51,14 +51,17 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
 
     //check if input data count is ok
-    if (yCount == 0) {
-        return err(new NoValuesError());
+    if (yCount === 0) {
+        return err(new NoDataColumnsError());
     }
-    if (xCount == 0) {
-        return err(new SlabDataError());
+    if (xCount === 0) {
+        return err(new XDataError());
     }
-    if (xCount != yCount && !sharedXAxis) {
+    if (xCount !== yCount && !sharedXAxis) {
         return err(new AxisError());
+    }
+    if (yCategoriesCount > 0 && categorical.categories[0].values.length === 0 || yValuesCount > 0 && categorical.values[0].values.length === 0) {
+        return err(new NoDataError());
     }
 
     let xData: XAxisData;
@@ -72,8 +75,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let xDataPoints: number[] = [];
     let yDataPoints: number[] = [];
     let dataPoints: DataPoint[] = [];
-    let slabWidth: number[] = [];
-    let slabLength: number[] = [];
+    let overlayWidth: number[] = [];
+    let overlayLength: number[] = [];
     let defectLegend: Legend = null;
     let defectGroupLegend: Legend = null;
     let rolloutRectangles: number[];
@@ -99,18 +102,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 };
                 yData[yId] = yAxis;
             }
-            if (roles.slabX) {
-                slabLength = <number[]>category.values;
+            if (roles.overlayX) {
+                overlayLength = <number[]>category.values;
             }
-            if (category.source.roles.slabY) {
-                slabWidth = <number[]>category.values;
+            if (category.source.roles.overlayY) {
+                overlayWidth = <number[]>category.values;
             }
             if (roles.tooltip) {
 
                 let columnId = category.source.index;
-                if (!metadataColumns[columnId]) {
-                    columnId = categorical.values.filter(x => x.source.displayName === category.source.displayName)[0].source.index;
-                }
                 const tooltipId = category.source['rolesIndex']['tooltip'][0];
                 let data: TooltipColumnData = {
                     type: category.source.type,
@@ -164,18 +164,14 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 }
                 yData[yId] = yAxis;
             }
-            if (roles.slabX) {
-                slabLength = <number[]>value.values;
+            if (roles.overlayX) {
+                overlayLength = <number[]>value.values;
             }
-            if (roles.slabY) {
-                slabWidth = <number[]>value.values;
+            if (roles.overlayY) {
+                overlayWidth = <number[]>value.values;
             }
             if (roles.tooltip) {
                 let columnId = value.source.index;
-                if (!metadataColumns[columnId]) {
-                    columnId = categorical.categories.filter(x => x.source.displayName === value.source.displayName)[0].source.index;
-                }
-
                 const tooltipId = value.source['rolesIndex']['tooltip'][0];
                 let data: TooltipColumnData = {
                     type: value.source.type,
@@ -314,7 +310,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
         let yAxis: YAxisData = yData[plotNr]
         let yColumnId = yData[plotNr].columnId;
-        let yColumnObjects = metadataColumns[yColumnId].objects;
+        let yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
         plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name))
 
         const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)]
@@ -358,7 +354,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
 
     createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
-    createSlabInformation(slabLength, slabWidth, xData.values, viewModel).mapErr(err => parseAndTransformError = err);
+    createOverlayInformation(overlayLength, overlayWidth, xData.values, viewModel).mapErr(err => parseAndTransformError = err);
     if (parseAndTransformError) { return err(parseAndTransformError); }
 
 
@@ -372,7 +368,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
         dataPoints = [];
         const yColumnId = yData[plotNr].columnId;
-        const yColumnObjects = metadataColumns[yColumnId].objects;
+        const yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
         const plotSettings: PlotSettings = {
             plotSettings: {
                 fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
@@ -381,7 +377,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false)
             }
         }
-        debugger;
         //create datapoints
         for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
@@ -389,11 +384,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             const xVal = xDataPoints[pointNr];
             if (plotSettings.plotSettings.useLegendColor) {
                 if (defectLegend != null) {
-                    // if (yDataPoints[pointNr] !== null) debugger;
                     const legendVal = defectLegend.legendDataPoints.find(x => x.i === pointNr)?.yValue;
                     color = legendVal === undefined ? color : defectLegend.legendValues.find(x => x.value === legendVal).color;
                 } else {
-                    return err(new PlotLegendError(yAxis.name));
+                    viewModel.errors.push(new PlotLegendError(yAxis.name));
                 }
             }
 
@@ -437,7 +431,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             },
             overlayPlotSettings: {
                 overlayPlotSettings: {
-                    slabType: SlabType[getValue<string>(yColumnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.slabType, SlabType.None)]
+                    overlayType: OverlayType[getValue<string>(yColumnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.overlayType, OverlayType.None)]
                 }
             },
             yRange: {
@@ -467,12 +461,18 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
     return ok(viewModel);
 
+
+
+}
+
+function getMetadataColumn(metadataColumns: powerbi.DataViewMetadataColumn[], yColumnId: number) {
+    return metadataColumns.filter(x => x.index === yColumnId)[0];
 }
 
 function createTooltipModels(sharedXAxis: boolean, xData: XAxisData, tooltipData: TooltipColumnData[], viewModel: ViewModel, metadataColumns: powerbi.DataViewMetadataColumn[]): void {
     if (sharedXAxis) {
         for (const tooltip of tooltipData) {
-            const column: powerbi.DataViewMetadataColumn = metadataColumns[tooltip.columnId];
+            const column: powerbi.DataViewMetadataColumn = getMetadataColumn(metadataColumns, tooltip.columnId);
             const maxLengthAttributes: number = Math.min(xData.values.length, tooltip.values.length);
 
             let tooltipPoints: TooltipDataPoint[] = <TooltipDataPoint[]>[];
@@ -499,7 +499,7 @@ function createTooltipModels(sharedXAxis: boolean, xData: XAxisData, tooltipData
             //create datapoints
             for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
                 let dataPoint: TooltipDataPoint = {
-                    xValue: xData.values[pointNr],
+                    pointNr: pointNr,
                     yValue: tooltip.values[pointNr]
                 };
                 tooltipPoints.push(dataPoint);
@@ -514,22 +514,22 @@ function createTooltipModels(sharedXAxis: boolean, xData: XAxisData, tooltipData
     }
 }
 
-function createSlabInformation(slabLength: number[], slabWidth: number[], xValues: number[], viewModel: ViewModel): Result<void, SlabDataError> {
-    if (slabLength.length == slabWidth.length && slabWidth.length > 0) {
-        let slabRectangles: SlabRectangle[] = new Array<SlabRectangle>(slabLength.length);
-        for (let i = 0; i < slabLength.length; i++) {
-            slabRectangles[i] = {
-                width: slabWidth[i],
-                length: slabLength[i],
+function createOverlayInformation(overlayLength: number[], overlayWidth: number[], xValues: number[], viewModel: ViewModel): Result<void, OverlayDataError> {
+    if (overlayLength.length == overlayWidth.length && overlayWidth.length > 0) {
+        let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(overlayLength.length);
+        for (let i = 0; i < overlayLength.length; i++) {
+            overlayRectangles[i] = {
+                width: overlayWidth[i],
+                length: overlayLength[i],
                 y: 0,
                 x: xValues[i]
             };
         }
-        slabRectangles = slabRectangles.filter(x => x.x != null && x.x > 0 && x.width != null && x.width > 0);
-        if (slabRectangles.length == 0) {
-            return err(new SlabDataError());
+        overlayRectangles = overlayRectangles.filter(x => x.x != null && x.x > 0 && x.width != null && x.width > 0);
+        if (overlayRectangles.length == 0) {
+            return err(new OverlayDataError());
         }
-        viewModel.slabRectangles = slabRectangles;
+        viewModel.overlayRectangles = overlayRectangles;
     }
     return ok(null);
 }
@@ -576,17 +576,15 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         xAxisSettings: xAxisSettings
     };
 
-    const zoomingSettings: ZoomingSettings = {
-        enableZoom: <boolean>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.show, true),
-        maximumZoom: <number>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.maximum, 30)
-    }
+    const zoomingSettings: ZoomingSettings = SettingsGetter.getZoomingSettings(objects)
 
     let viewModel: ViewModel = <ViewModel>{
         plotModels: new Array<PlotModel>(yCount),
         colorSettings: {
             colorSettings: {
                 verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
-                slabColor: getColorSettings(objects, ColorSettingsNames.slabColor, colorPalette, '#000000'),
+                overlayColor: getColorSettings(objects, ColorSettingsNames.overlayColor, colorPalette, '#000000'),
+                yZeroLineColor: getColorSettings(objects, ColorSettingsNames.yZeroLineColor, colorPalette, '#CCCCCC'),
                 heatmapColorScheme: <string>getValue(objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme, 'interpolateBlues')
 
             }
@@ -594,14 +592,14 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         heatmapSettings: { heatmapBins: getValue<number>(objects, Settings.heatmapSettings, HeatmapSettingsNames.heatmapBins, 100) },
         tooltipModels: [],
         generalPlotSettings: generalPlotSettings,
-        slabRectangles: [],
+        overlayRectangles: [],
         svgHeight: svgHeight,
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,
         defectLegend: defectLegend,
-        defectGroupLegend: defectGroupLegend
-        // defectIndices: defectIndices
+        defectGroupLegend: defectGroupLegend,
+        errors: []
     };
     return ok(viewModel);
 }
@@ -636,4 +634,16 @@ function getAxisInformation(axisInformation: AxisInformation): Result<AxisInform
             return err(new GetAxisInformationError());
     }
     return err(new GetAxisInformationError());
+}
+
+
+export class SettingsGetter {
+
+    public static getZoomingSettings(objects: powerbi.DataViewObjects) {
+        return <ZoomingSettings>{
+            enableZoom: <boolean>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.show, true),
+            maximumZoom: <number>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.maximum, 30)
+        }
+    }
+
 }

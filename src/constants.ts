@@ -43,12 +43,13 @@ export enum TooltipTitleSettingsNames {
     title = "title"
 }
 export enum OverlayPlotSettingsNames {
-    slabType = "slabType"
+    overlayType = "overlayType"
 }
 export enum ColorSettingsNames {
     verticalRulerColor = "verticalRulerColor",
-    slabColor = "slabColor",
-    heatmapColorScheme = "heatmapColorScheme"
+    overlayColor = "overlayColor",
+    heatmapColorScheme = "heatmapColorScheme",
+    yZeroLineColor = "yZeroLineColor"
 }
 export enum AxisSettingsNames {
     xAxis = "xAxis",
@@ -69,7 +70,8 @@ export enum ColorSelectorNames {
 
 export enum Constants {
     verticalRulerClass = "hover-line",
-    slabClass = "slabBars",
+    yZeroLine = "yZeroLine",
+    overlayClass = "overlayBars",
     barClass = "bar",
     dotClass = "dot",
     rolloutClass = "rollout",
