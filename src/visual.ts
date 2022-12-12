@@ -159,7 +159,7 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         try {
-            console.log("update",Date.now());
+            console.log("update", Date.now());
             this.dataview = options.dataViews[0];
             let categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
@@ -182,7 +182,7 @@ export class Visual implements IVisual {
                 this.svg.selectAll('*').remove();
                 this.svg.attr("width", this.viewModel.svgWidth)
                     .attr("height", this.viewModel.svgHeight);
-                if(model.errors.length>0){
+                if (model.errors.length > 0) {
                     this.displayError(model.errors[0]);
                     return;
                 }
@@ -349,9 +349,11 @@ export class Visual implements IVisual {
         let x: D3PlotXAxis;
         let y: D3PlotYAxis;
         let plotError: PlotError;
+        let yZeroLine;
         const PlotResult = this.buildBasicPlot(plotModel).map(plt => {
             root = plt;
             root.append("g").attr("class", Constants.overlayClass).attr('clip-path', 'url(#overlayClip)');
+            yZeroLine = root.append("g").attr("class", Constants.yZeroLine);
         }).mapErr(error => this.displayError(error));
         if (PlotResult.isErr()) {
             return err(plotError);
@@ -359,7 +361,7 @@ export class Visual implements IVisual {
 
         this.buildXAxis(plotModel, root).map(axis => x = axis).mapErr(err => plotError = err);
         this.buildYAxis(plotModel, root).map(axis => y = axis).mapErr(err => plotError = err);
-        plotModel.d3Plot = <D3Plot>{ yName: plotModel.yName, type: plotType, root, points: null, x, y };
+        plotModel.d3Plot = <D3Plot>{ yName: plotModel.yName, type: plotType, root, points: null, x, y, yZeroLine };
         this.addPlotTitles(plotModel, root).mapErr(err => plotError = err);
         this.addVerticalRuler(root).mapErr(err => plotError = err);
         this.drawOverlay(plotModel).mapErr(err => plotError = err);
@@ -655,6 +657,17 @@ export class Visual implements IVisual {
                 });
                 dotSize = 3;
             }
+            d3Plot.yZeroLine.selectAll("*")
+                .data([0])
+                .enter()
+                .append("line")
+                .attr("x1", xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.min))
+                .attr("x2", xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.max))
+                .attr("y1", yScale(0))
+                .attr("y2", yScale(0))
+                .attr('stroke', this.viewModel.colorSettings.colorSettings.yZeroLineColor)
+                .attr('class', Constants.yZeroLine);
+
 
             const plotType = plotModel.plotSettings.plotSettings.plotType;
 
@@ -685,17 +698,8 @@ export class Visual implements IVisual {
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', dotSize)
                 .attr('clip-path', 'url(#clip)');
-            
-                d3Plot.yZeroLine = d3Plot.root.selectAll("."+Constants.yZeroLine)
-                .data([0])
-                .enter()
-                .append("line")
-                .attr("x1",xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.min))
-                .attr("x2",xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.max))
-                .attr("y1",yScale(0))
-                .attr("y2",yScale(0))
-                .attr('stroke', 'black')
-                .attr('class', Constants.yZeroLine)
+
+
 
             let mouseEvents: TooltipInterface;
             this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
@@ -893,7 +897,13 @@ export class Visual implements IVisual {
                             plot.plotLine.attr('d', line);
                         }
 
-                        //TODO: add zoom for y-zero line
+                        const yZero = plot.y.yScaleZoomed(0);
+
+                        plot.yZeroLine
+                            .selectAll("line")
+                            .attr("y1", yZero)
+                            .attr("y2", yZero);
+
                         if (plot.heatmap) {
                             let values = plot.heatmap.values;
                             let scale = transform.rescaleX(plot.heatmap.scale);
@@ -907,8 +917,7 @@ export class Visual implements IVisual {
                     errorFunction(error, _this);
                 }
             }
-
-            this.zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed); // with scale extent you can control how much you scale
+            this.zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed);
 
 
             this.svg.call(this.zoom);
@@ -1068,6 +1077,7 @@ export class Visual implements IVisual {
                         properties: {
                             verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
                             overlayColor: getColorSettings(objects, ColorSettingsNames.overlayColor, colorPalette, '#0000FF'),
+                            yZeroLineColor: getColorSettings(objects, ColorSettingsNames.yZeroLineColor, colorPalette, '#CCCCCC'),
                             heatmapColorScheme: <string>getValue(objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme, 'interpolateBlues')
                         },
                         selector: null

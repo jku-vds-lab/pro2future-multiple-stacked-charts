@@ -48,7 +48,8 @@ export enum OverlayPlotSettingsNames {
 export enum ColorSettingsNames {
     verticalRulerColor = "verticalRulerColor",
     overlayColor = "overlayColor",
-    heatmapColorScheme = "heatmapColorScheme"
+    heatmapColorScheme = "heatmapColorScheme",
+    yZeroLineColor = "yZeroLineColor"
 }
 export enum AxisSettingsNames {
     xAxis = "xAxis",

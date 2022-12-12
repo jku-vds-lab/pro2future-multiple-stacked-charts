@@ -266,6 +266,7 @@ export interface ColorSettings {
         verticalRulerColor: string;
         overlayColor: string;
         heatmapColorScheme: string;
+        yZeroLineColor:string;
     }
 }
 export interface HeatmapSettings {
