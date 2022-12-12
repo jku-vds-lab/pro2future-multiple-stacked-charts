@@ -40,6 +40,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
+import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
@@ -64,11 +65,13 @@ export class Visual implements IVisual {
     private svg: Selection<any>;
     private legendSelection = new Set(Object.keys(ArrayConstants.legendColors).concat(Object.keys(ArrayConstants.groupValues)));
     private storage: ILocalVisualStorageService;
-    private zoom: d3.ZoomBehavior<Element, unknown>
+    private zoom: d3.ZoomBehavior<Element, unknown>;
+    private selectionManager: ISelectionManager;
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.element = options.element;
+        this.selectionManager = this.host.createSelectionManager();
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true)
             .attr("width", this.element.clientWidth)
             .attr("height", this.element.clientHeight);
@@ -159,7 +162,6 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         try {
-            console.log("update", Date.now());
             this.dataview = options.dataViews[0];
             let categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
@@ -199,6 +201,15 @@ export class Visual implements IVisual {
                     this.drawRolloutRectangles();
                     this.drawRolloutLegend();
                 }
+                this.svg.on('contextmenu', (event, d) => {
+                    debugger;
+                    let dataPoint: any = d3.select(event.target).datum();//d3Select(event.target).datum();
+                    this.selectionManager.showContextMenu((dataPoint && (<DataPoint>dataPoint).selectionId) ? (<DataPoint>dataPoint).selectionId : {}, {
+                        x: event.clientX,
+                        y: event.clientY
+                    });
+                    event.preventDefault();
+                });
             }).mapErr(err => this.displayError(err));
 
 
@@ -697,7 +708,11 @@ export class Visual implements IVisual {
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', dotSize)
-                .attr('clip-path', 'url(#clip)');
+                .attr('clip-path', 'url(#clip)')
+                .on("click", (event, d: DataPoint) => {
+                    const multiSelect = (event as MouseEvent).ctrlKey;
+                    this.selectionManager.select(d.selectionId, multiSelect);
+                });
 
 
 

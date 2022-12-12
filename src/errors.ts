@@ -67,7 +67,7 @@ export class OverlayDataError extends ParseAndTransformError {
      */
     constructor() {
         const name = "Overlay Data Error";
-        const message = "There was an Error creating the overlay information with the provided Data. Pleas check the specifications.";
+        const message = "There was an Error creating the overlay information with the provided Data. Please check the specifications.";
         super(message, name);
 
     }

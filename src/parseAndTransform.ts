@@ -398,8 +398,11 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 identity: selectionId,
                 selected: false,
                 color: color,
-                pointNr: pointNr
+                pointNr: pointNr,
+                selectionId: host.createSelectionIdBuilder().withCategory(categorical.categories[0], pointNr).createSelectionId()
             };
+
+
             dataPoints.push(dataPoint);
         }
 
