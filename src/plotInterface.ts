@@ -1,6 +1,7 @@
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
 import { ArrayConstants } from './constants';
+import { ParseAndTransformError } from './errors';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
@@ -21,6 +22,7 @@ export interface ViewModel {
     heatmapSettings: HeatmapSettings;
     // defectIndices: DefectIndices;
     rolloutRectangles: RolloutRectangles;
+    errors: ParseAndTransformError[];
 }
 // export class DefectIndices {
 
@@ -68,7 +70,7 @@ export class RolloutRectangles {
     name: string;
     opacity: number;
 
-    constructor(xValues: number[], rollout: number[], y, width,rolloutName = "Rollout", rolloutOpacity = 0.1) {
+    constructor(xValues: number[], rollout: number[], y, width, rolloutName = "Rollout", rolloutOpacity = 0.1) {
         this.name = rolloutName;
         this.rolloutRectangles = [];
         this.opacity = rolloutOpacity;
@@ -220,7 +222,7 @@ export interface TooltipDataPoint {
 export interface LegendDataPoint {
     xValue: PrimitiveValue;
     yValue: PrimitiveValue;
-    i:number;
+    i: number;
 }
 
 export interface LegendValue {
@@ -233,8 +235,8 @@ export interface Legend {
     legendDataPoints: LegendDataPoint[];
     legendValues: LegendValue[];
     legendTitle: string;
-    legendXEndPosition:number;
-    legendXPosition:number;
+    legendXEndPosition: number;
+    legendXPosition: number;
 }
 
 export interface DataPoint extends SelectableDataPoint {
@@ -243,7 +245,7 @@ export interface DataPoint extends SelectableDataPoint {
     color?: string;
     highlight?: boolean;
     opacity?: number;
-    pointNr:number;
+    pointNr: number;
 }
 
 export interface FormatSettings {
@@ -325,6 +327,7 @@ export interface D3Plot {
     y: D3PlotYAxis;
     x: D3PlotXAxis;
     heatmap: D3Heatmap;
+    yZeroLine: any;
 }
 
 export interface D3PlotXAxis {

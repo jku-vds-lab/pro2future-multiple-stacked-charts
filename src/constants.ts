@@ -69,6 +69,7 @@ export enum ColorSelectorNames {
 
 export enum Constants {
     verticalRulerClass = "hover-line",
+    yZeroLine = "yZeroLine",
     overlayClass = "overlayBars",
     barClass = "bar",
     dotClass = "dot",

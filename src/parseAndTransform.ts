@@ -387,7 +387,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     const legendVal = defectLegend.legendDataPoints.find(x => x.i === pointNr)?.yValue;
                     color = legendVal === undefined ? color : defectLegend.legendValues.find(x => x.value === legendVal).color;
                 } else {
-                    return err(new PlotLegendError(yAxis.name));
+                    viewModel.errors.push(new PlotLegendError(yAxis.name));
                 }
             }
 
@@ -597,8 +597,8 @@ function createViewModel(options: VisualUpdateOptions, yCount: number, objects: 
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,
         defectLegend: defectLegend,
-        defectGroupLegend: defectGroupLegend
-        // defectIndices: defectIndices
+        defectGroupLegend: defectGroupLegend,
+        errors: []
     };
     return ok(viewModel);
 }

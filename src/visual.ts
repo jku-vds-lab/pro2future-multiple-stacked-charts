@@ -51,7 +51,7 @@ import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawPlotError, DrawScatterPlotError, HeatmapError, PlotError, OverlayInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 import { Heatmapmargins, MarginSettings } from './marginSettings';
-import { line } from 'd3';
+import { line, mode } from 'd3';
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 
@@ -182,6 +182,10 @@ export class Visual implements IVisual {
                 this.svg.selectAll('*').remove();
                 this.svg.attr("width", this.viewModel.svgWidth)
                     .attr("height", this.viewModel.svgHeight);
+                if(model.errors.length>0){
+                    this.displayError(model.errors[0]);
+                    return;
+                }
                 this.drawPlots();
                 if (this.viewModel.defectLegend != null) {
                     this.viewModel.defectLegend.legendValues.map(val => this.legendSelection.add(val.value.toString()));
@@ -681,6 +685,17 @@ export class Visual implements IVisual {
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', dotSize)
                 .attr('clip-path', 'url(#clip)');
+            
+                d3Plot.yZeroLine = d3Plot.root.selectAll("."+Constants.yZeroLine)
+                .data([0])
+                .enter()
+                .append("line")
+                .attr("x1",xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.min))
+                .attr("x2",xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.max))
+                .attr("y1",yScale(0))
+                .attr("y2",yScale(0))
+                .attr('stroke', 'black')
+                .attr('class', Constants.yZeroLine)
 
             let mouseEvents: TooltipInterface;
             this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
@@ -877,6 +892,8 @@ export class Visual implements IVisual {
 
                             plot.plotLine.attr('d', line);
                         }
+
+                        //TODO: add zoom for y-zero line
                         if (plot.heatmap) {
                             let values = plot.heatmap.values;
                             let scale = transform.rescaleX(plot.heatmap.scale);
