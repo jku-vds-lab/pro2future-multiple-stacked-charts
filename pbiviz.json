@@ -9,7 +9,7 @@
         "supportUrl": "https://github.com/jku-vds-lab/pro2future-voest-multiple-stacked-charts",
         "gitHubUrl": "https://github.com/jku-vds-lab/pro2future-voest-multiple-stacked-charts"
     },
-    "apiVersion": "3.8.0",
+    "apiVersion": "5.1.0",
     "author": {
         "name": "Jakob Zethofer",
         "email": "jakob.zethofer@pro2future.at"

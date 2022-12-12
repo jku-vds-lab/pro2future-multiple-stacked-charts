@@ -25,9 +25,9 @@
  */
 'use strict';
 
-import 'core-js/stable';
+// import 'core-js/stable';
 import './../style/visual.less';
-import 'regenerator-runtime/runtime';
+// import 'regenerator-runtime/runtime';
 
 import powerbi from 'powerbi-visuals-api';
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
@@ -52,7 +52,7 @@ import { err, ok, Result } from 'neverthrow';
 import { AddClipPathError, AddPlotTitlesError, AddVerticalRulerError, AddZoomError, BuildBasicPlotError, BuildXAxisError, BuildYAxisError, CustomTooltipError, DrawPlotError, DrawScatterPlotError, HeatmapError, PlotError, OverlayInformationError } from './errors';
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 import { Heatmapmargins, MarginSettings } from './marginSettings';
-import { line, mode } from 'd3';
+
 
 type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
 

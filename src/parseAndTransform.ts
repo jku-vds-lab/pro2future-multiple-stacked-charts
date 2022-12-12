@@ -10,7 +10,6 @@ import { AxisSettingsNames, PlotSettingsNames, Settings, ColorSettingsNames, Ove
 import { Heatmapmargins, MarginSettings } from './marginSettings'
 import { ok, err, Result } from 'neverthrow'
 import { AxisError, AxisNullValuesError, GetAxisInformationError, OverlayDataError, NoDataColumnsError, ParseAndTransformError, PlotLegendError, PlotSizeError, SVGSizeError, NoDataError, XDataError } from './errors'
-import { isString } from 'vega';
 
 
 
@@ -482,10 +481,6 @@ function createTooltipModels(sharedXAxis: boolean, xData: XAxisData, tooltipData
             const type = tooltip.type;
             if (type.dateTime) {
                 tooltip.values = tooltip.values.map(val => {
-                    if (!isString(val)) {
-                        console.log("Type is no date, this should not have happened: " + column.displayName);
-                        return val;
-                    }
                     let d = new Date(<string>val);
                     let formatedDate = padTo2Digits(d.getDate()) + "." + padTo2Digits(d.getMonth() + 1) + "." + padTo2Digits(d.getFullYear()) + " " + padTo2Digits(d.getHours()) + ":" + padTo2Digits(d.getMinutes())
                     return formatedDate;

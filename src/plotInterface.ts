@@ -1,5 +1,5 @@
 import powerbi from 'powerbi-visuals-api';
-import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
+import { interactivitySelectionService } from  'powerbi-visuals-utils-interactivityutils';
 import { ArrayConstants } from './constants';
 import { ParseAndTransformError } from './errors';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
