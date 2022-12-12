@@ -246,6 +246,7 @@ export interface DataPoint extends SelectableDataPoint {
     highlight?: boolean;
     opacity?: number;
     pointNr: number;
+    selectionId: ISelectionId;
 }
 
 export interface FormatSettings {

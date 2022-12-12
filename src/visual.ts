@@ -40,6 +40,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
+import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
@@ -64,11 +65,13 @@ export class Visual implements IVisual {
     private svg: Selection<any>;
     private legendSelection = new Set(Object.keys(ArrayConstants.legendColors).concat(Object.keys(ArrayConstants.groupValues)));
     private storage: ILocalVisualStorageService;
-    private zoom: d3.ZoomBehavior<Element, unknown>
+    private zoom: d3.ZoomBehavior<Element, unknown>;
+    private selectionManager: ISelectionManager;
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.element = options.element;
+        this.selectionManager = this.host.createSelectionManager();
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true)
             .attr("width", this.element.clientWidth)
             .attr("height", this.element.clientHeight);
@@ -697,7 +700,11 @@ export class Visual implements IVisual {
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
                 .attr('r', dotSize)
-                .attr('clip-path', 'url(#clip)');
+                .attr('clip-path', 'url(#clip)')
+                .on("click", (event, d: DataPoint) => {
+                    const multiSelect = (event as MouseEvent).ctrlKey;
+                    this.selectionManager.select(d.selectionId,multiSelect);
+                });
 
 
 
