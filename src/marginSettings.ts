@@ -9,13 +9,12 @@ export class MarginSettings {
     static readonly dotMargin = 4;
     static readonly xLabelSpace = 10;
 
-
     static readonly margins: Margins = {
         top: 10,
         right: 50,
         bottom: 10,
         left: 50,
-    }
+    };
     static readonly miniumumPlotHeight = 40;
     static readonly miniumumPlotWidth = 120;
 }

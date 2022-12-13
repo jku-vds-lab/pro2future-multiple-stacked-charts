@@ -1,6 +1,5 @@
-import { color } from "d3-color";
-import powerbi from "powerbi-visuals-api";
-import { ColorSelectorNames, PlotSettingsNames, Settings, ColorSettingsNames } from "./constants";
+import powerbi from 'powerbi-visuals-api';
+import { ColorSelectorNames, PlotSettingsNames, Settings } from './constants';
 import DataViewObjects = powerbi.DataViewObjects;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import DataViewObject = powerbi.DataViewObject;
@@ -17,17 +16,17 @@ import Fill = powerbi.Fill;
  */
 
 export function getValue<T>(objects: DataViewObjects, objectName: string, propertyName: string, defaultValue: T): T {
-  if (objects) {
-    let object = objects[objectName];
-    if (object) {
-      let property: T = <T>object[propertyName];
-      if (property != undefined) {
-        return property;
-      }
+    if (objects) {
+        const object = objects[objectName];
+        if (object) {
+            const property: T = <T>object[propertyName];
+            if (property != undefined) {
+                return property;
+            }
+        }
     }
-  }
 
-  return defaultValue;
+    return defaultValue;
 }
 
 /**
@@ -42,111 +41,83 @@ export function getValue<T>(objects: DataViewObjects, objectName: string, proper
  */
 
 export function getCategoricalObjectValue<T>(category: DataViewCategoryColumn, index: number, objectName: string, propertyName: string, defaultValue: T): T {
-  let categoryObjects = category.objects;
+    const categoryObjects = category.objects;
 
-  if (categoryObjects) {
-    let categoryObject: DataViewObject = categoryObjects[index];
-    if (categoryObject) {
-      let object = categoryObject[objectName];
-      if (object) {
-        let property: T = <T>object[propertyName];
-        if (property !== undefined) {
-          return property;
+    if (categoryObjects) {
+        const categoryObject: DataViewObject = categoryObjects[index];
+        if (categoryObject) {
+            const object = categoryObject[objectName];
+            if (object) {
+                const property: T = <T>object[propertyName];
+                if (property !== undefined) {
+                    return property;
+                }
+            }
         }
-      }
     }
-  }
-  return defaultValue;
+    return defaultValue;
 }
 
 export function getCategoricalObjectColor(category: DataViewCategoryColumn, index: number, objectName: string, propertyName: string, defaultValue: string): string {
-  let categoryObjects = category.objects;
+    const categoryObjects = category.objects;
 
-  if (categoryObjects) {
-    let categoryObject: DataViewObject = categoryObjects[index];
-    if (categoryObject) {
-      let object = categoryObject[objectName];
-      if (object) {
-        let property: Fill = <Fill>object[propertyName];
-        if (property !== undefined) {
-          return property.solid.color;
+    if (categoryObjects) {
+        const categoryObject: DataViewObject = categoryObjects[index];
+        if (categoryObject) {
+            const object = categoryObject[objectName];
+            if (object) {
+                const property: Fill = <Fill>object[propertyName];
+                if (property !== undefined) {
+                    return property.solid.color;
+                }
+            }
         }
-      }
     }
-  }
-  return defaultValue;
+    return defaultValue;
 }
 
-export function getAxisTextFillColor(objects: DataViewObjects,
-  colorPalette: ISandboxExtendedColorPalette,
-  defaultColor: string): string {
-  if (colorPalette.isHighContrast) {
-    return colorPalette.foreground.value;
-  }
-  return getValue<Fill>(
-    objects,
-    "enableAxis",
-    "fill",
-    {
-      solid: {
-        color: defaultColor,
-      }
-    },
-  ).solid.color;
+export function getAxisTextFillColor(objects: DataViewObjects, colorPalette: ISandboxExtendedColorPalette, defaultColor: string): string {
+    if (colorPalette.isHighContrast) {
+        return colorPalette.foreground.value;
+    }
+    return getValue<Fill>(objects, 'enableAxis', 'fill', {
+        solid: {
+            color: defaultColor,
+        },
+    }).solid.color;
 }
 
-export function getPlotFillColor(objects: DataViewObjects,
-  colorPalette: ISandboxExtendedColorPalette,
-  defaultColor: string): string {
-  if (colorPalette.isHighContrast) {
-    return colorPalette.foreground.value;
-  }
-  return getValue<Fill>(
-    objects,
-    Settings.plotSettings,
-    PlotSettingsNames.fill,
-    {
-      solid: {
-        color: defaultColor,
-      }
-    },
-  ).solid.color;
+export function getPlotFillColor(objects: DataViewObjects, colorPalette: ISandboxExtendedColorPalette, defaultColor: string): string {
+    if (colorPalette.isHighContrast) {
+        return colorPalette.foreground.value;
+    }
+    return getValue<Fill>(objects, Settings.plotSettings, PlotSettingsNames.fill, {
+        solid: {
+            color: defaultColor,
+        },
+    }).solid.color;
 }
 
-
-export function getColorSettings(objects: DataViewObjects, settingsName: string,
-  colorPalette: ISandboxExtendedColorPalette,
-  defaultColor: string): string {
-  if (colorPalette.isHighContrast) {
-    return colorPalette.foreground.value;
-  }
-  return getValue<Fill>(
-    objects,
-    Settings.colorSettings,
-    settingsName,
-    {
-      solid: {
-        color: defaultColor,
-      }
-    },
-  ).solid.color;
+export function getColorSettings(objects: DataViewObjects, settingsName: string, colorPalette: ISandboxExtendedColorPalette, defaultColor: string): string {
+    if (colorPalette.isHighContrast) {
+        return colorPalette.foreground.value;
+    }
+    return getValue<Fill>(objects, Settings.colorSettings, settingsName, {
+        solid: {
+            color: defaultColor,
+        },
+    }).solid.color;
 }
 
 export function getColumnnColorByIndex(category: DataViewCategoryColumn, index: number, colorPalette: ISandboxExtendedColorPalette): string {
-  if (colorPalette.isHighContrast) {
-    return colorPalette.background.value;
-  }
-  const defaultColor: Fill = {
-    solid: {
-      color: colorPalette.getColor(`${category.values[index]}`).value,
+    if (colorPalette.isHighContrast) {
+        return colorPalette.background.value;
     }
-  };
+    const defaultColor: Fill = {
+        solid: {
+            color: colorPalette.getColor(`${category.values[index]}`).value,
+        },
+    };
 
-  return getCategoricalObjectValue<Fill>(
-    category,
-    index,
-    Settings.colorSelector,
-    ColorSelectorNames.fill,
-    defaultColor
-  ).solid.color;
+    return getCategoricalObjectValue<Fill>(category, index, Settings.colorSelector, ColorSelectorNames.fill, defaultColor).solid.color;
 }
