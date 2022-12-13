@@ -16,5 +16,7 @@ module.exports = {
     extends: [
         "plugin:powerbi-visuals/recommended"
     ],
-    rules: {}
+    rules: {
+        "max-lines-per-function": ["error", 500]
+    }
 };

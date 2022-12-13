@@ -185,26 +185,29 @@ export class Visual implements IVisual {
             .style('stroke', 'grey')
             .attr('class', (d) => Constants.defectLegendClass + ' ' + d.value)
             .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-        this.svg.selectAll('.' + Constants.defectLegendClass).on('click', (function (e: Event, d: LegendValue) {
-            e.stopPropagation();
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            const def = d.value.toString();
-            const selection = this.svg.selectAll('.' + Constants.defectLegendClass + '.' + def);
-            if (legendSelection.has(def)) {
-                legendSelection.delete(def);
-                selection.style('opacity', unselectedOpacity);
-            } else {
-                legendSelection.add(def);
-                selection.style('opacity', 1);
-            }
-            for (const plotModel of this.viewModel.plotModels) {
-                if (plotModel.yName.includes('DEF')) {
-                    this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
-                    this.drawPlot(plotModel);
+        this.svg.selectAll('.' + Constants.defectLegendClass).on(
+            'click',
+            function (e: Event, d: LegendValue) {
+                e.stopPropagation();
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                const def = d.value.toString();
+                const selection = this.svg.selectAll('.' + Constants.defectLegendClass + '.' + def);
+                if (legendSelection.has(def)) {
+                    legendSelection.delete(def);
+                    selection.style('opacity', unselectedOpacity);
+                } else {
+                    legendSelection.add(def);
+                    selection.style('opacity', 1);
                 }
-            }
-        }).bind(this));
+                for (const plotModel of this.viewModel.plotModels) {
+                    if (plotModel.yName.includes('DEF')) {
+                        this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                        this.drawPlot(plotModel);
+                    }
+                }
+            }.bind(this)
+        );
 
         legend.legendXEndPosition = width;
     }
@@ -284,7 +287,7 @@ export class Visual implements IVisual {
                 }
             })
             .catch(() => {
-                console.log("restore error");
+                console.log('restore error');
                 this.storage.set(Constants.zoomState, '0;0;1');
             });
     }
@@ -298,12 +301,15 @@ export class Visual implements IVisual {
             .attr('y', 20)
             .text('ERROR: ' + error.name);
         _this.svg
-            .append('foreignObject')
+            .append('text')
             .attr('width', _this.element.clientWidth)
             .attr('height', _this.element.clientHeight - 40)
             .attr('x', 0)
-            .attr('y', 30)
-            .html("<p style='font-size:12px;'>" + error.message + '</p>');
+            .attr('y', 40)
+            .text(error.message)
+            .style('font-size', '12px');
+
+        // ("<p style='font-size:12px;'>" + error.message + '</p>');
 
         console.log('error: ', error.name);
         console.log(error.message);
@@ -351,7 +357,7 @@ export class Visual implements IVisual {
             .attr('text-anchor', 'left')
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function (d, i) {
+            .attr('x', function () {
                 const x = width;
                 width = width + this.getComputedTextLength() + 15;
                 return x;
@@ -367,7 +373,7 @@ export class Visual implements IVisual {
             .attr('text-anchor', 'left')
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function (d, i) {
+            .attr('x', function () {
                 const x = width;
                 widths.push(width);
                 width = width + 25 + this.getComputedTextLength();
@@ -911,7 +917,6 @@ export class Visual implements IVisual {
 
     private addZoom(zoomingSettings: ZoomingSettings): Result<void, PlotError> {
         try {
-            const _this = this;
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plots = this.viewModel.plotModels;
             const errorFunction = this.displayError;
@@ -919,15 +924,15 @@ export class Visual implements IVisual {
                 try {
                     const transform: d3.ZoomTransform = event.transform;
                     if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
-                        _this.svg.call(_this.zoom.transform, d3.zoomIdentity);
+                        this.svg.call(this.zoom.transform, d3.zoomIdentity);
                         return;
                     }
-                    _this.storage.set(Constants.zoomState, transform.x + ';' + transform.y + ';' + transform.k).catch((reason) => console.log("set error: " + reason));
+                    this.storage.set(Constants.zoomState, transform.x + ';' + transform.y + ';' + transform.k).catch((reason) => console.log('set error: ' + reason));
                     const xScaleZoomed = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
                     const xMin = xScaleZoomed.domain()[0];
                     const xMax = xScaleZoomed.domain()[1];
-                    _this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed = xScaleZoomed;
-                    _this.svg
+                    this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed = xScaleZoomed;
+                    this.svg
                         .selectAll('.' + Constants.rolloutClass)
                         .attr('x', function (d: RolloutRectangle) {
                             return xScaleZoomed(d.x);
@@ -967,7 +972,7 @@ export class Visual implements IVisual {
                         //     plot.y.yAxis.call(yAxisValue);
                         // }
                         // else {
-                        const plotModel = _this.viewModel.plotModels.filter((x) => x.yName === plot.yName)[0];
+                        const plotModel = this.viewModel.plotModels.filter((x) => x.yName === plot.yName)[0];
                         const yDataPoints = plotModel.dataPoints.filter((x) => x.xValue >= xMin && x.xValue <= xMax).map((x) => Number(x.yValue));
                         const yMin = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
                         const yMax = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
@@ -1029,9 +1034,9 @@ export class Visual implements IVisual {
                     }
                 } catch (error) {
                     error.message = 'error in zoom function: ' + error.message;
-                    errorFunction(error, _this);
+                    errorFunction(error);
                 }
-            };
+            }.bind(this);
             this.zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed);
 
             this.svg.call(this.zoom);
@@ -1059,8 +1064,8 @@ export class Visual implements IVisual {
                 .style('border', 'solid')
                 .style('border-width', '1px')
                 .style('border-radius', '5px')
-                .style('padding', '10px')
-                .html('No tooltip info available');
+                .style('padding', '10px');
+            tooltip.append('text').text('No tooltip info available');
 
             const mouseover = function () {
                 try {
@@ -1098,9 +1103,16 @@ export class Visual implements IVisual {
                             }
                         });
                     });
-                    const tooltipSet = new Set(tooltipData.map((tooltip) => '<b> ' + tooltip.title + '</b> : ' + tooltip.yValue + ' <br> '));
+                    tooltip.selectChildren().remove();
+                    tooltipData.map((t) => {
+                        tooltip.append('text').text(t.title).style('font-weight', '500');
+                        tooltip
+                            .append('tspan')
+                            .text(':\t' + t.yValue)
+                            .append('br');
+                    });
 
-                    tooltip.html(Array.from(tooltipSet).join(''));
+                    //tooltip.text(Array.from(tooltipSet).join(''));
                     const tooltipHeight = tooltip.node().getBoundingClientRect().height;
                     tooltipY = Math.max(tooltipY, 0);
                     tooltipY = Math.min(tooltipY, viewModel.svgHeight - tooltipHeight);
@@ -1166,9 +1178,7 @@ export class Visual implements IVisual {
                 case Settings.colorSelector:
                     break;
                 case Settings.tooltipTitleSettings:
-                    const tooltipModels = this.viewModel.tooltipModels;
-                    const tooltipCount = tooltipModels.length;
-                    objectEnumeration = new Array<VisualObjectInstance>(tooltipCount);
+                    objectEnumeration = new Array<VisualObjectInstance>(this.viewModel.tooltipModels.length);
                     for (const column of metadataColumns) {
                         if (column.roles.tooltip) {
                             const yIndex: number = column['rolesIndex']['tooltip'][0];
@@ -1205,9 +1215,6 @@ export class Visual implements IVisual {
                     break;
                 case Settings.legendSettings:
                     if (!this.viewModel.defectLegend) break;
-                    const legendValues = this.viewModel.defectLegend.legendValues;
-                    const categories = this.dataview.categorical.categories.filter((x) => x.source.roles.legend);
-                    const category = categories.length > 0 ? categories[0] : null;
 
                     objectEnumeration.push({
                         objectName: objectName,
@@ -1231,13 +1238,20 @@ export class Visual implements IVisual {
                         },
                         selector: null,
                     });
-                    let i = 0;
-                    for (const value of legendValues) {
+
+                    for (let i = 0; i < this.viewModel.defectLegend.legendValues.length; i++) {
+                        const value = this.viewModel.defectLegend.legendValues[i];
                         objectEnumeration.push({
                             objectName: objectName,
                             displayName: String(value.value),
                             properties: {
-                                legendColor: getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, value.color),
+                                legendColor: getCategoricalObjectColor(
+                                    this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0],
+                                    i,
+                                    Settings.legendSettings,
+                                    LegendSettingsNames.legendColor,
+                                    value.color
+                                ),
                             },
                             altConstantValueSelector: value.selectionId.getSelector(),
                             selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
@@ -1290,35 +1304,39 @@ export class Visual implements IVisual {
                             break;
 
                         case Settings.axisSettings:
-                            const xInformation = AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)];
-                            const yInformation = AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)];
-
                             displayNames = {
                                 xInformation: column.displayName + ' X-Axis',
                                 yInformation: column.displayName + ' Y-Axis',
                             };
                             properties = {
-                                xAxis: xInformation,
-                                yAxis: yInformation,
+                                xAxis: AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)],
+                                yAxis: AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)],
                             };
                             break;
                         case Settings.axisLabelSettings:
-                            const labelNames = plotmodles.filter((x) => {
-                                return x.plotId == yIndex;
-                            })[0].labelNames;
-                            const xLabel = getValue<string>(columnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.xLabel, labelNames.xLabel);
-                            const yLabel = getValue<string>(columnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.yLabel, labelNames.yLabel);
                             displayNames = {
                                 xLabel: column.displayName + ' x-Label',
                                 yLabel: column.displayName + ' y-Label',
                             };
-                            properties[AxisLabelSettingsNames.xLabel] = xLabel;
-                            properties[AxisLabelSettingsNames.yLabel] = yLabel;
+                            properties[AxisLabelSettingsNames.xLabel] = getValue<string>(
+                                columnObjects,
+                                Settings.axisLabelSettings,
+                                AxisLabelSettingsNames.xLabel,
+                                plotmodles.filter((x) => {
+                                    return x.plotId == yIndex;
+                                })[0].labelNames.xLabel
+                            );
+                            properties[AxisLabelSettingsNames.yLabel] = getValue<string>(
+                                columnObjects,
+                                Settings.axisLabelSettings,
+                                AxisLabelSettingsNames.yLabel,
+                                plotmodles.filter((x) => {
+                                    return x.plotId == yIndex;
+                                })[0].labelNames.yLabel
+                            );
+
                             break;
                         case Settings.yRangeSettings:
-                            const yRange = plotmodles.filter((x) => {
-                                return x.plotId == yIndex;
-                            })[0].yRange;
                             displayNames = {
                                 min: column.displayName + ' Minimum Value',
                                 max: column.displayName + ' Maximum Value',
@@ -1326,8 +1344,22 @@ export class Visual implements IVisual {
                                 maxFixed: column.displayName + ' Fixed Maximum',
                             };
                             properties = {
-                                min: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, yRange.min),
-                                max: getValue<number>(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, yRange.max),
+                                min: getValue<number>(
+                                    columnObjects,
+                                    Settings.yRangeSettings,
+                                    YRangeSettingsNames.min,
+                                    plotmodles.filter((x) => {
+                                        return x.plotId == yIndex;
+                                    })[0].yRange.min
+                                ),
+                                max: getValue<number>(
+                                    columnObjects,
+                                    Settings.yRangeSettings,
+                                    YRangeSettingsNames.max,
+                                    plotmodles.filter((x) => {
+                                        return x.plotId == yIndex;
+                                    })[0].yRange.max
+                                ),
                                 minFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.minFixed, true),
                                 maxFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.maxFixed, false),
                             };
@@ -1370,14 +1402,14 @@ export class Visual implements IVisual {
     }
 }
 
-//function to print color schemes for adding them to capabilities
-function printColorSchemes() {
-    let str = '';
-    for (const scheme of ArrayConstants.colorSchemes.sequential) {
-        str = str + '{"displayName": "' + scheme + '",   "value": "interpolate' + scheme + '"},';
-    }
-    console.log(str);
-}
+// //function to print color schemes for adding them to capabilities
+// function printColorSchemes() {
+//     let str = '';
+//     for (const scheme of ArrayConstants.colorSchemes.sequential) {
+//         str = str + '{"displayName": "' + scheme + '",   "value": "interpolate' + scheme + '"},';
+//     }
+//     console.log(str);
+// }
 
 function filterNullValues(dataPoints: DataPoint[]) {
     dataPoints = dataPoints.filter((d) => {

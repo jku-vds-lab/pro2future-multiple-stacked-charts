@@ -87,40 +87,40 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         categorical.categories === undefined
             ? 0
             : categorical.categories.filter((cat) => {
-                return cat.source.roles.y_axis;
-            }).length;
+                  return cat.source.roles.y_axis;
+              }).length;
     const yValuesCount =
         categorical.values === undefined
             ? 0
             : categorical.values.filter((val) => {
-                return val.source.roles.y_axis;
-            }).length;
+                  return val.source.roles.y_axis;
+              }).length;
     const yCount = yCategoriesCount + yValuesCount;
     const xCategoriesCount =
         categorical.categories === undefined
             ? 0
             : categorical.categories.filter((cat) => {
-                return cat.source.roles.x_axis;
-            }).length;
+                  return cat.source.roles.x_axis;
+              }).length;
     const xValuesCount =
         categorical.values === undefined
             ? 0
             : categorical.values.filter((val) => {
-                return val.source.roles.x_axis;
-            }).length;
+                  return val.source.roles.x_axis;
+              }).length;
     const xCount = xCategoriesCount + xValuesCount;
     const tooltipCategoriesCount =
         categorical.categories === undefined
             ? 0
             : categorical.categories.filter((cat) => {
-                return cat.source.roles.tooltip;
-            }).length;
+                  return cat.source.roles.tooltip;
+              }).length;
     const tooltipValuesCount =
         categorical.values === undefined
             ? 0
             : categorical.values.filter((val) => {
-                return val.source.roles.tooltip;
-            }).length;
+                  return val.source.roles.tooltip;
+              }).length;
     const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
     const sharedXAxis = xCount == 1;
 
