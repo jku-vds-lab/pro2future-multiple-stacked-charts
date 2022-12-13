@@ -1,11 +1,10 @@
 import powerbi from 'powerbi-visuals-api';
-import { interactivitySelectionService } from  'powerbi-visuals-utils-interactivityutils';
+import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
 import { ArrayConstants } from './constants';
 import { ParseAndTransformError } from './errors';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
-
 
 export interface ViewModel {
     plotModels: PlotModel[];
@@ -70,13 +69,16 @@ export class RolloutRectangles {
     name: string;
     opacity: number;
 
-    constructor(xValues: number[], rollout: number[], y, width, rolloutName = "Rollout", rolloutOpacity = 0.1) {
+    constructor(xValues: number[], rollout: number[], y, width, rolloutName = 'Rollout', rolloutOpacity = 0.1) {
         this.name = rolloutName;
         this.rolloutRectangles = [];
         this.opacity = rolloutOpacity;
         let rect = <RolloutRectangle>{
-            y, width, x: xValues[0], color: ArrayConstants.rolloutColors[rollout[0]]
-        }
+            y,
+            width,
+            x: xValues[0],
+            color: ArrayConstants.rolloutColors[rollout[0]],
+        };
         let lastX = xValues[0];
         let lastRollout = rollout[0];
         for (let i = 0; i < xValues.length; i++) {
@@ -88,14 +90,15 @@ export class RolloutRectangles {
                 lastX = x;
                 this.rolloutRectangles.push(rect);
                 rect = <RolloutRectangle>{
-                    y, width, x: xValues[i], color: ArrayConstants.rolloutColors[rollout[i]]
-                }
+                    y,
+                    width,
+                    x: xValues[i],
+                    color: ArrayConstants.rolloutColors[rollout[i]],
+                };
             }
         }
         rect.length = xValues[xValues.length - 1] - lastX;
         this.rolloutRectangles.push(rect);
-
-
     }
 }
 
@@ -106,7 +109,6 @@ export interface RolloutRectangle {
     y: number;
     color: string;
 }
-
 
 export interface GeneralPlotSettings {
     plotHeight: number;
@@ -140,7 +142,6 @@ export interface Margins {
     left: number;
 }
 
-
 export interface ZoomingSettings {
     enableZoom: boolean;
     maximumZoom: number;
@@ -148,24 +149,22 @@ export interface ZoomingSettings {
 
 export enum PlotType {
     //BarPlot = "BarPlot",
-    ScatterPlot = "ScatterPlot",
-    LinePlot = "LinePlot"
+    ScatterPlot = 'ScatterPlot',
+    LinePlot = 'LinePlot',
 }
 
 export enum OverlayType {
-    Rectangle = "Rectangle",
-    Line = "Line",
-    None = "None"
+    Rectangle = 'Rectangle',
+    Line = 'Line',
+    None = 'None',
 }
 
 export enum AxisInformation {
-    None = "None",
-    Labels = "Labels",
-    Ticks = "Ticks",
-    TicksLabels = "TicksLabels"
+    None = 'None',
+    Labels = 'Labels',
+    Ticks = 'Ticks',
+    TicksLabels = 'TicksLabels',
 }
-
-
 
 export interface PlotModel {
     plotId: number;
@@ -218,7 +217,6 @@ export interface TooltipDataPoint {
     yValue: PrimitiveValue;
 }
 
-
 export interface LegendDataPoint {
     xValue: PrimitiveValue;
     yValue: PrimitiveValue;
@@ -261,14 +259,13 @@ export interface AxisInformationInterface {
     ticks: boolean;
 }
 
-
 export interface ColorSettings {
     colorSettings: {
         verticalRulerColor: string;
         overlayColor: string;
         heatmapColorScheme: string;
-        yZeroLineColor:string;
-    }
+        yZeroLineColor: string;
+    };
 }
 export interface HeatmapSettings {
     heatmapBins: number;
@@ -343,7 +340,6 @@ export interface D3Heatmap {
     scale: any;
     values: any;
 }
-
 
 export interface D3PlotYAxis {
     yAxis: any;

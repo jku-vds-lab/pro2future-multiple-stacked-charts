@@ -1,101 +1,100 @@
 export enum Settings {
-    plotSettings = "plotSettings",
-    axisSettings = "axisSettings",
-    colorSelector = "colorSelector",
-    colorSettings = "colorSettings",
-    heatmapSettings = "heatmapSettings",
-    legendSettings = "legendSettings",
-    overlayPlotSettings = "overlayPlotSettings",
-    plotTitleSettings = "plotTitleSettings",
-    tooltipTitleSettings = "tooltipTitleSettings",
-    yRangeSettings = "yRangeSettings",
-    zoomingSettings = "zoomingSettings",
-    axisLabelSettings = "axisLabelSettings"
+    plotSettings = 'plotSettings',
+    axisSettings = 'axisSettings',
+    colorSelector = 'colorSelector',
+    colorSettings = 'colorSettings',
+    heatmapSettings = 'heatmapSettings',
+    legendSettings = 'legendSettings',
+    overlayPlotSettings = 'overlayPlotSettings',
+    plotTitleSettings = 'plotTitleSettings',
+    tooltipTitleSettings = 'tooltipTitleSettings',
+    yRangeSettings = 'yRangeSettings',
+    zoomingSettings = 'zoomingSettings',
+    axisLabelSettings = 'axisLabelSettings',
 }
 export enum AxisLabelSettingsNames {
-    xLabel = "xLabel",
-    yLabel = "yLabel"
-
+    xLabel = 'xLabel',
+    yLabel = 'yLabel',
 }
 export enum HeatmapSettingsNames {
-    heatmapBins = "heatmapBins"
+    heatmapBins = 'heatmapBins',
 }
 
 export enum YRangeSettingsNames {
-    min = "min",
-    max = "max",
-    minFixed = "minFixed",
-    maxFixed = "maxFixed"
+    min = 'min',
+    max = 'max',
+    minFixed = 'minFixed',
+    maxFixed = 'maxFixed',
 }
 export enum LegendSettingsNames {
-    defectLegendTitle = "errorLegendTitle",
-    defectGroupLegendTitle = "controlLegendTitle",
-    legendColor = "legendColor"
+    defectLegendTitle = 'errorLegendTitle',
+    defectGroupLegendTitle = 'controlLegendTitle',
+    legendColor = 'legendColor',
 }
 
 export enum PlotSettingsNames {
-    plotType = "plotType",
-    fill = "fill",
-    useLegendColor = "useLegendColor",
-    showHeatmap = "showHeatmap"
+    plotType = 'plotType',
+    fill = 'fill',
+    useLegendColor = 'useLegendColor',
+    showHeatmap = 'showHeatmap',
 }
 export enum TooltipTitleSettingsNames {
-    title = "title"
+    title = 'title',
 }
 export enum OverlayPlotSettingsNames {
-    overlayType = "overlayType"
+    overlayType = 'overlayType',
 }
 export enum ColorSettingsNames {
-    verticalRulerColor = "verticalRulerColor",
-    overlayColor = "overlayColor",
-    heatmapColorScheme = "heatmapColorScheme",
-    yZeroLineColor = "yZeroLineColor"
+    verticalRulerColor = 'verticalRulerColor',
+    overlayColor = 'overlayColor',
+    heatmapColorScheme = 'heatmapColorScheme',
+    yZeroLineColor = 'yZeroLineColor',
 }
 export enum AxisSettingsNames {
-    xAxis = "xAxis",
-    yAxis = "yAxis"
+    xAxis = 'xAxis',
+    yAxis = 'yAxis',
 }
 export enum ZoomingSettingsNames {
-    show = "show",
-    maximum = "maximum"
+    show = 'show',
+    maximum = 'maximum',
 }
 
 export enum PlotTitleSettingsNames {
-    title = "title"
+    title = 'title',
 }
 
 export enum ColorSelectorNames {
-    fill = "fill"
+    fill = 'fill',
 }
 
 export enum Constants {
-    verticalRulerClass = "hover-line",
-    yZeroLine = "yZeroLine",
-    overlayClass = "overlayBars",
-    barClass = "bar",
-    dotClass = "dot",
-    rolloutClass = "rollout",
-    defectLegendClass = "defectLegend",
-    zoomState = "zoomState"
+    verticalRulerClass = 'hover-line',
+    yZeroLine = 'yZeroLine',
+    overlayClass = 'overlayBars',
+    barClass = 'bar',
+    dotClass = 'dot',
+    rolloutClass = 'rollout',
+    defectLegendClass = 'defectLegend',
+    zoomState = 'zoomState',
 }
 
 export class ArrayConstants {
     static readonly colorSchemes = {
-        sequential: ["BuGn", "BuPu", "GnBu", "OrRd", "PuBu", "PuBuGn", "PuRd", "RdPu", "YlGn", "YlGnBu", "YlOrBr", "YlOrRd"],
-        singlehue: ["Blues", "Greens", "Greys", "Oranges", "Purples", "Reds"],
-        diverging: ["BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy", "RdYlBu", "RdYlGn", "Spectral"]
+        sequential: ['BuGn', 'BuPu', 'GnBu', 'OrRd', 'PuBu', 'PuBuGn', 'PuRd', 'RdPu', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd'],
+        singlehue: ['Blues', 'Greens', 'Greys', 'Oranges', 'Purples', 'Reds'],
+        diverging: ['BrBG', 'PiYG', 'PRGn', 'PuOr', 'RdBu', 'RdGy', 'RdYlBu', 'RdYlGn', 'Spectral'],
     };
-    static readonly rolloutColors = ["#ffffff", "#a8a8a8", "#222222", "#4daf4a", "#ff0000"];
+    static readonly rolloutColors = ['#ffffff', '#a8a8a8', '#222222', '#4daf4a', '#ff0000'];
     static readonly legendColors = {
-        OZE: "#e41a1c",
-        GZE: "#377eb8",
-        RAS: "#4daf4a",
-        EOZ: "#a42ee8"
-    }
+        OZE: '#e41a1c',
+        GZE: '#377eb8',
+        RAS: '#4daf4a',
+        EOZ: '#a42ee8',
+    };
     static readonly groupValues = {
-        Kontrolleur: "Kontrolleur",
-        OIG: "OIG"
-    }
+        Kontrolleur: 'Kontrolleur',
+        OIG: 'OIG',
+    };
 
-    static readonly rolloutNames = ["nicht gewalzt", "BBS gewalzt", "Beize gewalzt", "KB gewalzt ohne Fehler", "KB gewalzt mit Fehler"];
+    static readonly rolloutNames = ['nicht gewalzt', 'BBS gewalzt', 'Beize gewalzt', 'KB gewalzt ohne Fehler', 'KB gewalzt mit Fehler'];
 }
