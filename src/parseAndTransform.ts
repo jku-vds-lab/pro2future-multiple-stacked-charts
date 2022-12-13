@@ -3,7 +3,7 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
-import { getValue, getColumnnColorByIndex, getAxisTextFillColor, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
+import { getValue, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
 import {
     ViewModel,
     DataPoint,
@@ -17,21 +17,18 @@ import {
     OverlayRectangle,
     OverlayType,
     GeneralPlotSettings,
-    Margins,
     AxisInformation,
     AxisInformationInterface,
     TooltipModel,
     ZoomingSettings,
     LegendData,
     Legend,
-    LegendValue,
-    TooltipData,
     TooltipColumnData,
     RolloutRectangles,
     XAxisSettings,
     LegendDataPoint,
 } from './plotInterface';
-import { Color, scaleLinear, stratify } from 'd3';
+import { scaleLinear } from 'd3';
 import {
     AxisSettingsNames,
     PlotSettingsNames,
@@ -90,40 +87,40 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         categorical.categories === undefined
             ? 0
             : categorical.categories.filter((cat) => {
-                  return cat.source.roles.y_axis;
-              }).length;
+                return cat.source.roles.y_axis;
+            }).length;
     const yValuesCount =
         categorical.values === undefined
             ? 0
             : categorical.values.filter((val) => {
-                  return val.source.roles.y_axis;
-              }).length;
+                return val.source.roles.y_axis;
+            }).length;
     const yCount = yCategoriesCount + yValuesCount;
     const xCategoriesCount =
         categorical.categories === undefined
             ? 0
             : categorical.categories.filter((cat) => {
-                  return cat.source.roles.x_axis;
-              }).length;
+                return cat.source.roles.x_axis;
+            }).length;
     const xValuesCount =
         categorical.values === undefined
             ? 0
             : categorical.values.filter((val) => {
-                  return val.source.roles.x_axis;
-              }).length;
+                return val.source.roles.x_axis;
+            }).length;
     const xCount = xCategoriesCount + xValuesCount;
     const tooltipCategoriesCount =
         categorical.categories === undefined
             ? 0
             : categorical.categories.filter((cat) => {
-                  return cat.source.roles.tooltip;
-              }).length;
+                return cat.source.roles.tooltip;
+            }).length;
     const tooltipValuesCount =
         categorical.values === undefined
             ? 0
             : categorical.values.filter((val) => {
-                  return val.source.roles.tooltip;
-              }).length;
+                return val.source.roles.tooltip;
+            }).length;
     const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
     const sharedXAxis = xCount == 1;
 
@@ -142,8 +139,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
 
     let xData: XAxisData;
-    let yData = new Array<YAxisData>(yCount);
-    let tooltipData = new Array<TooltipColumnData>(tooltipCount);
+    const yData = new Array<YAxisData>(yCount);
+    const tooltipData = new Array<TooltipColumnData>(tooltipCount);
     let legendData: LegendData = null;
     let defectGroupLegendData: LegendData = null;
     // let defectIndices: DefectIndices = new DefectIndices();
@@ -160,7 +157,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
     //aquire all categorical values
     if (categorical.categories !== undefined) {
-        for (let category of categorical.categories) {
+        for (const category of categorical.categories) {
             const roles = category.source.roles;
             if (roles.x_axis) {
                 xData = {
@@ -169,8 +166,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 };
             }
             if (roles.y_axis) {
-                let yId = category.source['rolesIndex']['y_axis'][0];
-                let yAxis: YAxisData = {
+                const yId = category.source['rolesIndex']['y_axis'][0];
+                const yAxis: YAxisData = {
                     name: category.source.displayName,
                     values: <number[]>category.values,
                     columnId: category.source.index,
@@ -184,9 +181,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 overlayWidth = <number[]>category.values;
             }
             if (roles.tooltip) {
-                let columnId = category.source.index;
+                const columnId = category.source.index;
                 const tooltipId = category.source['rolesIndex']['tooltip'][0];
-                let data: TooltipColumnData = {
+                const data: TooltipColumnData = {
                     type: category.source.type,
                     name: category.source.displayName,
                     values: <number[]>category.values,
@@ -220,7 +217,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
     //aquire all measure values
     if (categorical.values !== undefined) {
-        for (let value of categorical.values) {
+        for (const value of categorical.values) {
             const roles = value.source.roles;
             if (roles.x_axis) {
                 xData = {
@@ -230,7 +227,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
             if (roles.y_axis) {
                 const yId = value.source['rolesIndex']['y_axis'][0];
-                let yAxis: YAxisData = {
+                const yAxis: YAxisData = {
                     name: value.source.displayName,
                     values: <number[]>value.values,
                     columnId: value.source.index,
@@ -244,9 +241,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 overlayWidth = <number[]>value.values;
             }
             if (roles.tooltip) {
-                let columnId = value.source.index;
+                const columnId = value.source.index;
                 const tooltipId = value.source['rolesIndex']['tooltip'][0];
-                let data: TooltipColumnData = {
+                const data: TooltipColumnData = {
                     type: value.source.type,
                     name: value.source.displayName,
                     values: <number[]>value.values,
@@ -285,15 +282,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
     const legendColors = ArrayConstants.legendColors;
     if (legendData != null) {
-        let categories = categorical.categories.filter((x) => x.source.roles.legend);
-        let category = categories.length > 0 ? categories[0] : null;
-        let legendSet = new Set(legendData.values);
+        const categories = categorical.categories.filter((x) => x.source.roles.legend);
+        const category = categories.length > 0 ? categories[0] : null;
+        const legendSet = new Set(legendData.values);
         const defaultLegendName = category ? category.source.displayName : 'Error Legend';
 
         if (legendSet.has(null)) {
             legendSet.delete(null);
         }
-        let legendValues = Array.from(legendSet);
+        const legendValues = Array.from(legendSet);
         defectLegend = {
             legendDataPoints: [],
             legendValues: [],
@@ -332,15 +329,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         // }
     }
     if (defectGroupLegendData != null) {
-        let categories = categorical.categories.filter((x) => x.source.roles.defectGroup);
-        let category = categories.length > 0 ? categories[0] : null;
-        let legendSet = new Set(defectGroupLegendData.values);
+        const categories = categorical.categories.filter((x) => x.source.roles.defectGroup);
+        const category = categories.length > 0 ? categories[0] : null;
+        const legendSet = new Set(defectGroupLegendData.values);
         const defaultLegendName = category ? category.source.displayName : 'Control Legend';
 
         if (legendSet.has(null)) {
             legendSet.delete(null);
         }
-        let legendValues = Array.from(legendSet);
+        const legendValues = Array.from(legendSet);
         defectGroupLegend = {
             legendDataPoints: [],
             legendValues: [],
@@ -350,11 +347,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         };
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i];
-            const defaultColor = legendColors[val] ? legendColors[val] : 'FFFFFF';
             const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
 
             defectGroupLegend.legendValues.push({
-                color: 'white', //getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
+                color: 'white',
                 selectionId: selectionId,
                 value: val,
             });
@@ -380,14 +376,14 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         // }
     }
 
-    let formatSettings: FormatSettings[] = [];
-    let plotTitles: string[] = [];
-    let plotSettings: PlotSettings[] = [];
+    const formatSettings: FormatSettings[] = [];
+    const plotTitles: string[] = [];
+    const plotSettings: PlotSettings[] = [];
 
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
-        let yAxis: YAxisData = yData[plotNr];
-        let yColumnId = yData[plotNr].columnId;
-        let yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
+        const yAxis: YAxisData = yData[plotNr];
+        const yColumnId = yData[plotNr].columnId;
+        const yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
         plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name));
 
         const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)];
@@ -423,7 +419,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const xLabelsCount = formatSettings.filter((x) => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
     const heatmapCount = plotSettings.filter((x) => x.plotSettings.showHeatmap).length;
     let viewModel: ViewModel;
-    let viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, defectLegend, defectGroupLegend, xData).map(
+    const viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, defectLegend, defectGroupLegend, xData).map(
         (vm) => (viewModel = vm)
     );
     if (viewModelResult.isErr()) {
@@ -442,7 +438,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     //create Plotmodels
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
         //get x- and y-data for plotnumber
-        let yAxis: YAxisData = yData[plotNr];
+        const yAxis: YAxisData = yData[plotNr];
         xDataPoints = xData.values;
         yDataPoints = yAxis.values;
         const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
@@ -472,7 +468,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
 
             //const color = legend.legendValues.fin legend.legendDataPoints[pointNr].yValue
-            let dataPoint: DataPoint = {
+            const dataPoint: DataPoint = {
                 xValue: xVal,
                 yValue: yDataPoints[pointNr],
                 identity: selectionId,
@@ -489,10 +485,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         //     return <number>a.xValue - <number>b.xValue;
         // });
 
-        let plotTitle = plotTitles[plotNr];
+        const plotTitle = plotTitles[plotNr];
         plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
 
-        let plotModel: PlotModel = {
+        const plotModel: PlotModel = {
             plotId: plotNr,
             formatSettings: formatSettings[plotNr],
 
@@ -555,12 +551,12 @@ function createTooltipModels(
             const column: powerbi.DataViewMetadataColumn = getMetadataColumn(metadataColumns, tooltip.columnId);
             const maxLengthAttributes: number = Math.min(xData.values.length, tooltip.values.length);
 
-            let tooltipPoints: TooltipDataPoint[] = <TooltipDataPoint[]>[];
+            const tooltipPoints: TooltipDataPoint[] = <TooltipDataPoint[]>[];
             const type = tooltip.type;
             if (type.dateTime) {
                 tooltip.values = tooltip.values.map((val) => {
-                    let d = new Date(<string>val);
-                    let formatedDate =
+                    const d = new Date(<string>val);
+                    const formatedDate =
                         padTo2Digits(d.getDate()) +
                         '.' +
                         padTo2Digits(d.getMonth() + 1) +
@@ -583,13 +579,13 @@ function createTooltipModels(
 
             //create datapoints
             for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
-                let dataPoint: TooltipDataPoint = {
+                const dataPoint: TooltipDataPoint = {
                     pointNr: pointNr,
                     yValue: tooltip.values[pointNr],
                 };
                 tooltipPoints.push(dataPoint);
             }
-            let tooltipModel: TooltipModel = {
+            const tooltipModel: TooltipModel = {
                 tooltipName: getValue<string>(column.objects, Settings.tooltipTitleSettings, TooltipTitleSettingsNames.title, column.displayName),
                 tooltipId: tooltip.columnId,
                 tooltipData: tooltipPoints,
@@ -665,7 +661,7 @@ function createViewModel(
         xScale,
         xScaleZoomed: xScale,
     };
-    let generalPlotSettings: GeneralPlotSettings = {
+    const generalPlotSettings: GeneralPlotSettings = {
         plotTitleHeight: margins.plotTitleHeight,
         dotMargin: margins.dotMargin,
         plotHeight: plotHeightSpace - margins.margins.top - margins.margins.bottom,
@@ -682,7 +678,7 @@ function createViewModel(
 
     const zoomingSettings: ZoomingSettings = SettingsGetter.getZoomingSettings(objects);
 
-    let viewModel: ViewModel = <ViewModel>{
+    const viewModel: ViewModel = <ViewModel>{
         plotModels: new Array<PlotModel>(yCount),
         colorSettings: {
             colorSettings: {

@@ -11,6 +11,7 @@
     "start": "pbiviz start",
     "package": "pbiviz package",
     "lint": "npx eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint-and-fix": "npx eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "pretest": "pbiviz package --resources --no-minify --no-pbiviz --no-plugin",
     "prettier-format": "prettier --config .prettierrc src\\**.ts --write"
   },

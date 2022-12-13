@@ -1,6 +1,5 @@
-import { color } from 'd3-color';
 import powerbi from 'powerbi-visuals-api';
-import { ColorSelectorNames, PlotSettingsNames, Settings, ColorSettingsNames } from './constants';
+import { ColorSelectorNames, PlotSettingsNames, Settings } from './constants';
 import DataViewObjects = powerbi.DataViewObjects;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import DataViewObject = powerbi.DataViewObject;
@@ -18,9 +17,9 @@ import Fill = powerbi.Fill;
 
 export function getValue<T>(objects: DataViewObjects, objectName: string, propertyName: string, defaultValue: T): T {
     if (objects) {
-        let object = objects[objectName];
+        const object = objects[objectName];
         if (object) {
-            let property: T = <T>object[propertyName];
+            const property: T = <T>object[propertyName];
             if (property != undefined) {
                 return property;
             }
@@ -42,14 +41,14 @@ export function getValue<T>(objects: DataViewObjects, objectName: string, proper
  */
 
 export function getCategoricalObjectValue<T>(category: DataViewCategoryColumn, index: number, objectName: string, propertyName: string, defaultValue: T): T {
-    let categoryObjects = category.objects;
+    const categoryObjects = category.objects;
 
     if (categoryObjects) {
-        let categoryObject: DataViewObject = categoryObjects[index];
+        const categoryObject: DataViewObject = categoryObjects[index];
         if (categoryObject) {
-            let object = categoryObject[objectName];
+            const object = categoryObject[objectName];
             if (object) {
-                let property: T = <T>object[propertyName];
+                const property: T = <T>object[propertyName];
                 if (property !== undefined) {
                     return property;
                 }
@@ -60,14 +59,14 @@ export function getCategoricalObjectValue<T>(category: DataViewCategoryColumn, i
 }
 
 export function getCategoricalObjectColor(category: DataViewCategoryColumn, index: number, objectName: string, propertyName: string, defaultValue: string): string {
-    let categoryObjects = category.objects;
+    const categoryObjects = category.objects;
 
     if (categoryObjects) {
-        let categoryObject: DataViewObject = categoryObjects[index];
+        const categoryObject: DataViewObject = categoryObjects[index];
         if (categoryObject) {
-            let object = categoryObject[objectName];
+            const object = categoryObject[objectName];
             if (object) {
-                let property: Fill = <Fill>object[propertyName];
+                const property: Fill = <Fill>object[propertyName];
                 if (property !== undefined) {
                     return property.solid.color;
                 }

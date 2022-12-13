@@ -44,7 +44,7 @@ import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
-import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectValue, getCategoricalObjectColor } from './objectEnumerationUtility';
+import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
 import {
     TooltipInterface,
     ViewModel,
@@ -94,7 +94,6 @@ import {
     BuildYAxisError,
     CustomTooltipError,
     DrawPlotError,
-    DrawScatterPlotError,
     HeatmapError,
     PlotError,
     OverlayInformationError,
@@ -129,8 +128,9 @@ export class Visual implements IVisual {
         const yPosition = margins.legendYPostion + 10;
         const legendData = legend.legendValues;
         const legendTitle = legend.legendTitle;
-        const _this = this;
-        let widths = [];
+        const legendSelection = this.legendSelection;
+        // const _this = this;
+        const widths = [];
         let width = legend.legendXPosition;
         this.svg
             .selectAll('legendTitle')
@@ -141,8 +141,8 @@ export class Visual implements IVisual {
             .attr('text-anchor', 'left')
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function (d, i) {
-                let x = width;
+            .attr('x', function () {
+                const x = width;
                 width = width + this.getComputedTextLength() + 15;
                 return x;
             })
@@ -160,14 +160,14 @@ export class Visual implements IVisual {
             .attr('class', (d) => Constants.defectLegendClass + ' ' + d.value)
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function (d, i) {
-                let x = width;
+            .attr('x', function () {
+                const x = width;
                 widths.push(width);
                 width = width + 25 + this.getComputedTextLength();
                 return 10 + x;
             })
             .attr('y', yPosition)
-            .style('opacity', (d) => (_this.legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
+            .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
 
         this.svg
             .selectAll('legendDots')
@@ -184,27 +184,27 @@ export class Visual implements IVisual {
             })
             .style('stroke', 'grey')
             .attr('class', (d) => Constants.defectLegendClass + ' ' + d.value)
-            .style('opacity', (d) => (_this.legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-        this.svg.selectAll('.' + Constants.defectLegendClass).on('click', function (e: Event, d: LegendValue) {
+            .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
+        this.svg.selectAll('.' + Constants.defectLegendClass).on('click', (function (e: Event, d: LegendValue) {
             e.stopPropagation();
             e.preventDefault();
             e.stopImmediatePropagation();
             const def = d.value.toString();
-            const selection = _this.svg.selectAll('.' + Constants.defectLegendClass + '.' + def);
-            if (_this.legendSelection.has(def)) {
-                _this.legendSelection.delete(def);
+            const selection = this.svg.selectAll('.' + Constants.defectLegendClass + '.' + def);
+            if (legendSelection.has(def)) {
+                legendSelection.delete(def);
                 selection.style('opacity', unselectedOpacity);
             } else {
-                _this.legendSelection.add(def);
+                legendSelection.add(def);
                 selection.style('opacity', 1);
             }
-            for (const plotModel of _this.viewModel.plotModels) {
+            for (const plotModel of this.viewModel.plotModels) {
                 if (plotModel.yName.includes('DEF')) {
-                    _this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
-                    _this.drawPlot(plotModel);
+                    this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                    this.drawPlot(plotModel);
                 }
             }
-        });
+        }).bind(this));
 
         legend.legendXEndPosition = width;
     }
@@ -212,7 +212,7 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         try {
             this.dataview = options.dataViews[0];
-            let categoryIndices = new Set();
+            const categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
                 this.dataview.categorical.categories = this.dataview.categorical.categories.filter((cat) => {
                     const duplicate = categoryIndices.has(cat.source.index);
@@ -221,7 +221,7 @@ export class Visual implements IVisual {
                 });
             }
             if (this.dataview.categorical.values) {
-                let valueIndices = new Set();
+                const valueIndices = new Set();
                 this.dataview.categorical.values = <powerbi.DataViewValueColumns>this.dataview.categorical.values.filter((val) => {
                     const duplicate = valueIndices.has(val.source.index);
                     valueIndices.add(val.source.index);
@@ -252,9 +252,8 @@ export class Visual implements IVisual {
                         this.drawRolloutRectangles();
                         this.drawRolloutLegend();
                     }
-                    this.svg.on('contextmenu', (event, d) => {
-                        debugger;
-                        let dataPoint: any = d3.select(event.target).datum(); //d3Select(event.target).datum();
+                    this.svg.on('contextmenu', (event) => {
+                        const dataPoint: any = d3.select(event.target).datum(); //d3Select(event.target).datum();
                         this.selectionManager.showContextMenu(dataPoint && (<DataPoint>dataPoint).selectionId ? (<DataPoint>dataPoint).selectionId : {}, {
                             x: event.clientX,
                             y: event.clientY,
@@ -273,17 +272,19 @@ export class Visual implements IVisual {
 
     private restoreZoomState() {
         //TODO: publish on AppSource to save zoom state https://learn.microsoft.com/en-us/power-bi/developer/visuals/local-storage
-        const _this = this;
+        const svg = this.svg;
+        const zoom = this.zoom;
         this.storage
             .get(Constants.zoomState)
             .then((state) => {
                 const zoomState = state.split(';');
                 if (zoomState.length === 3) {
                     const transform = d3.zoomIdentity.translate(Number(zoomState[0]), Number(zoomState[1])).scale(Number(zoomState[2]));
-                    _this.svg.call(_this.zoom.transform, transform);
+                    svg.call(zoom.transform, transform);
                 }
             })
             .catch(() => {
+                console.log("restore error");
                 this.storage.set(Constants.zoomState, '0;0;1');
             });
     }
@@ -318,7 +319,7 @@ export class Visual implements IVisual {
             error = true;
         });
         if (error) return;
-        for (let plotModel of this.viewModel.plotModels) {
+        for (const plotModel of this.viewModel.plotModels) {
             this.drawPlot(plotModel).mapErr((err) => {
                 this.displayError(err);
                 error = true;
@@ -339,7 +340,7 @@ export class Visual implements IVisual {
         if (this.viewModel.defectGroupLegend) {
             width = this.viewModel.defectGroupLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
         }
-        let widths = [];
+        const widths = [];
 
         this.svg
             .selectAll('rolloutLegendTitle')
@@ -351,7 +352,7 @@ export class Visual implements IVisual {
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
             .attr('x', function (d, i) {
-                let x = width;
+                const x = width;
                 width = width + this.getComputedTextLength() + 15;
                 return x;
             })
@@ -367,7 +368,7 @@ export class Visual implements IVisual {
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
             .attr('x', function (d, i) {
-                let x = width;
+                const x = width;
                 widths.push(width);
                 width = width + 25 + this.getComputedTextLength();
                 return 10 + x;
@@ -559,7 +560,7 @@ export class Visual implements IVisual {
             const yAxis = plot.append('g').classed('yAxis', true);
             const yScale = scaleLinear().domain([plotModel.yRange.min, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
             const yAxisValue = axisLeft(yScale).ticks(generalPlotSettings.plotHeight / 20);
-            var yLabel = null;
+            let yLabel = null;
             if (plotModel.formatSettings.axisSettings.yAxis.lables) {
                 yLabel = plot
                     .append('text')
@@ -648,7 +649,7 @@ export class Visual implements IVisual {
         try {
             const verticalRulerSettings = this.viewModel.colorSettings.colorSettings.verticalRulerColor;
             const lineGroup = plot.append('g').attr('class', Constants.verticalRulerClass);
-            let generalPlotSettings = this.viewModel.generalPlotSettings;
+            const generalPlotSettings = this.viewModel.generalPlotSettings;
 
             lineGroup
                 .append('line')
@@ -815,7 +816,7 @@ export class Visual implements IVisual {
                 .thresholds(heatmapSettings.heatmapBins);
             const binnedData = bins(dataPoints);
             const heatmapValues = binnedData.map((bin) => {
-                var extent = d3.extent(bin.map((d) => <number>d.yValue));
+                const extent = d3.extent(bin.map((d) => <number>d.yValue));
                 return extent[1] - extent[0];
             });
             const colorScale = d3.scaleSequential().interpolator(d3[this.viewModel.colorSettings.colorSettings.heatmapColorScheme]).domain(d3.extent(heatmapValues));
@@ -831,7 +832,7 @@ export class Visual implements IVisual {
                 .attr('height', generalPlotSettings.plotHeight)
                 .attr('transform', 'translate(' + generalPlotSettings.margins.left + ',' + (plotModel.plotTop + yTransition) + ')');
             heatmap.append('rect').attr('width', generalPlotSettings.plotWidth).attr('height', Heatmapmargins.heatmapHeight).attr('fill', 'transparent').attr('stroke', '#000000');
-            let values = heatmap
+            const values = heatmap
                 .selectAll()
                 .data(heatmapValues)
                 .enter()
@@ -849,7 +850,7 @@ export class Visual implements IVisual {
                 });
 
             this.drawHeatmapLegend(yTransition, colorScale, heatmap, generalPlotSettings);
-            let d3heatmap: D3Heatmap = {
+            const d3heatmap: D3Heatmap = {
                 axis: null,
                 scale: heatmapScale,
                 values: values,
@@ -867,14 +868,14 @@ export class Visual implements IVisual {
         generalPlotSettings: GeneralPlotSettings
     ) {
         const legendHeight = yTransition + Heatmapmargins.heatmapHeight;
-        let legendScale = Object.assign(colorScale.copy().interpolator(d3.interpolateRound(0, legendHeight)), {
+        const legendScale = Object.assign(colorScale.copy().interpolator(d3.interpolateRound(0, legendHeight)), {
             range() {
                 return [0, legendHeight];
             },
         });
 
-        let tickValues = d3.range(Heatmapmargins.legendTickCount).map((i) => d3.quantile(colorScale.domain(), i / (Heatmapmargins.legendTickCount - 1)));
-        let legend = heatmap.append('g').attr('transform', `translate(${generalPlotSettings.plotWidth + Heatmapmargins.legendMargin},${-yTransition})`);
+        const tickValues = d3.range(Heatmapmargins.legendTickCount).map((i) => d3.quantile(colorScale.domain(), i / (Heatmapmargins.legendTickCount - 1)));
+        const legend = heatmap.append('g').attr('transform', `translate(${generalPlotSettings.plotWidth + Heatmapmargins.legendMargin},${-yTransition})`);
         legend
             .append('image')
             .attr('x', 0)
@@ -883,7 +884,7 @@ export class Visual implements IVisual {
             .attr('height', legendHeight)
             .attr('preserveAspectRatio', 'none')
             .attr('xlink:href', createHeatmapLegendImage(colorScale.interpolator()).toDataURL());
-        let tickAdjust = (g) =>
+        const tickAdjust = (g) =>
             g
                 .selectAll('.tick line')
                 .attr('x1', Heatmapmargins.legendWidth - Heatmapmargins.legendTicksTranslation)
@@ -913,15 +914,15 @@ export class Visual implements IVisual {
             const _this = this;
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plots = this.viewModel.plotModels;
-            let errorFunction = this.displayError;
-            let zoomed = function (event) {
+            const errorFunction = this.displayError;
+            const zoomed = function (event) {
                 try {
-                    let transform: d3.ZoomTransform = event.transform;
+                    const transform: d3.ZoomTransform = event.transform;
                     if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
                         _this.svg.call(_this.zoom.transform, d3.zoomIdentity);
                         return;
                     }
-                    _this.storage.set(Constants.zoomState, transform.x + ';' + transform.y + ';' + transform.k);
+                    _this.storage.set(Constants.zoomState, transform.x + ';' + transform.y + ';' + transform.k).catch((reason) => console.log("set error: " + reason));
                     const xScaleZoomed = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
                     const xMin = xScaleZoomed.domain()[0];
                     const xMax = xScaleZoomed.domain()[1];
@@ -934,9 +935,9 @@ export class Visual implements IVisual {
                         .attr('width', function (d: RolloutRectangle) {
                             return xScaleZoomed(d.length + d.x) - xScaleZoomed(d.x);
                         });
-                    for (let plot of plots.map((x) => x.d3Plot)) {
+                    for (const plot of plots.map((x) => x.d3Plot)) {
                         plot.x.xAxis.attr('clip-path', 'url(#clip)');
-                        let xAxisValue = plot.x.xAxisValue;
+                        const xAxisValue = plot.x.xAxisValue;
                         xAxisValue.scale(xScaleZoomed);
                         plot.x.xAxis.call(xAxisValue);
                         plot.points.attr('cx', (d) => {
@@ -974,13 +975,13 @@ export class Visual implements IVisual {
                         plot.points.attr('cy', (d) => {
                             return plot.y.yScaleZoomed(<number>d.yValue);
                         });
-                        let yAxisValue = plot.y.yAxisValue;
+                        const yAxisValue = plot.y.yAxisValue;
                         yAxisValue.scale(plot.y.yScaleZoomed);
                         plot.y.yAxis.call(yAxisValue);
                         // }
 
                         plot.points.attr('clip-path', 'url(#clip)');
-                        var overlayBars = plot.root.select(`.${Constants.overlayClass}`);
+                        const overlayBars = plot.root.select(`.${Constants.overlayClass}`);
                         overlayBars
                             .selectAll('rect')
                             .attr('x', function (d: OverlayRectangle) {
@@ -1001,7 +1002,7 @@ export class Visual implements IVisual {
                         if (plot.type === 'LinePlot') {
                             plot.plotLine.attr('clip-path', 'url(#clip)');
 
-                            let line = d3
+                            const line = d3
                                 .line<DataPoint>()
                                 .x((d) => xScaleZoomed(<number>d.xValue))
                                 .y((d) => plot.y.yScaleZoomed(<number>d.yValue));
@@ -1014,8 +1015,8 @@ export class Visual implements IVisual {
                         plot.yZeroLine.selectAll('line').attr('y1', yZero).attr('y2', yZero);
 
                         if (plot.heatmap) {
-                            let values = plot.heatmap.values;
-                            let scale = transform.rescaleX(plot.heatmap.scale);
+                            const values = plot.heatmap.values;
+                            const scale = transform.rescaleX(plot.heatmap.scale);
                             values
                                 .attr('x', function (d, i) {
                                     return scale(i);
@@ -1048,8 +1049,8 @@ export class Visual implements IVisual {
             const margins = this.viewModel.generalPlotSettings.margins;
             const tooltipModels = this.viewModel.tooltipModels;
             const errorFunction = this.displayError;
-            var lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
-            var tooltip = d3
+            let lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
+            const tooltip = d3
                 .select(this.element)
                 .append('div')
                 .style('position', 'absolute')
@@ -1061,7 +1062,7 @@ export class Visual implements IVisual {
                 .style('padding', '10px')
                 .html('No tooltip info available');
 
-            let mouseover = function () {
+            const mouseover = function () {
                 try {
                     lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
                     tooltip.style('visibility', 'visible');
@@ -1077,14 +1078,14 @@ export class Visual implements IVisual {
                 }
             };
 
-            let mousemove = function (event, dataPoint: DataPoint) {
+            const mousemove = function (event, dataPoint: DataPoint) {
                 try {
                     const height = visualContainer.clientHeight;
                     const width = visualContainer.clientWidth;
                     const x = event.clientX - margins.left;
                     const tooltipX = event.clientX > width / 2 ? event.clientX - tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
                     let tooltipY = event.clientY > height / 2 ? event.clientY - tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
-                    let tooltipData: TooltipData[] = [];
+                    const tooltipData: TooltipData[] = [];
 
                     //add tooltips
                     tooltipModels.filter((model: TooltipModel) => {
@@ -1097,7 +1098,7 @@ export class Visual implements IVisual {
                             }
                         });
                     });
-                    let tooltipSet = new Set(tooltipData.map((tooltip) => '<b> ' + tooltip.title + '</b> : ' + tooltip.yValue + ' <br> '));
+                    const tooltipSet = new Set(tooltipData.map((tooltip) => '<b> ' + tooltip.title + '</b> : ' + tooltip.yValue + ' <br> '));
 
                     tooltip.html(Array.from(tooltipSet).join(''));
                     const tooltipHeight = tooltip.node().getBoundingClientRect().height;
@@ -1115,7 +1116,7 @@ export class Visual implements IVisual {
                 }
             };
 
-            let mouseout = function () {
+            const mouseout = function () {
                 try {
                     tooltip.style('visibility', 'hidden');
                     const element = d3.select(this);
@@ -1143,10 +1144,10 @@ export class Visual implements IVisual {
         const zoomingSettings = this.viewModel ? this.viewModel.zoomingSettings : SettingsGetter.getZoomingSettings(objects);
         const plotmodles: PlotModel[] = this.viewModel ? this.viewModel.plotModels : [];
         try {
-            let yCount: number = this.dataview.metadata.columns.filter((x) => {
+            const yCount: number = this.dataview.metadata.columns.filter((x) => {
                 return x.roles.y_axis;
             }).length;
-            let metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
+            const metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
             switch (objectName) {
                 case Settings.plotSettings:
                     setObjectEnumerationColumnSettings(yCount, metadataColumns, 4);
@@ -1204,9 +1205,9 @@ export class Visual implements IVisual {
                     break;
                 case Settings.legendSettings:
                     if (!this.viewModel.defectLegend) break;
-                    let legendValues = this.viewModel.defectLegend.legendValues;
-                    let categories = this.dataview.categorical.categories.filter((x) => x.source.roles.legend);
-                    let category = categories.length > 0 ? categories[0] : null;
+                    const legendValues = this.viewModel.defectLegend.legendValues;
+                    const categories = this.dataview.categorical.categories.filter((x) => x.source.roles.legend);
+                    const category = categories.length > 0 ? categories[0] : null;
 
                     objectEnumeration.push({
                         objectName: objectName,
@@ -1264,11 +1265,11 @@ export class Visual implements IVisual {
         function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], settingsCount: number = 1) {
             objectEnumeration = new Array<VisualObjectInstance>(yCount * settingsCount);
 
-            for (let column of metadataColumns) {
+            for (const column of metadataColumns) {
                 if (column.roles.y_axis) {
                     const columnObjects = column.objects;
-                    var displayNames = {};
-                    var properties = {};
+                    let displayNames = {};
+                    let properties = {};
                     //index that the column has in the plot (differs from index in metadata) and is used to have the same order in settings
                     const yIndex: number = column['rolesIndex']['y_axis'][0];
                     switch (objectName) {
@@ -1354,7 +1355,7 @@ export class Visual implements IVisual {
 
                     for (let i = 0; i < propertyEntries.length; i++) {
                         const [key, value] = propertyEntries[i];
-                        var props = {};
+                        const props = {};
                         props[key] = value;
                         objectEnumeration[yIndex * settingsCount + i] = {
                             objectName: objectName,
@@ -1371,7 +1372,7 @@ export class Visual implements IVisual {
 
 //function to print color schemes for adding them to capabilities
 function printColorSchemes() {
-    var str = '';
+    let str = '';
     for (const scheme of ArrayConstants.colorSchemes.sequential) {
         str = str + '{"displayName": "' + scheme + '",   "value": "interpolate' + scheme + '"},';
     }
