@@ -65,6 +65,7 @@ import {
     RolloutRectangle,
     LegendValue,
     Legend,
+    D3Selection,
 } from './plotInterface';
 import { SettingsGetter, visualTransform } from './parseAndTransform';
 import {
@@ -101,14 +102,12 @@ import {
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 
-type Selection<T1, T2 = T1> = d3.Selection<any, T1, any, T2>;
-
 export class Visual implements IVisual {
     private host: IVisualHost;
     private element: HTMLElement;
     private dataview: DataView;
     private viewModel: ViewModel;
-    private svg: Selection<any>;
+    private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
     private legendSelection = new Set(Object.keys(ArrayConstants.legendColors).concat(Object.keys(ArrayConstants.groupValues)));
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
@@ -256,7 +255,7 @@ export class Visual implements IVisual {
                         this.drawRolloutLegend();
                     }
                     this.svg.on('contextmenu', (event) => {
-                        const dataPoint: any = d3.select(event.target).datum(); //d3Select(event.target).datum();
+                        const dataPoint = d3.select(event.target).datum();
                         this.selectionManager.showContextMenu(dataPoint && (<DataPoint>dataPoint).selectionId ? (<DataPoint>dataPoint).selectionId : {}, {
                             x: event.clientX,
                             y: event.clientY,
@@ -419,7 +418,7 @@ export class Visual implements IVisual {
 
     private constructBasicPlot(plotModel: PlotModel): Result<void, PlotError> {
         const plotType = plotModel.plotSettings.plotSettings.plotType;
-        let root: d3.Selection<SVGGElement, any, any, any>;
+        let root;
         let x: D3PlotXAxis;
         let y: D3PlotYAxis;
         let plotError: PlotError;
@@ -495,7 +494,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private addPlotTitles(plotModel: PlotModel, plot: d3.Selection<SVGGElement, any, any, any>) {
+    private addPlotTitles(plotModel: PlotModel, plot: D3Selection) {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             if (plotModel.plotTitleSettings.title.length > 0) {
@@ -514,7 +513,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private buildBasicPlot(plotModel: PlotModel): Result<d3.Selection<SVGGElement, any, any, any>, PlotError> {
+    private buildBasicPlot(plotModel: PlotModel): Result<D3Selection, PlotError> {
         try {
             const plotType = plotModel.plotSettings.plotSettings.plotType;
             const generalPlotSettings = this.viewModel.generalPlotSettings;
@@ -530,7 +529,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private buildXAxis(plotModel: PlotModel, plot: any): Result<D3PlotXAxis, PlotError> {
+    private buildXAxis(plotModel: PlotModel, plot: D3Selection): Result<D3PlotXAxis, PlotError> {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxis = plot.append('g').classed('xAxis', true);
@@ -554,13 +553,13 @@ export class Visual implements IVisual {
 
             xAxis.attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')').call(xAxisValue);
 
-            return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xLabel: xLabel });
+            return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xLabel });
         } catch (error) {
             return err(new BuildXAxisError(error.stack));
         }
     }
 
-    private buildYAxis(plotModel: PlotModel, plot: any): Result<D3PlotYAxis, PlotError> {
+    private buildYAxis(plotModel: PlotModel, plot: D3Selection): Result<D3PlotYAxis, PlotError> {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const yAxis = plot.append('g').classed('yAxis', true);
@@ -651,7 +650,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private addVerticalRuler(plot: any) {
+    private addVerticalRuler(plot: D3Selection) {
         try {
             const verticalRulerSettings = this.viewModel.colorSettings.colorSettings.verticalRulerColor;
             const lineGroup = plot.append('g').attr('class', Constants.verticalRulerClass);
@@ -857,7 +856,6 @@ export class Visual implements IVisual {
 
             this.drawHeatmapLegend(yTransition, colorScale, heatmap, generalPlotSettings);
             const d3heatmap: D3Heatmap = {
-                axis: null,
                 scale: heatmapScale,
                 values: values,
             };
@@ -867,12 +865,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private drawHeatmapLegend(
-        yTransition: number,
-        colorScale: d3.ScaleSequential<number, never>,
-        heatmap: d3.Selection<SVGGElement, any, any, any>,
-        generalPlotSettings: GeneralPlotSettings
-    ) {
+    private drawHeatmapLegend(yTransition: number, colorScale: d3.ScaleSequential<number, never>, heatmap: D3Selection, generalPlotSettings: GeneralPlotSettings) {
         const legendHeight = yTransition + Heatmapmargins.heatmapHeight;
         const legendScale = Object.assign(colorScale.copy().interpolator(d3.interpolateRound(0, legendHeight)), {
             range() {
@@ -1276,7 +1269,7 @@ export class Visual implements IVisual {
         }
         return objectEnumeration;
 
-        function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], settingsCount: number = 1) {
+        function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], settingsCount = 1) {
             objectEnumeration = new Array<VisualObjectInstance>(yCount * settingsCount);
 
             for (const column of metadataColumns) {

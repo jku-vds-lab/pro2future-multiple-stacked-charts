@@ -104,7 +104,7 @@ export class PlotSizeError extends ParseAndTransformError {
     /**
      *
      */
-    constructor(direction: string = '') {
+    constructor(direction = '') {
         const name = 'PlotSizeError';
         const message = 'There is not enough ' + direction + ' space to fit all plots. Please increase the chart size or remove some plots.';
         super(message, name);

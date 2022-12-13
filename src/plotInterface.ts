@@ -1,3 +1,4 @@
+import { BaseType } from 'd3-selection';
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
 import { ArrayConstants } from './constants';
@@ -316,41 +317,41 @@ export interface LegendData {
     name?: string;
     columnId: number;
 }
+export type D3Selection = d3.Selection<SVGGElement, unknown, BaseType, unknown>;
 
 export interface D3Plot {
     yName: string;
     type: string;
-    points: any;
-    plotLine: any;
-    root: any;
+    points: d3.Selection<SVGCircleElement, DataPoint, SVGGElement, unknown>;
+    plotLine: d3.Selection<SVGPathElement, DataPoint[], BaseType, unknown>;
+    root: D3Selection;
     y: D3PlotYAxis;
     x: D3PlotXAxis;
     heatmap: D3Heatmap;
-    yZeroLine: any;
+    yZeroLine: D3Selection;
 }
 
 export interface D3PlotXAxis {
-    xAxis: any;
-    xAxisValue: any;
-    xLabel: any;
+    xAxis: D3Selection;
+    xAxisValue: d3.Axis<d3.NumberValue>;
+    xLabel: D3Selection;
 }
 
 export interface D3Heatmap {
-    axis: any;
-    scale: any;
-    values: any;
+    scale: d3.ScaleLinear<number, number, never>;
+    values: d3.Selection<SVGRectElement, number, SVGGElement, unknown>;
 }
 
 export interface D3PlotYAxis {
-    yAxis: any;
-    yAxisValue: any;
+    yAxis: D3Selection;
+    yAxisValue: d3.Axis<d3.NumberValue>;
     yScale: d3.ScaleLinear<number, number, never>;
     yScaleZoomed: d3.ScaleLinear<number, number, never>;
-    yLabel: any;
+    yLabel: D3Selection;
 }
 
 export interface TooltipInterface {
     mouseover: () => void;
-    mousemove: (event: any, data: any) => void;
+    mousemove: (event: PointerEvent, data: DataPoint) => void;
     mouseout: () => void;
 }
