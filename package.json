@@ -10,7 +10,7 @@
     "pbiviz": "pbiviz",
     "start": "pbiviz start",
     "package": "pbiviz package",
-    "lint": "eslint -c eslint.json -p tsconfig.json",
+    "lint": "npx eslint . --ext .js,.jsx,.ts,.tsx",
     "pretest": "pbiviz package --resources --no-minify --no-pbiviz --no-plugin",
     "prettier-format": "prettier --config .prettierrc src\\**.ts --write"
   },
@@ -19,6 +19,7 @@
     "@types/d3-array": "^3.0.3",
     "d3": "7.7.0",
     "d3-array": "^3.2.1",
+    "eslint-plugin-powerbi-visuals": "^0.8.1",
     "neverthrow": "^6.0.0",
     "powerbi-visuals-api": "5.1.0",
     "powerbi-visuals-utils-dataviewutils": "^2.4.1",
