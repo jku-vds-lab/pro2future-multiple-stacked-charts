@@ -76,6 +76,7 @@ export enum Constants {
     rolloutClass = 'rollout',
     defectLegendClass = 'defectLegend',
     zoomState = 'zoomState',
+    axisBreakClass = 'axisBreakLines',
 }
 
 export class ArrayConstants {

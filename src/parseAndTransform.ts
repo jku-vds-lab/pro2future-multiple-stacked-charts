@@ -281,7 +281,14 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     if (nullValues.length > 0) {
         return err(new AxisNullValuesError(xData.name));
     }
-    const indexMap = new Map(Array.from(new Set(xData.values)).map((x, i) => [x, i]));
+    const uniqueXValues = Array.from(new Set(xData.values));
+    const indexMap = new Map(uniqueXValues.map((x, i) => [x, i]));
+    const a = uniqueXValues
+        .map((x, i, a) => {
+            return { i: i, gapSize: i < a.length ? a[i + 1] - x : 0 };
+        })
+        .filter((x) => x.gapSize > 1);
+    const breakIndices = a.map((x) => x.i + 0.5);
     // if (axisBreak) {
     //     debugger;
     //     //xData.values.filter((x,i)=>xData.values.findIndex(y=>y===x)!==i)
@@ -434,7 +441,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         defectLegend,
         defectGroupLegend,
         xData,
-        indexMap
+        indexMap,
+        axisBreak,
+        breakIndices
     ).map((vm) => (viewModel = vm));
     if (viewModelResult.isErr()) {
         return viewModelResult.mapErr((err) => {
@@ -619,7 +628,6 @@ function createOverlayInformation(overlayLength: number[], overlayWidth: number[
     if (overlayLength.length == overlayWidth.length && overlayWidth.length > 0) {
         let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(overlayLength.length);
         const xAxisSettings = viewModel.generalPlotSettings.xAxisSettings;
-        debugger;
         for (let i = 0; i < overlayLength.length; i++) {
             overlayRectangles[i] = {
                 width: overlayWidth[i],
@@ -648,7 +656,9 @@ function createViewModel(
     defectLegend: Legend,
     defectGroupLegend: Legend,
     xData: XAxisData,
-    indexMap: Map<number, number>
+    indexMap: Map<number, number>,
+    axisBreak: boolean,
+    breakIndices: number[]
 ): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings;
     const svgHeight: number = options.viewport.height;
@@ -678,8 +688,6 @@ function createViewModel(
         max: Math.max(...xData.values),
     };
 
-    //TODO: from settings
-    const axisBreak = true;
     if (axisBreak) {
         xRange.min = indexMap.get(xRange.min);
         xRange.max = indexMap.get(xRange.max);
@@ -687,6 +695,7 @@ function createViewModel(
     const xScale = scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
     const xAxisSettings = <XAxisSettings>{
         axisBreak,
+        breakIndices,
         indexMap,
         xName: xData.name,
         xRange: xRange,

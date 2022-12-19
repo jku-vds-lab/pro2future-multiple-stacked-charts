@@ -128,6 +128,7 @@ export interface GeneralPlotSettings {
 
 export interface XAxisSettings {
     axisBreak: boolean;
+    breakIndices: number[];
     indexMap: Map<number, number>;
     xName: string;
     xRange: {

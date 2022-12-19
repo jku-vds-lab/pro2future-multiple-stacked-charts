@@ -112,7 +112,6 @@ export class Visual implements IVisual {
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
-    private axisBreak;
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -214,7 +213,6 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         try {
             //TODO: update
-            this.axisBreak = true;
             this.dataview = options.dataViews[0];
             const categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
@@ -255,6 +253,27 @@ export class Visual implements IVisual {
                     if (this.viewModel.rolloutRectangles) {
                         this.drawRolloutRectangles();
                         this.drawRolloutLegend();
+                    }
+                    if (this.viewModel.generalPlotSettings.xAxisSettings.axisBreak) {
+                        const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
+                        const xScale = xAxisSettings.xScaleZoomed;
+                        const plotModels = this.viewModel.plotModels;
+                        const generalPlotSettings = this.viewModel.generalPlotSettings;
+                        const linesG = this.svg.append('g').attr('transform', 'translate(' + generalPlotSettings.margins.left + ',0)');
+                        const lines = linesG
+                            .selectAll('.' + Constants.axisBreakClass)
+                            .data(xAxisSettings.breakIndices)
+                            .join('line')
+                            .attr('class', Constants.axisBreakClass)
+                            .attr('stroke', '#cccccc')
+                            .attr('x1', (d) => xScale(d))
+                            .attr('x2', (d) => xScale(d))
+                            .attr('y1', plotModels[0].plotTop)
+                            .attr('y2', plotModels[plotModels.length - 1].plotTop + generalPlotSettings.plotHeight)
+                            .attr('stroke-dasharray', '5,5')
+                            .attr('clip-path', 'url(#rolloutClip)')
+                            .attr('pointer-events', 'none');
+                        lines.raise();
                     }
                     this.svg.on('contextmenu', (event) => {
                         const dataPoint = d3.select(event.target).datum();
@@ -735,7 +754,6 @@ export class Visual implements IVisual {
             let plotError: PlotError;
             const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
             const xScale = xAxisSettings.xScaleZoomed;
-            const indexMap = xAxisSettings.indexMap;
             this.constructBasicPlot(plotModel).mapErr((err) => (plotError = err));
             if (plotError) return err(plotError);
             const d3Plot = plotModel.d3Plot;
@@ -964,29 +982,6 @@ export class Visual implements IVisual {
                             return xScaleZoomed(<number>d.xValue);
                         });
 
-                        // //y-zoom for 212
-                        // if (plot.yName.includes("212")) {
-                        //     const yScale = plot.y.yScale;
-                        //     let domain = yScale.domain();
-                        //     const invertScale = yScale.domain([domain[1], domain[0]]);
-                        //     const t = d3.zoomIdentity.translate(0, 0).scale(transform.k);
-                        //     let yScaleNew = t.rescaleY(invertScale);
-                        //     yScale.domain(domain);
-                        //     domain = yScaleNew.domain();
-                        //     yScaleNew = yScaleNew.domain([domain[1], domain[0]]);
-                        //     const plotModel = _this.viewModel.plotModels.filter(x => x.yName === plot.yName)[0];
-                        //     const yDataPoints = plotModel.dataPoints.filter(x => x.xValue >= xMin && x.xValue <= xMax).map(x => Number(x.yValue));
-                        //     const yMin = Math.min(yScaleNew.domain()[0], ...yDataPoints);
-                        //     const yMax = Math.max(yScaleNew.domain()[1], ...yDataPoints);
-                        //     yScaleNew.domain([yMin, yMax]);
-                        //     plot.y.yScaleZoomed = yScaleNew;
-                        //     plot.points.attr('cy', (d) => { return yScaleNew(<number>d.yValue) })
-                        //         .attr('r', 2);
-                        //     let yAxisValue = plot.y.yAxisValue;
-                        //     yAxisValue.scale(yScaleNew);
-                        //     plot.y.yAxis.call(yAxisValue);
-                        // }
-                        // else {
                         const plotModel = this.viewModel.plotModels.filter((x) => x.yName === plot.yName)[0];
                         const yDataPoints = plotModel.dataPoints.filter((x) => x.xValue >= xMin && x.xValue <= xMax).map((x) => Number(x.yValue));
                         const yMin = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
@@ -998,7 +993,6 @@ export class Visual implements IVisual {
                         const yAxisValue = plot.y.yAxisValue;
                         yAxisValue.scale(plot.y.yScaleZoomed);
                         plot.y.yAxis.call(yAxisValue);
-                        // }
 
                         plot.points.attr('clip-path', 'url(#clip)');
                         const overlayBars = plot.root.select(`.${Constants.overlayClass}`);
@@ -1033,7 +1027,7 @@ export class Visual implements IVisual {
                         const yZero = plot.y.yScaleZoomed(0);
 
                         plot.yZeroLine.selectAll('line').attr('y1', yZero).attr('y2', yZero);
-
+                        //TODO: test heatmap with axis break
                         if (plot.heatmap) {
                             const values = plot.heatmap.values;
                             const scale = transform.rescaleX(plot.heatmap.scale);
@@ -1046,6 +1040,10 @@ export class Visual implements IVisual {
                                 })
                                 .attr('clip-path', 'url(#hclip)');
                         }
+                        this.svg
+                            .selectAll('.' + Constants.axisBreakClass)
+                            .attr('x1', (d) => xScaleZoomed(d))
+                            .attr('x2', (d) => xScaleZoomed(d));
                     }
                 } catch (error) {
                     error.message = 'error in zoom function: ' + error.message;
