@@ -13,7 +13,7 @@ export class MarginSettings {
         top: 10,
         right: 50,
         bottom: 10,
-        left: 50,
+        left: 40,
     };
     static readonly miniumumPlotHeight = 40;
     static readonly miniumumPlotWidth = 120;

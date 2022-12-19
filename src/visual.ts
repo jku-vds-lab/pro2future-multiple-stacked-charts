@@ -117,6 +117,7 @@ export class Visual implements IVisual {
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
+        options.element.style.overflow = 'auto';
         this.element = options.element;
         this.selectionManager = this.host.createSelectionManager();
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true).attr('width', this.element.clientWidth).attr('height', this.element.clientHeight);
@@ -216,7 +217,6 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         try {
-            //TODO: update
             this.dataview = options.dataViews[0];
             const categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
@@ -238,7 +238,7 @@ export class Visual implements IVisual {
                 .map((model) => {
                     this.viewModel = model;
                     this.svg.selectAll('*').remove();
-                    this.svg.attr('width', this.viewModel.svgWidth).attr('height', this.viewModel.svgHeight);
+                    this.svg.attr('width', this.viewModel.svgWidth).attr('height', this.viewModel.svgHeight - 5);
                     if (model.errors.length > 0) {
                         this.displayError(model.errors[0]);
                         return;
@@ -284,6 +284,7 @@ export class Visual implements IVisual {
                         lines.raise();
                     }
                     this.svg.on('contextmenu', (event) => {
+                        if (event.shiftKey) return;
                         const dataPoint = d3.select(event.target).datum();
                         this.selectionManager.showContextMenu(dataPoint && (<DataPoint>dataPoint).selectionId ? (<DataPoint>dataPoint).selectionId : {}, {
                             x: event.clientX,
@@ -602,7 +603,9 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const yAxis = plot.append('g').classed('yAxis', true);
             const yScale = scaleLinear().domain([plotModel.yRange.min, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
-            const yAxisValue = axisLeft(yScale).ticks(generalPlotSettings.plotHeight / 20);
+            const yAxisValue = axisLeft(yScale)
+                .ticks(generalPlotSettings.plotHeight / 20)
+                .tickFormat(d3.format('~s'));
             let yLabel = null;
             if (plotModel.formatSettings.axisSettings.yAxis.lables) {
                 yLabel = plot
