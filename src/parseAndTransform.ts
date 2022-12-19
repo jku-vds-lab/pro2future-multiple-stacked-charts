@@ -72,6 +72,8 @@ import {
 
 export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Result<ViewModel, ParseAndTransformError> {
     // try {
+    //TODO: settings
+    const axisBreak = true;
     let parseAndTransformError: ParseAndTransformError;
     const dataViews = options.dataViews;
     if (!dataViews || !dataViews[0] || !dataViews[0].categorical || !dataViews[0].metadata) {
@@ -275,10 +277,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         }
     }
 
-    const possibleNullValues = xData.values.filter((y) => y === null || y === undefined);
-    if (possibleNullValues.length > 0) {
+    const nullValues = xData.values.filter((x) => x === null || x === undefined);
+    if (nullValues.length > 0) {
         return err(new AxisNullValuesError(xData.name));
     }
+    const indexMap = new Map(Array.from(new Set(xData.values)).map((x, i) => [x, i]));
+    // if (axisBreak) {
+    //     debugger;
+    //     //xData.values.filter((x,i)=>xData.values.findIndex(y=>y===x)!==i)
+    // }
 
     const legendColors = ArrayConstants.legendColors;
     if (legendData != null) {
@@ -313,13 +320,11 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             .map(
                 (val, i) =>
                     <LegendDataPoint>{
-                        xValue: xData.values[i],
                         yValue: val,
-                        i: i,
+                        i,
                     }
             )
             .filter((x) => x.yValue !== null);
-
         // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
         //     legend.legendDataPoints.push({
         //         xValue: xData.values[i],
@@ -360,7 +365,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             .map(
                 (val, i) =>
                     <LegendDataPoint>{
-                        xValue: xData.values[i],
                         yValue: val,
                         i: i,
                     }
@@ -419,9 +423,19 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const xLabelsCount = formatSettings.filter((x) => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
     const heatmapCount = plotSettings.filter((x) => x.plotSettings.showHeatmap).length;
     let viewModel: ViewModel;
-    const viewModelResult = createViewModel(options, yCount, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, defectLegend, defectGroupLegend, xData).map(
-        (vm) => (viewModel = vm)
-    );
+    const viewModelResult = createViewModel(
+        options,
+        yCount,
+        objects,
+        colorPalette,
+        plotTitlesCount,
+        xLabelsCount,
+        heatmapCount,
+        defectLegend,
+        defectGroupLegend,
+        xData,
+        indexMap
+    ).map((vm) => (viewModel = vm));
     if (viewModelResult.isErr()) {
         return viewModelResult.mapErr((err) => {
             return err;
@@ -469,7 +483,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
             //const color = legend.legendValues.fin legend.legendDataPoints[pointNr].yValue
             const dataPoint: DataPoint = {
-                xValue: xVal,
+                xValue: axisBreak ? indexMap.get(xVal) : xVal,
                 yValue: yDataPoints[pointNr],
                 identity: selectionId,
                 selected: false,
@@ -527,7 +541,13 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     if (rolloutRectangles) {
         const rolloutY = viewModel.plotModels[0].plotTop;
         const rolloutHeight = viewModel.plotModels[viewModel.plotModels.length - 1].plotTop + viewModel.generalPlotSettings.plotHeight - rolloutY;
-        viewModel.rolloutRectangles = new RolloutRectangles(xData.values, rolloutRectangles, rolloutY, rolloutHeight, rolloutName);
+        viewModel.rolloutRectangles = new RolloutRectangles(
+            axisBreak ? xData.values.map((x) => indexMap.get(x)) : xData.values,
+            rolloutRectangles,
+            rolloutY,
+            rolloutHeight,
+            rolloutName
+        );
     }
 
     viewModel.generalPlotSettings.legendYPostion = plotTop;
@@ -598,15 +618,17 @@ function createTooltipModels(
 function createOverlayInformation(overlayLength: number[], overlayWidth: number[], xValues: number[], viewModel: ViewModel): Result<void, OverlayDataError> {
     if (overlayLength.length == overlayWidth.length && overlayWidth.length > 0) {
         let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(overlayLength.length);
+        const xAxisSettings = viewModel.generalPlotSettings.xAxisSettings;
+        debugger;
         for (let i = 0; i < overlayLength.length; i++) {
             overlayRectangles[i] = {
                 width: overlayWidth[i],
                 length: overlayLength[i],
                 y: 0,
-                x: xValues[i],
+                x: xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) : xValues[i],
             };
         }
-        overlayRectangles = overlayRectangles.filter((x) => x.x != null && x.x > 0 && x.width != null && x.width > 0);
+        overlayRectangles = overlayRectangles.filter((x) => x.x != null && x.x >= 0 && x.width != null && x.width > 0);
         if (overlayRectangles.length == 0) {
             return err(new OverlayDataError());
         }
@@ -625,7 +647,8 @@ function createViewModel(
     heatmapCount: number,
     defectLegend: Legend,
     defectGroupLegend: Legend,
-    xData: XAxisData
+    xData: XAxisData,
+    indexMap: Map<number, number>
 ): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings;
     const svgHeight: number = options.viewport.height;
@@ -654,8 +677,17 @@ function createViewModel(
         min: Math.min(...xData.values),
         max: Math.max(...xData.values),
     };
+
+    //TODO: from settings
+    const axisBreak = true;
+    if (axisBreak) {
+        xRange.min = indexMap.get(xRange.min);
+        xRange.max = indexMap.get(xRange.max);
+    }
     const xScale = scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
     const xAxisSettings = <XAxisSettings>{
+        axisBreak,
+        indexMap,
         xName: xData.name,
         xRange: xRange,
         xScale,

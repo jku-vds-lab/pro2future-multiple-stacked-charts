@@ -112,6 +112,7 @@ export class Visual implements IVisual {
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
+    private axisBreak;
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -128,7 +129,6 @@ export class Visual implements IVisual {
         const legendData = legend.legendValues;
         const legendTitle = legend.legendTitle;
         const legendSelection = this.legendSelection;
-        // const _this = this;
         const widths = [];
         let width = legend.legendXPosition;
         this.svg
@@ -213,6 +213,8 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         try {
+            //TODO: update
+            this.axisBreak = true;
             this.dataview = options.dataViews[0];
             const categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
@@ -534,7 +536,16 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxis = plot.append('g').classed('xAxis', true);
 
-            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed);
+            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed).tickFormat(
+                ((d) => {
+                    const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
+                    let key = '';
+                    for (const [k, v] of xAxisSettings.indexMap.entries()) {
+                        if (v === d) key = '' + k;
+                    }
+                    return key;
+                }).bind(this)
+            );
             let xLabel = null;
             if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
                 xAxisValue.tickValues([]);
@@ -722,7 +733,9 @@ export class Visual implements IVisual {
         try {
             let dotSize = 2;
             let plotError: PlotError;
-            const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
+            const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
+            const xScale = xAxisSettings.xScaleZoomed;
+            const indexMap = xAxisSettings.indexMap;
             this.constructBasicPlot(plotModel).mapErr((err) => (plotError = err));
             if (plotError) return err(plotError);
             const d3Plot = plotModel.d3Plot;
@@ -807,6 +820,15 @@ export class Visual implements IVisual {
             return err(new DrawPlotError(error.stack));
         }
     }
+
+    // private getX(x: number): d3.NumberValue {
+    //     try {
+    //         const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
+    //         return xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(x) : x;
+    //     } catch (e) {
+    //         debugger;
+    //     }
+    // }
 
     private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel): Result<D3Heatmap, HeatmapError> {
         try {
@@ -1231,7 +1253,7 @@ export class Visual implements IVisual {
                         },
                         selector: null,
                     });
-
+                    //TODO: add settings for filter legend like this
                     for (let i = 0; i < this.viewModel.defectLegend.legendValues.length; i++) {
                         const value = this.viewModel.defectLegend.legendValues[i];
                         objectEnumeration.push({

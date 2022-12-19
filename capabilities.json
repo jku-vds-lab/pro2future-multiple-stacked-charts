@@ -1,5 +1,5 @@
 {
-    "privileges":[],
+    "privileges": [],
     "dataRoles": [
         {
             "displayName": "Axis",
@@ -88,6 +88,19 @@
                     "integer": true
                 }
             ]
+        },
+        {
+            "displayName": "Filter Legend",
+            "name": "filterLegend",
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
         }
     ],
     "sorting": {
@@ -130,6 +143,9 @@
                     },
                     "measure": {
                         "max": 100
+                    },
+                    "filterLegend": {
+                        "max": 1
                     }
                 }
             ],
@@ -174,6 +190,11 @@
                         {
                             "for": {
                                 "in": "rollout"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "filterLegend"
                             }
                         }
                     ],
@@ -549,8 +570,6 @@
     },
     "supportsLandingPage": false,
     "drilldown": {
-        "roles": [
-            "category"
-        ]
+        "roles": ["category"]
     }
 }
