@@ -11,6 +11,7 @@ export enum Settings {
     yRangeSettings = 'yRangeSettings',
     zoomingSettings = 'zoomingSettings',
     axisLabelSettings = 'axisLabelSettings',
+    xAxisBreakSettings = 'xAxisBreakSettings',
 }
 export enum AxisLabelSettingsNames {
     xLabel = 'xLabel',
@@ -25,6 +26,11 @@ export enum YRangeSettingsNames {
     max = 'max',
     minFixed = 'minFixed',
     maxFixed = 'maxFixed',
+}
+
+export enum XAxisBreakSettingsNames {
+    enable = 'enable',
+    showLines = 'showLines',
 }
 export enum LegendSettingsNames {
     defectLegendTitle = 'errorLegendTitle',
@@ -76,6 +82,7 @@ export enum Constants {
     rolloutClass = 'rollout',
     defectLegendClass = 'defectLegend',
     zoomState = 'zoomState',
+    axisBreakClass = 'axisBreakLines',
 }
 
 export class ArrayConstants {

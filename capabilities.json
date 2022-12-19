@@ -1,5 +1,5 @@
 {
-    "privileges":[],
+    "privileges": [],
     "dataRoles": [
         {
             "displayName": "Axis",
@@ -130,6 +130,9 @@
                     },
                     "measure": {
                         "max": 100
+                    },
+                    "filterLegend": {
+                        "max": 1
                     }
                 }
             ],
@@ -485,6 +488,23 @@
                 }
             }
         },
+        "xAxisBreakSettings": {
+            "displayName": "X-Axis Break Settings",
+            "properties": {
+                "enable": {
+                    "displayName": "Enable Axis Break",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "showLines": {
+                    "displayName": "Show Break Linkes",
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        },
         "yRangeSettings": {
             "displayName": "Y-Axis Range Settings",
             "properties": {
@@ -549,8 +569,6 @@
     },
     "supportsLandingPage": false,
     "drilldown": {
-        "roles": [
-            "category"
-        ]
+        "roles": ["category"]
     }
 }

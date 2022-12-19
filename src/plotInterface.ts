@@ -127,6 +127,10 @@ export interface GeneralPlotSettings {
 }
 
 export interface XAxisSettings {
+    axisBreak: boolean;
+    breakIndices: number[];
+    indexMap: Map<number, number>;
+    showBreakLines: boolean;
     xName: string;
     xRange: {
         min: number;
@@ -219,7 +223,6 @@ export interface TooltipDataPoint {
 }
 
 export interface LegendDataPoint {
-    xValue: PrimitiveValue;
     yValue: PrimitiveValue;
     i: number;
 }
