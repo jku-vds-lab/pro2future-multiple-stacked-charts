@@ -83,6 +83,7 @@ import {
     AxisLabelSettingsNames,
     ArrayConstants,
     HeatmapSettingsNames,
+    XAxisBreakSettingsNames,
 } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import {
@@ -254,7 +255,7 @@ export class Visual implements IVisual {
                         this.drawRolloutRectangles();
                         this.drawRolloutLegend();
                     }
-                    if (this.viewModel.generalPlotSettings.xAxisSettings.axisBreak) {
+                    if (this.viewModel.generalPlotSettings.xAxisSettings.showBreakLines) {
                         const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
                         const xScale = xAxisSettings.xScaleZoomed;
                         const plotModels = this.viewModel.plotModels;
@@ -860,8 +861,10 @@ export class Visual implements IVisual {
                 })
                 .thresholds(heatmapSettings.heatmapBins);
             const binnedData = bins(dataPoints);
+
             const heatmapValues = binnedData.map((bin) => {
                 const extent = d3.extent(bin.map((d) => <number>d.yValue));
+                if (extent[0] === undefined) return 0;
                 return extent[1] - extent[0];
             });
             const colorScale = d3.scaleSequential().interpolator(d3[this.viewModel.colorSettings.colorSettings.heatmapColorScheme]).domain(d3.extent(heatmapValues));
@@ -1222,6 +1225,16 @@ export class Visual implements IVisual {
                         objectName: objectName,
                         properties: {
                             heatmapBins: <number>getValue(objects, Settings.heatmapSettings, HeatmapSettingsNames.heatmapBins, 100),
+                        },
+                        selector: null,
+                    });
+                    break;
+                case Settings.xAxisBreakSettings:
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            enable: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, true),
+                            showLines: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, true),
                         },
                         selector: null,
                     });

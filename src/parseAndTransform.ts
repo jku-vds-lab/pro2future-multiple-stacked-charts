@@ -43,6 +43,7 @@ import {
     AxisLabelSettingsNames,
     HeatmapSettingsNames,
     ArrayConstants,
+    XAxisBreakSettingsNames,
 } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { ok, err, Result } from 'neverthrow';
@@ -72,8 +73,6 @@ import {
 
 export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Result<ViewModel, ParseAndTransformError> {
     // try {
-    //TODO: settings
-    const axisBreak = true;
     let parseAndTransformError: ParseAndTransformError;
     const dataViews = options.dataViews;
     if (!dataViews || !dataViews[0] || !dataViews[0].categorical || !dataViews[0].metadata) {
@@ -281,6 +280,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     if (nullValues.length > 0) {
         return err(new AxisNullValuesError(xData.name));
     }
+    const axisBreak = <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, true);
     const uniqueXValues = Array.from(new Set(xData.values));
     const indexMap = new Map(uniqueXValues.map((x, i) => [x, i]));
     const a = uniqueXValues
@@ -697,6 +697,7 @@ function createViewModel(
         axisBreak,
         breakIndices,
         indexMap,
+        showBreakLines: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, true),
         xName: xData.name,
         xRange: xRange,
         xScale,

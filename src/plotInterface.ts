@@ -130,6 +130,7 @@ export interface XAxisSettings {
     axisBreak: boolean;
     breakIndices: number[];
     indexMap: Map<number, number>;
+    showBreakLines: boolean;
     xName: string;
     xRange: {
         min: number;

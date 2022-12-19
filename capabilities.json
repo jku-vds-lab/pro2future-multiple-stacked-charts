@@ -506,6 +506,23 @@
                 }
             }
         },
+        "xAxisBreakSettings": {
+            "displayName": "X-Axis Break Settings",
+            "properties": {
+                "enable": {
+                    "displayName": "Enable Axis Break",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "showLines": {
+                    "displayName": "Show Break Linkes",
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        },
         "yRangeSettings": {
             "displayName": "Y-Axis Range Settings",
             "properties": {
