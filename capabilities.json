@@ -88,19 +88,6 @@
                     "integer": true
                 }
             ]
-        },
-        {
-            "displayName": "Filter Legend",
-            "name": "filterLegend",
-            "kind": "GroupingOrMeasure",
-            "preferredTypes": [
-                {
-                    "numeric": true
-                },
-                {
-                    "integer": true
-                }
-            ]
         }
     ],
     "sorting": {
@@ -190,11 +177,6 @@
                         {
                             "for": {
                                 "in": "rollout"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "filterLegend"
                             }
                         }
                     ],
