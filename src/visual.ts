@@ -615,9 +615,17 @@ export class Visual implements IVisual {
                     .attr('y', 0 - generalPlotSettings.margins.left)
                     .attr('x', 0 - generalPlotSettings.plotHeight / 2)
                     .attr('dy', '1em')
-                    .style('font-size', generalPlotSettings.fontSize)
                     .attr('transform', 'rotate(-90)')
-                    .text(plotModel.labelNames.yLabel);
+                    .text(plotModel.labelNames.yLabel)
+                    .style('font-size', generalPlotSettings.fontSize)
+                    .style('font-size', function () {
+                        const usedSpace = this.getComputedTextLength();
+                        const availableSpace = generalPlotSettings.plotHeight + generalPlotSettings.margins.top + generalPlotSettings.margins.bottom;
+                        if (usedSpace > availableSpace) {
+                            return (parseInt(generalPlotSettings.fontSize.split('p')[0]) / usedSpace) * availableSpace;
+                        }
+                        return generalPlotSettings.fontSize;
+                    });
             }
 
             if (!plotModel.formatSettings.axisSettings.yAxis.ticks) {

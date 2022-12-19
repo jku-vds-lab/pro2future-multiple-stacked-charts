@@ -55,7 +55,6 @@ import {
     NoDataColumnsError,
     ParseAndTransformError,
     PlotLegendError,
-    PlotSizeError,
     SVGSizeError,
     NoDataError,
     XDataError,
