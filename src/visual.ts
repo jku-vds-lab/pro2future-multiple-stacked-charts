@@ -110,6 +110,7 @@ export class Visual implements IVisual {
     private viewModel: ViewModel;
     private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
     private legendSelection = new Set(Object.keys(ArrayConstants.legendColors).concat(Object.keys(ArrayConstants.groupValues)));
+    private legendDeselected = new Set();
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
@@ -129,6 +130,7 @@ export class Visual implements IVisual {
         const legendData = legend.legendValues;
         const legendTitle = legend.legendTitle;
         const legendSelection = this.legendSelection;
+        const legendDeselected = this.legendDeselected;
         const widths = [];
         let width = legend.legendXPosition;
         this.svg
@@ -167,7 +169,6 @@ export class Visual implements IVisual {
             })
             .attr('y', yPosition)
             .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-
         this.svg
             .selectAll('legendDots')
             .data(legendData)
@@ -194,9 +195,11 @@ export class Visual implements IVisual {
                 const selection = this.svg.selectAll('.' + Constants.defectLegendClass + '.' + def);
                 if (legendSelection.has(def)) {
                     legendSelection.delete(def);
+                    legendDeselected.add(def);
                     selection.style('opacity', unselectedOpacity);
                 } else {
                     legendSelection.add(def);
+                    legendDeselected.delete(def);
                     selection.style('opacity', 1);
                 }
                 for (const plotModel of this.viewModel.plotModels) {
@@ -242,7 +245,11 @@ export class Visual implements IVisual {
                     }
                     this.drawPlots();
                     if (this.viewModel.defectLegend != null) {
-                        this.viewModel.defectLegend.legendValues.map((val) => this.legendSelection.add(val.value.toString()));
+                        this.viewModel.defectLegend.legendValues.map((val) => {
+                            if (!this.legendDeselected.has(val.value) && !this.legendSelection.has(<string>val.value)) {
+                                this.legendSelection.add(val.value.toString());
+                            }
+                        });
                         this.drawLegend(this.viewModel.defectLegend);
                         if (this.viewModel.defectGroupLegend != null) {
                             this.viewModel.defectGroupLegend.legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
