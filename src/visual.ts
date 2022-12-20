@@ -118,6 +118,7 @@ export class Visual implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         options.element.style.overflow = 'auto';
+        options.element.style.scrollbarGutter = 'stable';
         this.element = options.element;
         this.selectionManager = this.host.createSelectionManager();
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true).attr('width', this.element.clientWidth).attr('height', this.element.clientHeight);
@@ -213,6 +214,14 @@ export class Visual implements IVisual {
         );
 
         legend.legendXEndPosition = width;
+        this.checkOversize(width);
+    }
+
+    private checkOversize(width: number) {
+        if (width > this.viewModel.svgWidth) {
+            this.viewModel.svgWidth = width;
+            this.svg.attr('width', this.viewModel.svgWidth);
+        }
     }
 
     public update(options: VisualUpdateOptions) {
@@ -238,7 +247,7 @@ export class Visual implements IVisual {
                 .map((model) => {
                     this.viewModel = model;
                     this.svg.selectAll('*').remove();
-                    this.svg.attr('width', this.viewModel.svgWidth).attr('height', this.viewModel.svgHeight - 5);
+                    this.svg.attr('width', this.viewModel.svgWidth).attr('height', this.viewModel.svgHeight);
                     if (model.errors.length > 0) {
                         this.displayError(model.errors[0]);
                         return;
@@ -423,6 +432,7 @@ export class Visual implements IVisual {
             .style('fill', (d) => d)
             .style('stroke', 'grey')
             .style('opacity', rolloutRectangles.opacity * 2);
+        this.checkOversize(width);
     }
 
     private drawRolloutRectangles() {

@@ -660,8 +660,8 @@ function createViewModel(
     breakIndices: number[]
 ): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings;
-    let svgHeight: number = options.viewport.height;
-    let svgWidth: number = options.viewport.width;
+    let svgHeight: number = options.viewport.height - margins.scrollbarSpace;
+    let svgWidth: number = options.viewport.width - margins.scrollbarSpace;
     const legendHeight = defectLegend ? margins.legendHeight : 0;
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
