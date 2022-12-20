@@ -203,8 +203,8 @@ export class Visual implements IVisual {
                     legendDeselected.delete(def);
                     selection.style('opacity', 1);
                 }
-                for (const plotModel of this.viewModel.plotModels) {
-                    if (plotModel.yName.includes('DEF')) {
+                for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
+                    if (plotModel.plotSettings.plotSettings.useLegendColor) {
                         this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
                         this.drawPlot(plotModel);
                     }
@@ -780,14 +780,16 @@ export class Visual implements IVisual {
             let dataPoints = plotModel.dataPoints;
             dataPoints = filterNullValues(dataPoints);
 
-            if (plotModel.yName.includes('DEF')) {
+            if (plotModel.plotSettings.plotSettings.useLegendColor) {
                 dataPoints = dataPoints.filter((x) => {
                     let draw = true;
                     if (this.viewModel.defectLegend != null) {
-                        draw = draw && this.legendSelection.has(this.viewModel.defectLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString());
+                        const val = this.viewModel.defectLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
+                        if (val) draw = draw && this.legendSelection.has(val);
                     }
                     if (this.viewModel.defectGroupLegend != null) {
-                        draw = draw && this.legendSelection.has(this.viewModel.defectGroupLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString());
+                        const val = this.viewModel.defectGroupLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
+                        if (val) draw = draw && this.legendSelection.has(val);
                     }
                     return draw;
                 });
