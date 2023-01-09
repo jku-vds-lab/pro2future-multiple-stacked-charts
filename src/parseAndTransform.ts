@@ -55,7 +55,6 @@ import {
     NoDataColumnsError,
     ParseAndTransformError,
     PlotLegendError,
-    PlotSizeError,
     SVGSizeError,
     NoDataError,
     XDataError,
@@ -661,13 +660,13 @@ function createViewModel(
     breakIndices: number[]
 ): Result<ViewModel, ParseAndTransformError> {
     const margins = MarginSettings;
-    const svgHeight: number = options.viewport.height;
-    const svgWidth: number = options.viewport.width;
+    let svgHeight: number = options.viewport.height - margins.scrollbarSpace;
+    let svgWidth: number = options.viewport.width - margins.scrollbarSpace;
     const legendHeight = defectLegend ? margins.legendHeight : 0;
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
     }
-    const plotHeightSpace: number =
+    let plotHeightSpace: number =
         (svgHeight -
             margins.svgTopPadding -
             margins.svgBottomPadding -
@@ -677,11 +676,16 @@ function createViewModel(
             Heatmapmargins.heatmapSpace * heatmapCount) /
         yCount;
     if (plotHeightSpace < margins.miniumumPlotHeight) {
-        return err(new PlotSizeError('vertical'));
+        const plotSpaceDif = margins.miniumumPlotHeight - plotHeightSpace;
+        plotHeightSpace = margins.miniumumPlotHeight;
+        svgHeight = svgHeight + yCount * plotSpaceDif;
     }
-    const plotWidth: number = svgWidth - margins.margins.left - margins.margins.right;
+    let plotWidth: number = svgWidth - margins.margins.left - margins.margins.right;
     if (plotWidth < margins.miniumumPlotWidth) {
-        return err(new PlotSizeError('horizontal'));
+        const widthDif = margins.miniumumPlotWidth - plotWidth;
+        plotWidth = margins.miniumumPlotWidth;
+        svgWidth = svgWidth + widthDif;
+        // return err(new PlotSizeError('horizontal'));
     }
     const xRange = {
         min: Math.min(...xData.values),
@@ -734,7 +738,7 @@ function createViewModel(
         tooltipModels: [],
         generalPlotSettings: generalPlotSettings,
         overlayRectangles: [],
-        svgHeight: svgHeight,
+        svgHeight,
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,

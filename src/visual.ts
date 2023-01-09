@@ -110,12 +110,15 @@ export class Visual implements IVisual {
     private viewModel: ViewModel;
     private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
     private legendSelection = new Set(Object.keys(ArrayConstants.legendColors).concat(Object.keys(ArrayConstants.groupValues)));
+    private legendDeselected = new Set();
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
+        options.element.style.overflow = 'auto';
+        options.element.style.scrollbarGutter = 'stable';
         this.element = options.element;
         this.selectionManager = this.host.createSelectionManager();
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true).attr('width', this.element.clientWidth).attr('height', this.element.clientHeight);
@@ -129,6 +132,7 @@ export class Visual implements IVisual {
         const legendData = legend.legendValues;
         const legendTitle = legend.legendTitle;
         const legendSelection = this.legendSelection;
+        const legendDeselected = this.legendDeselected;
         const widths = [];
         let width = legend.legendXPosition;
         this.svg
@@ -167,7 +171,6 @@ export class Visual implements IVisual {
             })
             .attr('y', yPosition)
             .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-
         this.svg
             .selectAll('legendDots')
             .data(legendData)
@@ -194,13 +197,15 @@ export class Visual implements IVisual {
                 const selection = this.svg.selectAll('.' + Constants.defectLegendClass + '.' + def);
                 if (legendSelection.has(def)) {
                     legendSelection.delete(def);
+                    legendDeselected.add(def);
                     selection.style('opacity', unselectedOpacity);
                 } else {
                     legendSelection.add(def);
+                    legendDeselected.delete(def);
                     selection.style('opacity', 1);
                 }
-                for (const plotModel of this.viewModel.plotModels) {
-                    if (plotModel.yName.includes('DEF')) {
+                for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
+                    if (plotModel.plotSettings.plotSettings.useLegendColor) {
                         this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
                         this.drawPlot(plotModel);
                     }
@@ -209,11 +214,18 @@ export class Visual implements IVisual {
         );
 
         legend.legendXEndPosition = width;
+        this.checkOversize(width);
+    }
+
+    private checkOversize(width: number) {
+        if (width > this.viewModel.svgWidth) {
+            this.viewModel.svgWidth = width;
+            this.svg.attr('width', this.viewModel.svgWidth);
+        }
     }
 
     public update(options: VisualUpdateOptions) {
         try {
-            //TODO: update
             this.dataview = options.dataViews[0];
             const categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
@@ -242,7 +254,11 @@ export class Visual implements IVisual {
                     }
                     this.drawPlots();
                     if (this.viewModel.defectLegend != null) {
-                        this.viewModel.defectLegend.legendValues.map((val) => this.legendSelection.add(val.value.toString()));
+                        this.viewModel.defectLegend.legendValues.map((val) => {
+                            if (!this.legendDeselected.has(val.value) && !this.legendSelection.has(<string>val.value)) {
+                                this.legendSelection.add(val.value.toString());
+                            }
+                        });
                         this.drawLegend(this.viewModel.defectLegend);
                         if (this.viewModel.defectGroupLegend != null) {
                             this.viewModel.defectGroupLegend.legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
@@ -277,6 +293,7 @@ export class Visual implements IVisual {
                         lines.raise();
                     }
                     this.svg.on('contextmenu', (event) => {
+                        if (event.shiftKey) return;
                         const dataPoint = d3.select(event.target).datum();
                         this.selectionManager.showContextMenu(dataPoint && (<DataPoint>dataPoint).selectionId ? (<DataPoint>dataPoint).selectionId : {}, {
                             x: event.clientX,
@@ -415,6 +432,7 @@ export class Visual implements IVisual {
             .style('fill', (d) => d)
             .style('stroke', 'grey')
             .style('opacity', rolloutRectangles.opacity * 2);
+        this.checkOversize(width);
     }
 
     private drawRolloutRectangles() {
@@ -595,7 +613,9 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const yAxis = plot.append('g').classed('yAxis', true);
             const yScale = scaleLinear().domain([plotModel.yRange.min, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
-            const yAxisValue = axisLeft(yScale).ticks(generalPlotSettings.plotHeight / 20);
+            const yAxisValue = axisLeft(yScale)
+                .ticks(generalPlotSettings.plotHeight / 20)
+                .tickFormat(d3.format('~s'));
             let yLabel = null;
             if (plotModel.formatSettings.axisSettings.yAxis.lables) {
                 yLabel = plot
@@ -605,9 +625,17 @@ export class Visual implements IVisual {
                     .attr('y', 0 - generalPlotSettings.margins.left)
                     .attr('x', 0 - generalPlotSettings.plotHeight / 2)
                     .attr('dy', '1em')
-                    .style('font-size', generalPlotSettings.fontSize)
                     .attr('transform', 'rotate(-90)')
-                    .text(plotModel.labelNames.yLabel);
+                    .text(plotModel.labelNames.yLabel)
+                    .style('font-size', generalPlotSettings.fontSize)
+                    .style('font-size', function () {
+                        const usedSpace = this.getComputedTextLength();
+                        const availableSpace = generalPlotSettings.plotHeight + generalPlotSettings.margins.top + generalPlotSettings.margins.bottom;
+                        if (usedSpace > availableSpace) {
+                            return (parseInt(generalPlotSettings.fontSize.split('p')[0]) / usedSpace) * availableSpace;
+                        }
+                        return generalPlotSettings.fontSize;
+                    });
             }
 
             if (!plotModel.formatSettings.axisSettings.yAxis.ticks) {
@@ -762,14 +790,16 @@ export class Visual implements IVisual {
             let dataPoints = plotModel.dataPoints;
             dataPoints = filterNullValues(dataPoints);
 
-            if (plotModel.yName.includes('DEF')) {
+            if (plotModel.plotSettings.plotSettings.useLegendColor) {
                 dataPoints = dataPoints.filter((x) => {
                     let draw = true;
                     if (this.viewModel.defectLegend != null) {
-                        draw = draw && this.legendSelection.has(this.viewModel.defectLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString());
+                        const val = this.viewModel.defectLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
+                        if (val) draw = draw && this.legendSelection.has(val);
                     }
                     if (this.viewModel.defectGroupLegend != null) {
-                        draw = draw && this.legendSelection.has(this.viewModel.defectGroupLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString());
+                        const val = this.viewModel.defectGroupLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
+                        if (val) draw = draw && this.legendSelection.has(val);
                     }
                     return draw;
                 });

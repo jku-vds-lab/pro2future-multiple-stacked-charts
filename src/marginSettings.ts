@@ -2,18 +2,19 @@ import { Margins } from './plotInterface';
 
 export class MarginSettings {
     static readonly svgTopPadding = 0;
-    static readonly svgBottomPadding = 15;
+    static readonly svgBottomPadding = 10;
     static readonly plotTitleHeight = 10;
     static readonly legendHeight = 20;
-    static readonly legendSeparationMargin = 50;
+    static readonly legendSeparationMargin = 20;
     static readonly dotMargin = 4;
     static readonly xLabelSpace = 10;
+    static readonly scrollbarSpace = 23;
 
     static readonly margins: Margins = {
         top: 10,
-        right: 50,
+        right: 45,
         bottom: 10,
-        left: 50,
+        left: 40,
     };
     static readonly miniumumPlotHeight = 40;
     static readonly miniumumPlotWidth = 120;
@@ -21,7 +22,7 @@ export class MarginSettings {
 
 export class Heatmapmargins {
     static readonly heatmapHeight = 10;
-    static readonly heatmapMargin = 8;
+    static readonly heatmapMargin = 6;
     static readonly heatmapSpace = this.heatmapMargin + this.heatmapHeight;
     static readonly legendWidth = 10;
     static readonly legendMargin = 20;
