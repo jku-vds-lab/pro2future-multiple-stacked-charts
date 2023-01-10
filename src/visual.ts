@@ -227,8 +227,14 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         try {
             this.dataview = options.dataViews[0];
-            const hasHighlights = !!(this.dataview.categorical.values && this.dataview.categorical.values.length > 0 && this.dataview.categorical.values[0].highlights);
-            console.log('has highlights: ' + hasHighlights);
+            //findings: empty data is ignored on grouping => need grouping column as grouping and measure?
+            // const xData = this.dataview.categorical.categories.filter((x) => x.source.displayName === 'Segment')[0].values;
+            // // const insp = this.dataview.categorical.categories.filter((x) => x.source.displayName === 'INSP_ZUSTAND')[0].values;
+            // const duplicates = Array.from(new Set(xData.filter((x, i, a) => a.indexOf(x) !== i)));
+            // console.log('x: ', xData[xData.length - 1]);
+            // console.log('duplicates: ', duplicates);
+            // console.log('datapoints: ', this.dataview.categorical.categories ? this.dataview.categorical.categories[0].values.length + '' : 'no categories');
+            // console.log('unique x: ', Array.from(new Set(xData)));
             const categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
                 this.dataview.categorical.categories = this.dataview.categorical.categories.filter((cat) => {
