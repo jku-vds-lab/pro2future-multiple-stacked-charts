@@ -84,6 +84,7 @@ import {
     ArrayConstants,
     HeatmapSettingsNames,
     XAxisBreakSettingsNames,
+    RolloutSettingsNames,
 } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import {
@@ -412,10 +413,11 @@ export class Visual implements IVisual {
 
         this.svg
             .selectAll('rolloutLegendText')
-            .data(ArrayConstants.rolloutNames)
+            // .data(ArrayConstants.rolloutNames)
+            .data(rolloutRectangles.legendValues)
             .enter()
             .append('text')
-            .text((d) => d)
+            .text((d) => '' + d.value)
             .attr('text-anchor', 'left')
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
@@ -429,7 +431,7 @@ export class Visual implements IVisual {
 
         this.svg
             .selectAll('rolloutLegendDots')
-            .data(ArrayConstants.rolloutColors)
+            .data(rolloutRectangles.legendValues)
             .enter()
             .append('circle')
             .attr('cx', function (d, i) {
@@ -437,7 +439,7 @@ export class Visual implements IVisual {
             })
             .attr('cy', yPosition)
             .attr('r', 7)
-            .style('fill', (d) => d)
+            .style('fill', (d) => d.color)
             .style('stroke', 'grey')
             .style('opacity', rolloutRectangles.opacity * 2);
         this.checkOversize(width);
@@ -1279,7 +1281,6 @@ export class Visual implements IVisual {
                     break;
                 case Settings.legendSettings:
                     if (!this.viewModel.defectLegend) break;
-
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
@@ -1317,9 +1318,43 @@ export class Visual implements IVisual {
                             altConstantValueSelector: value.selectionId.getSelector(),
                             selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
                         });
-                        i++;
                     }
                     break;
+                case Settings.rolloutSettings:
+                    if (!this.viewModel.rolloutRectangles) break;
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            legendTitle: <string>(
+                                getValue(
+                                    objects,
+                                    Settings.rolloutSettings,
+                                    RolloutSettingsNames.legendTitle,
+                                    this.viewModel.rolloutRectangles ? this.viewModel.rolloutRectangles.name : 'Rollout Legend'
+                                )
+                            ),
+                        },
+                        selector: null,
+                    });
+                    //TODO: fix settings bug
+                    for (let i = 0; i < this.viewModel.rolloutRectangles.legendValues.length; i++) {
+                        const value = this.viewModel.rolloutRectangles.legendValues[i];
+                        const column = this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+                            ? this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+                            : this.dataview.categorical.values.filter((x) => x.source.roles.rollout)[0];
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            displayName: String(value.value),
+                            properties: {
+                                legendColor: getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]),
+                            },
+                            altConstantValueSelector: value.selectionId.getSelector(),
+                            selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
+                        });
+                    }
+
+                    break;
+
                 case Settings.zoomingSettings:
                     objectEnumeration.push({
                         objectName: objectName,

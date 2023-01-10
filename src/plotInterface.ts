@@ -1,11 +1,14 @@
+import { Primitive } from 'd3-array';
 import { BaseType } from 'd3-selection';
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
-import { ArrayConstants } from './constants';
+import { ArrayConstants, RolloutSettingsNames, Settings } from './constants';
 import { ParseAndTransformError } from './errors';
+import { getCategoricalObjectColor } from './objectEnumerationUtility';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 
 export interface ViewModel {
     plotModels: PlotModel[];
@@ -69,17 +72,49 @@ export class RolloutRectangles {
     rolloutRectangles: RolloutRectangle[];
     name: string;
     opacity: number;
+    // uniqueValues: Primitive[];
+    legendValues: LegendValue[];
+    // colors: string[];
 
-    constructor(xValues: number[], rollout: number[], y, width, rolloutName = 'Rollout', rolloutOpacity = 0.1) {
+    constructor(
+        xValues: number[],
+        rollout: Primitive[],
+        y,
+        width,
+        host: IVisualHost,
+        category: powerbi.DataViewCategoryColumn,
+        dataView: powerbi.DataView,
+        rolloutName = 'Rollout',
+        rolloutOpacity = 0.2
+    ) {
         this.name = rolloutName;
         this.rolloutRectangles = [];
+        this.legendValues = [];
         this.opacity = rolloutOpacity;
+        const column = dataView.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+            ? dataView.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+            : dataView.categorical.values.filter((x) => x.source.roles.rollout)[0];
+        const uniqueValues = Array.from(new Set(rollout)).sort().reverse();
+        for (let i = 0; i < uniqueValues.length; i++) {
+            const val = uniqueValues[i];
+            const selectionId = host
+                .createSelectionIdBuilder()
+                .withCategory(
+                    category,
+                    rollout.findIndex((x) => x === val)
+                )
+                .createSelectionId();
+            const color = getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]);
+            this.legendValues.push({ value: val, color: ArrayConstants.rolloutColors[i], selectionId: selectionId });
+        }
+
         let rect = <RolloutRectangle>{
             y,
             width,
             x: xValues[0],
-            color: ArrayConstants.rolloutColors[rollout[0]],
+            color: this.getColor(rollout[0]),
         };
+
         let lastX = xValues[0];
         let lastRollout = rollout[0];
         for (let i = 0; i < xValues.length; i++) {
@@ -94,12 +129,16 @@ export class RolloutRectangles {
                     y,
                     width,
                     x: xValues[i],
-                    color: ArrayConstants.rolloutColors[rollout[i]],
+                    color: this.getColor(rollout[i]),
                 };
             }
         }
         rect.length = xValues[xValues.length - 1] - lastX;
         this.rolloutRectangles.push(rect);
+    }
+
+    private getColor(rollout: Primitive): string {
+        return this.legendValues.filter((x) => x.value === rollout)[0].color;
     }
 }
 

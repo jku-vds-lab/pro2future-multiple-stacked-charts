@@ -28,7 +28,7 @@ import {
     XAxisSettings,
     LegendDataPoint,
 } from './plotInterface';
-import { scaleLinear } from 'd3';
+import { Primitive, scaleLinear } from 'd3';
 import {
     AxisSettingsNames,
     PlotSettingsNames,
@@ -152,7 +152,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let overlayLength: number[] = [];
     let defectLegend: Legend = null;
     let defectGroupLegend: Legend = null;
-    let rolloutRectangles: number[];
+    let rolloutRectangles: Primitive[];
     let rolloutName: string;
 
     //aquire all categorical values
@@ -210,7 +210,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             //     defectIndices.defectIndices.set(category.source.displayName, <number[]>category.values)
             // }
             if (roles.rollout) {
-                rolloutRectangles = <number[]>category.values;
+                rolloutRectangles = category.values;
                 rolloutName = category.source.displayName;
             }
         }
@@ -553,6 +553,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         plotTop += plotModel.plotSettings.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
     }
     if (rolloutRectangles) {
+        const category = categorical.categories.filter((x) => x.source.roles.rollout)[0];
         const rolloutY = viewModel.plotModels[0].plotTop;
         const rolloutHeight = viewModel.plotModels[viewModel.plotModels.length - 1].plotTop + viewModel.generalPlotSettings.plotHeight - rolloutY;
         viewModel.rolloutRectangles = new RolloutRectangles(
@@ -560,6 +561,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             rolloutRectangles,
             rolloutY,
             rolloutHeight,
+            host,
+            category,
+            dataViews[0],
             rolloutName
         );
     }

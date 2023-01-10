@@ -12,11 +12,17 @@ export enum Settings {
     zoomingSettings = 'zoomingSettings',
     axisLabelSettings = 'axisLabelSettings',
     xAxisBreakSettings = 'xAxisBreakSettings',
+    rolloutSettings = 'rolloutSettings',
 }
 export enum AxisLabelSettingsNames {
     xLabel = 'xLabel',
     yLabel = 'yLabel',
 }
+export enum RolloutSettingsNames {
+    legendTitle = 'legendTitle',
+    legendColor = 'legendColor',
+}
+
 export enum HeatmapSettingsNames {
     heatmapBins = 'heatmapBins',
 }
@@ -91,7 +97,8 @@ export class ArrayConstants {
         singlehue: ['Blues', 'Greens', 'Greys', 'Oranges', 'Purples', 'Reds'],
         diverging: ['BrBG', 'PiYG', 'PRGn', 'PuOr', 'RdBu', 'RdGy', 'RdYlBu', 'RdYlGn', 'Spectral'],
     };
-    static readonly rolloutColors = ['#ffffff', '#a8a8a8', '#222222', '#4daf4a', '#ff0000'];
+    // static readonly rolloutColors = ['#ffffff', '#a8a8a8', '#222222', '#4daf4a', '#ff0000'];
+    static readonly rolloutColors = ['#ffffff', '#2ca25f', '#de2d26'];
     static readonly legendColors = {
         OZE: '#e41a1c',
         GZE: '#377eb8',
@@ -103,5 +110,5 @@ export class ArrayConstants {
         OIG: 'OIG',
     };
 
-    static readonly rolloutNames = ['nicht gewalzt', 'BBS gewalzt', 'Beize gewalzt', 'KB gewalzt ohne Fehler', 'KB gewalzt mit Fehler'];
+    //static readonly rolloutNames = ['nicht gewalzt', 'BBS gewalzt', 'Beize gewalzt', 'KB gewalzt ohne Fehler', 'KB gewalzt mit Fehler'];
 }

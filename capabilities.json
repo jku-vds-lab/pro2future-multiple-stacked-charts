@@ -448,6 +448,28 @@
                 }
             }
         },
+        "rolloutSettings": {
+            "displayName": "Rollout Settings",
+            "properties": {
+                "legendTitle": {
+                    "displayName": "Rollout Legend Title",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "legendColor": {
+                    "displayName": "Legend Color",
+                    "description": "The color of this legend type.",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "plotSettings": {
             "displayName": "Plot Settings",
             "properties": {
