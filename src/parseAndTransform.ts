@@ -227,18 +227,21 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
             if (roles.y_axis) {
                 const yId = value.source['rolesIndex']['y_axis'][0];
+                const yColumnObjects = getMetadataColumn(metadataColumns, value.source.index).objects;
+                const useHighlights = getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false);
+                if (value.source.displayName === 'Average of DEF_OS') debugger;
                 const yAxis: YAxisData = {
                     name: value.source.displayName,
-                    values: <number[]>value.values,
+                    values: <number[]>(useHighlights && value.highlights ? value.highlights : value.values),
                     columnId: value.source.index,
                 };
                 yData[yId] = yAxis;
             }
             if (roles.overlayX) {
-                overlayLength = <number[]>value.values;
+                overlayLength = <number[]>(value.highlights ? value.highlights : value.values);
             }
             if (roles.overlayY) {
-                overlayWidth = <number[]>value.values;
+                overlayWidth = <number[]>(value.highlights ? value.highlights : value.values);
             }
             if (roles.tooltip) {
                 const columnId = value.source.index;
@@ -297,6 +300,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     if (legendData != null) {
         const categories = categorical.categories.filter((x) => x.source.roles.legend);
         const category = categories.length > 0 ? categories[0] : null;
+        const values = categorical.values.filter((x) => x.source.roles.legend);
+        const value = values.length > 0 ? values[0] : null;
         const legendSet = new Set(legendData.values);
         const defaultLegendName = category ? category.source.displayName : 'Error Legend';
 
@@ -315,9 +320,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             const val = legendValues[i];
             const defaultColor = legendColors[val] ? legendColors[val] : 'FFFFFF';
             const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
-
+            const column = category ? category : value;
             defectLegend.legendValues.push({
-                color: getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
+                color: getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
                 selectionId: selectionId,
                 value: val,
             });
@@ -627,6 +632,7 @@ function createOverlayInformation(overlayLength: number[], overlayWidth: number[
     if (overlayLength.length == overlayWidth.length && overlayWidth.length > 0) {
         let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(overlayLength.length);
         const xAxisSettings = viewModel.generalPlotSettings.xAxisSettings;
+        debugger;
         for (let i = 0; i < overlayLength.length; i++) {
             overlayRectangles[i] = {
                 width: overlayWidth[i],

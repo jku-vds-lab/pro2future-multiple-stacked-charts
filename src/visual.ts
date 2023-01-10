@@ -227,6 +227,8 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         try {
             this.dataview = options.dataViews[0];
+            const hasHighlights = !!(this.dataview.categorical.values && this.dataview.categorical.values.length > 0 && this.dataview.categorical.values[0].highlights);
+            console.log('has highlights: ' + hasHighlights);
             const categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
                 this.dataview.categorical.categories = this.dataview.categorical.categories.filter((cat) => {
@@ -1297,17 +1299,14 @@ export class Visual implements IVisual {
                     //TODO: add settings for filter legend like this
                     for (let i = 0; i < this.viewModel.defectLegend.legendValues.length; i++) {
                         const value = this.viewModel.defectLegend.legendValues[i];
+                        const column = this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
+                            ? this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
+                            : this.dataview.categorical.values.filter((x) => x.source.roles.legend)[0];
                         objectEnumeration.push({
                             objectName: objectName,
                             displayName: String(value.value),
                             properties: {
-                                legendColor: getCategoricalObjectColor(
-                                    this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0],
-                                    i,
-                                    Settings.legendSettings,
-                                    LegendSettingsNames.legendColor,
-                                    value.color
-                                ),
+                                legendColor: getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, value.color),
                             },
                             altConstantValueSelector: value.selectionId.getSelector(),
                             selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),

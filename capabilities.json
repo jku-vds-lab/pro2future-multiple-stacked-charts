@@ -4,7 +4,7 @@
         {
             "displayName": "Axis",
             "name": "x_axis",
-            "kind": "GroupingOrMeasure",
+            "kind": "Grouping",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -17,7 +17,7 @@
         {
             "displayName": "Values",
             "name": "y_axis",
-            "kind": "GroupingOrMeasure",
+            "kind": "Measure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -30,7 +30,7 @@
         {
             "displayName": "Overlay Length",
             "name": "overlayX",
-            "kind": "GroupingOrMeasure",
+            "kind": "Measure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -43,7 +43,7 @@
         {
             "displayName": "Overlay Width",
             "name": "overlayY",
-            "kind": "GroupingOrMeasure",
+            "kind": "Measure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -56,7 +56,7 @@
         {
             "displayName": "Tooltips",
             "name": "tooltip",
-            "kind": "GroupingOrMeasure",
+            "kind": "Measure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -69,17 +69,17 @@
         {
             "displayName": "Legend",
             "name": "legend",
-            "kind": "GroupingOrMeasure"
+            "kind": "Measure"
         },
         {
             "displayName": "Defect Group",
             "name": "defectGroup",
-            "kind": "GroupingOrMeasure"
+            "kind": "Measure"
         },
         {
             "displayName": "Rollout",
             "name": "rollout",
-            "kind": "GroupingOrMeasure",
+            "kind": "Measure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -143,10 +143,14 @@
                             "for": {
                                 "in": "x_axis"
                             }
-                        },
+                        }
+                    ]
+                },
+                "values": {
+                    "select": [
                         {
-                            "for": {
-                                "in": "y_axis"
+                            "bind": {
+                                "to": "y_axis"
                             }
                         },
                         {
@@ -179,16 +183,12 @@
                                 "in": "rollout"
                             }
                         }
-                    ],
-                    "dataReductionAlgorithm": {
-                        "top": {
-                            "count": 20000
-                        }
-                    }
+                    ]
                 }
             }
         }
     ],
+    "supportsHighlight": true,
     "objects": {
         "axisSettings": {
             "displayName": "Axis Settings",
