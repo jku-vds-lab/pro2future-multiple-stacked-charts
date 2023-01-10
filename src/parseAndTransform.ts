@@ -229,7 +229,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 const yId = value.source['rolesIndex']['y_axis'][0];
                 const yColumnObjects = getMetadataColumn(metadataColumns, value.source.index).objects;
                 const useHighlights = getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false);
-                if (value.source.displayName === 'Average of DEF_OS') debugger;
                 const yAxis: YAxisData = {
                     name: value.source.displayName,
                     values: <number[]>(useHighlights && value.highlights ? value.highlights : value.values),
@@ -296,11 +295,13 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     //     //xData.values.filter((x,i)=>xData.values.findIndex(y=>y===x)!==i)
     // }
 
+    // console.log(categorical.values ? categorical.values.filter((x) => x.source.displayName === 'Average of SEGMENT_LENGTH') : 'no values');
+
     const legendColors = ArrayConstants.legendColors;
     if (legendData != null) {
-        const categories = categorical.categories.filter((x) => x.source.roles.legend);
+        const categories = categorical.categories ? categorical.categories.filter((x) => x.source.roles.legend) : [];
         const category = categories.length > 0 ? categories[0] : null;
-        const values = categorical.values.filter((x) => x.source.roles.legend);
+        const values = categorical.values ? categorical.values.filter((x) => x.source.roles.legend) : [];
         const value = values.length > 0 ? values[0] : null;
         const legendSet = new Set(legendData.values);
         const defaultLegendName = category ? category.source.displayName : 'Error Legend';
@@ -632,7 +633,6 @@ function createOverlayInformation(overlayLength: number[], overlayWidth: number[
     if (overlayLength.length == overlayWidth.length && overlayWidth.length > 0) {
         let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(overlayLength.length);
         const xAxisSettings = viewModel.generalPlotSettings.xAxisSettings;
-        debugger;
         for (let i = 0; i < overlayLength.length; i++) {
             overlayRectangles[i] = {
                 width: overlayWidth[i],

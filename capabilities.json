@@ -4,7 +4,7 @@
         {
             "displayName": "Axis",
             "name": "x_axis",
-            "kind": "Grouping",
+            "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -17,7 +17,7 @@
         {
             "displayName": "Values",
             "name": "y_axis",
-            "kind": "Measure",
+            "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -30,7 +30,7 @@
         {
             "displayName": "Overlay Length",
             "name": "overlayX",
-            "kind": "Measure",
+            "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -43,7 +43,7 @@
         {
             "displayName": "Overlay Width",
             "name": "overlayY",
-            "kind": "Measure",
+            "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -56,7 +56,7 @@
         {
             "displayName": "Tooltips",
             "name": "tooltip",
-            "kind": "Measure",
+            "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -69,17 +69,17 @@
         {
             "displayName": "Legend",
             "name": "legend",
-            "kind": "Measure"
+            "kind": "GroupingOrMeasure"
         },
         {
             "displayName": "Defect Group",
             "name": "defectGroup",
-            "kind": "Measure"
+            "kind": "GroupingOrMeasure"
         },
         {
             "displayName": "Rollout",
             "name": "rollout",
-            "kind": "Measure",
+            "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
                     "numeric": true
@@ -88,6 +88,11 @@
                     "integer": true
                 }
             ]
+        },
+        {
+            "displayName": "Grouping",
+            "name": "grouping",
+            "kind": "Grouping"
         }
     ],
     "sorting": {
@@ -133,6 +138,9 @@
                     },
                     "filterLegend": {
                         "max": 1
+                    },
+                    "grouping": {
+                        "max": 1
                     }
                 }
             ],
@@ -143,14 +151,64 @@
                             "for": {
                                 "in": "x_axis"
                             }
+                        },
+                        {
+                            "for": {
+                                "in": "y_axis"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "overlayX"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "overlayY"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "tooltip"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "legend"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "defectGroup"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "rollout"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "grouping"
+                            }
                         }
-                    ]
+                    ],
+                    "dataReductionAlgorithm": {
+                        "top": {
+                            "count": 30000
+                        }
+                    }
                 },
                 "values": {
                     "select": [
                         {
-                            "bind": {
-                                "to": "y_axis"
+                            "for": {
+                                "in": "x_axis"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "y_axis"
                             }
                         },
                         {
