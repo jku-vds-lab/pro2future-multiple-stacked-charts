@@ -25,7 +25,6 @@ export function getValue<T>(objects: DataViewObjects, objectName: string, proper
             }
         }
     }
-
     return defaultValue;
 }
 

@@ -1306,59 +1306,59 @@ export class Visual implements IVisual {
                         selector: null,
                     });
                     //TODO: add settings for filter legend like this
-                    for (let i = 0; i < this.viewModel.defectLegend.legendValues.length; i++) {
-                        const value = this.viewModel.defectLegend.legendValues[i];
-                        const column = this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
-                            ? this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
-                            : this.dataview.categorical.values.filter((x) => x.source.roles.legend)[0];
-                        objectEnumeration.push({
-                            objectName: objectName,
-                            displayName: String(value.value),
-                            properties: {
-                                legendColor: getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, value.color),
-                            },
-                            altConstantValueSelector: value.selectionId.getSelector(),
-                            selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
-                        });
-                    }
+                    // for (let i = 0; i < this.viewModel.defectLegend.legendValues.length; i++) {
+                    //     const value = this.viewModel.defectLegend.legendValues[i];
+                    //     const column = this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
+                    //         ? this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
+                    //         : this.dataview.categorical.values.filter((x) => x.source.roles.legend)[0];
+                    //     objectEnumeration.push({
+                    //         objectName: objectName,
+                    //         displayName: String(value.value),
+                    //         properties: {
+                    //             legendColor: getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, value.color),
+                    //         },
+                    //         altConstantValueSelector: value.selectionId.getSelector(),
+                    //         selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
+                    //     });
+                    // }
                     break;
                 //TODO: fix settings or remove
                 case Settings.rolloutSettings:
-                    if (!this.viewModel.rolloutRectangles) break;
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            legendTitle: <string>(
-                                getValue(
-                                    objects,
-                                    Settings.rolloutSettings,
-                                    RolloutSettingsNames.legendTitle,
-                                    this.viewModel.rolloutRectangles ? this.viewModel.rolloutRectangles.name : 'Rollout Legend'
-                                )
-                            ),
-                        },
-                        selector: null,
-                    });
+                    // if (!this.viewModel.rolloutRectangles) break;
+                    // objectEnumeration.push({
+                    //     objectName: objectName,
+                    //     properties: {
+                    //         legendTitle: <string>(
+                    //             getValue(
+                    //                 objects,
+                    //                 Settings.rolloutSettings,
+                    //                 RolloutSettingsNames.legendTitle,
+                    //                 this.viewModel.rolloutRectangles ? this.viewModel.rolloutRectangles.name : 'Rollout Legend'
+                    //             )
+                    //         ),
+                    //     },
+                    //     selector: null,
+                    // });
 
-                    for (let i = 0; i < this.viewModel.rolloutRectangles.legendValues.length; i++) {
-                        const value = this.viewModel.rolloutRectangles.legendValues[i];
-                        // const column = this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
-                        //     ? this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
-                        //     : this.dataview.categorical.values.filter((x) => x.source.roles.rollout)[0];
+                    // for (let i = 0; i < this.viewModel.rolloutRectangles.legendValues.length; i++) {
+                    //     const value = this.viewModel.rolloutRectangles.legendValues[i];
+                    //     // const column = this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+                    //     //     ? this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+                    //     //     : this.dataview.categorical.values.filter((x) => x.source.roles.rollout)[0];
 
-                        objectEnumeration.push({
-                            objectName: objectName,
-                            displayName: String(value.value),
-                            properties: {
-                                legendColor: value.color, //getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]),
-                            },
-                            propertyInstanceKind: {
-                                fill: VisualEnumerationInstanceKinds.ConstantOrRule,
-                            },
-                            altConstantValueSelector: value.selectionId.getSelector(),
-                            selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
-                        });
-                    }
+                    //     objectEnumeration.push({
+                    //         objectName: objectName,
+                    //         displayName: String(value.value),
+                    //         properties: {
+                    //             legendColor: value.color, //getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]),
+                    //         },
+                    //         propertyInstanceKind: {
+                    //             fill: VisualEnumerationInstanceKinds.ConstantOrRule,
+                    //         },
+                    //         altConstantValueSelector: value.selectionId.getSelector(),
+                    //         selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
+                    //     });
+                    // }
 
                     break;
 
@@ -1399,7 +1399,7 @@ export class Visual implements IVisual {
                             };
                             properties = {
                                 plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                                fill: getPlotFillColor(columnObjects, colorPalette, '#000000'),
+                                fill: getPlotFillColor(columnObjects, colorPalette, ArrayConstants.colorArray[yIndex]),
                                 useLegendColor: getValue<boolean>(columnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
                                 showHeatmap: <boolean>getValue(columnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
                             };

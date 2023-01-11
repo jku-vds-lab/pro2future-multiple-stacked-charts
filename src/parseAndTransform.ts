@@ -393,7 +393,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
     const formatSettings: FormatSettings[] = [];
     const plotTitles: string[] = [];
-    const plotSettings: PlotSettings[] = [];
+    const plotSettingsArray: PlotSettings[] = [];
 
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
         const yAxis: YAxisData = yData[plotNr];
@@ -420,10 +420,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 yAxis: yAxisInformation,
             },
         });
-
-        plotSettings.push({
+        plotSettingsArray.push({
             plotSettings: {
-                fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
+                fill: getPlotFillColor(yColumnObjects, colorPalette, ArrayConstants.colorArray[plotNr]),
                 plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
                 useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
                 showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
@@ -432,7 +431,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
     const plotTitlesCount = plotTitles.filter((x) => x.length > 0).length;
     const xLabelsCount = formatSettings.filter((x) => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
-    const heatmapCount = plotSettings.filter((x) => x.plotSettings.showHeatmap).length;
+    const heatmapCount = plotSettingsArray.filter((x) => x.plotSettings.showHeatmap).length;
     let viewModel: ViewModel;
     const viewModelResult = createViewModel(
         options,
@@ -472,14 +471,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         dataPoints = [];
         const yColumnId = yData[plotNr].columnId;
         const yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
-        const plotSettings: PlotSettings = {
-            plotSettings: {
-                fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
-                plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
-                showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
-            },
-        };
+        const plotSettings = plotSettingsArray[plotNr];
+        // : PlotSettings = {
+        //     plotSettings: {
+        //         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
+        //         plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+        //         useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
+        //         showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
+        //     },
+        // };
         //create datapoints
         for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();

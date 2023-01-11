@@ -2,7 +2,7 @@ import { Primitive } from 'd3-array';
 import { BaseType } from 'd3-selection';
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
-import { ArrayConstants, RolloutSettingsNames, Settings } from './constants';
+import { ArrayConstants } from './constants';
 import { ParseAndTransformError } from './errors';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
@@ -113,8 +113,8 @@ export class RolloutRectangles {
                 // .withMeasure('' + val)
                 .withCategory(category, settingsFiltered ? settingsFiltered.i : rollout.findIndex((x) => x === val))
                 .createSelectionId();
-            const color = settingsFiltered ? settingsFiltered.settings[Settings.rolloutSettings][RolloutSettingsNames.legendColor].solid.color : ArrayConstants.rolloutColors[i];
-
+            //const color = settingsFiltered ? settingsFiltered.settings[Settings.rolloutSettings][RolloutSettingsNames.legendColor].solid.color : ArrayConstants.rolloutColors[i];
+            const color = ArrayConstants.rolloutColors[<string>val] ? ArrayConstants.rolloutColors[<string>val] : ArrayConstants.colorArray[i];
             //getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]);
 
             this.legendValues.push({ value: val, color: color, selectionId: selectionId });
