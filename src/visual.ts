@@ -40,6 +40,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
+import VisualEnumerationInstanceKinds = powerbi.VisualEnumerationInstanceKinds;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
@@ -1279,6 +1280,7 @@ export class Visual implements IVisual {
                         selector: null,
                     });
                     break;
+                //TODO: fix settings or remove
                 case Settings.legendSettings:
                     if (!this.viewModel.defectLegend) break;
                     objectEnumeration.push({
@@ -1320,6 +1322,7 @@ export class Visual implements IVisual {
                         });
                     }
                     break;
+                //TODO: fix settings or remove
                 case Settings.rolloutSettings:
                     if (!this.viewModel.rolloutRectangles) break;
                     objectEnumeration.push({
@@ -1336,17 +1339,21 @@ export class Visual implements IVisual {
                         },
                         selector: null,
                     });
-                    //TODO: fix settings bug
+
                     for (let i = 0; i < this.viewModel.rolloutRectangles.legendValues.length; i++) {
                         const value = this.viewModel.rolloutRectangles.legendValues[i];
-                        const column = this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
-                            ? this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
-                            : this.dataview.categorical.values.filter((x) => x.source.roles.rollout)[0];
+                        // const column = this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+                        //     ? this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+                        //     : this.dataview.categorical.values.filter((x) => x.source.roles.rollout)[0];
+
                         objectEnumeration.push({
                             objectName: objectName,
                             displayName: String(value.value),
                             properties: {
-                                legendColor: getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]),
+                                legendColor: value.color, //getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]),
+                            },
+                            propertyInstanceKind: {
+                                fill: VisualEnumerationInstanceKinds.ConstantOrRule,
                             },
                             altConstantValueSelector: value.selectionId.getSelector(),
                             selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),

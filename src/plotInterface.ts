@@ -4,7 +4,6 @@ import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
 import { ArrayConstants, RolloutSettingsNames, Settings } from './constants';
 import { ParseAndTransformError } from './errors';
-import { getCategoricalObjectColor } from './objectEnumerationUtility';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
@@ -95,17 +94,30 @@ export class RolloutRectangles {
             ? dataView.categorical.categories.filter((x) => x.source.roles.rollout)[0]
             : dataView.categorical.values.filter((x) => x.source.roles.rollout)[0];
         const uniqueValues = Array.from(new Set(rollout)).sort().reverse();
+        let settings = null;
+        if (column && column.objects) {
+            settings = column.objects
+                .map((x, i) => {
+                    return { settings: x, i: i };
+                })
+                .filter((x) => x.settings)
+                .map((x) => {
+                    return { val: column.values[x.i], settings: x.settings, i: x.i };
+                });
+        }
         for (let i = 0; i < uniqueValues.length; i++) {
             const val = uniqueValues[i];
+            const settingsFiltered = settings && settings.filter((x) => x.val === val).length > 0 ? settings.filter((x) => x.val === val)[0] : null;
             const selectionId = host
                 .createSelectionIdBuilder()
-                .withCategory(
-                    category,
-                    rollout.findIndex((x) => x === val)
-                )
+                // .withMeasure('' + val)
+                .withCategory(category, settingsFiltered ? settingsFiltered.i : rollout.findIndex((x) => x === val))
                 .createSelectionId();
-            const color = getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]);
-            this.legendValues.push({ value: val, color: ArrayConstants.rolloutColors[i], selectionId: selectionId });
+            const color = settingsFiltered ? settingsFiltered.settings[Settings.rolloutSettings][RolloutSettingsNames.legendColor].solid.color : ArrayConstants.rolloutColors[i];
+
+            //getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]);
+
+            this.legendValues.push({ value: val, color: color, selectionId: selectionId });
         }
 
         let rect = <RolloutRectangle>{

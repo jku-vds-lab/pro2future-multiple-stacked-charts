@@ -81,7 +81,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const categorical = dataViews[0].categorical;
     const metadataColumns = dataViews[0].metadata.columns;
     const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
-
     //count numbers of x-axis, y-axis and tooltipdata
     const yCategoriesCount =
         categorical.categories === undefined
