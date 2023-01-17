@@ -27,6 +27,8 @@ import {
     RolloutRectangles,
     XAxisSettings,
     LegendDataPoint,
+    Legends,
+    LegendValue,
 } from './plotInterface';
 import { Primitive, scaleLinear } from 'd3';
 import {
@@ -44,6 +46,7 @@ import {
     HeatmapSettingsNames,
     ArrayConstants,
     XAxisBreakSettingsNames,
+    FilterType,
 } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { ok, err, Result } from 'neverthrow';
@@ -141,7 +144,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const yData = new Array<YAxisData>(yCount);
     const tooltipData = new Array<TooltipColumnData>(tooltipCount);
     let legendData: LegendData = null;
-    let defectGroupLegendData: LegendData = null;
+    const filterLegendData: LegendData[] = [];
     // let defectIndices: DefectIndices = new DefectIndices();
 
     let xDataPoints: number[] = [];
@@ -149,10 +152,12 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let dataPoints: DataPoint[] = [];
     let overlayWidth: number[] = [];
     let overlayLength: number[] = [];
-    let defectLegend: Legend = null;
-    let defectGroupLegend: Legend = null;
+    // let defectLegend: Legend = null;
+    // let defectGroupLegend: Legend = null;
+    const legends = new Legends();
     let rolloutRectangles: Primitive[];
     let rolloutName: string;
+    const legendFilter: number[][] = [];
 
     //aquire all categorical values
     if (categorical.categories !== undefined) {
@@ -193,17 +198,27 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             if (roles.legend) {
                 legendData = {
                     name: category.source.displayName,
-                    values: <string[]>category.values,
-                    columnId: category.source.index,
+                    values: category.values,
+                    metaDataColumn: category.source,
+                    type: FilterType.stringFilter,
                 };
+            }
+            if (roles.legendFilter) {
+                if (category.source.type.numeric) {
+                    legendFilter.push(<number[]>category.values);
+                }
             }
 
             if (roles.defectGroup) {
-                defectGroupLegendData = {
-                    name: category.source.displayName,
-                    values: <string[]>category.values,
-                    columnId: category.source.index,
-                };
+                if (category.source.type.text || category.source.type.numeric) {
+                    const type = category.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
+                    filterLegendData.push({
+                        name: category.source.displayName,
+                        values: category.values,
+                        metaDataColumn: category.source,
+                        type,
+                    });
+                }
             }
             // if (roles.defectIndices) {
             //     defectIndices.defectIndices.set(category.source.displayName, <number[]>category.values)
@@ -256,15 +271,25 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 legendData = {
                     name: value.source.displayName,
                     values: <string[]>value.values,
-                    columnId: value.source.index,
+                    metaDataColumn: value.source,
+                    type: FilterType.stringFilter,
                 };
             }
+            if (roles.legendFilter) {
+                if (value.source.type.numeric) {
+                    legendFilter.push(<number[]>value.values);
+                }
+            }
             if (roles.defectGroup) {
-                defectGroupLegendData = {
-                    name: value.source.displayName,
-                    values: <string[]>value.values,
-                    columnId: value.source.index,
-                };
+                if (value.source.type.text || value.source.type.numeric) {
+                    const type = value.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
+                    filterLegendData.push({
+                        name: value.source.displayName,
+                        values: value.values,
+                        metaDataColumn: value.source,
+                        type,
+                    });
+                }
             }
             // if (roles.defectIndices) {
             //     defectIndices.defectIndices.set(value.source.displayName, <number[]>value.values);
@@ -309,33 +334,36 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             legendSet.delete(null);
         }
         const legendValues = Array.from(legendSet);
-        defectLegend = {
-            legendDataPoints: [],
+        const defectLegend = <Legend>{
+            legendDataPoints: legendData.values
+                .map(
+                    (val, i) =>
+                        <LegendDataPoint>{
+                            yValue: val,
+                            i,
+                        }
+                )
+                .filter((x) => x.yValue !== null),
             legendValues: [],
             legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.defectLegendTitle, defaultLegendName),
             legendXEndPosition: 0,
             legendXPosition: MarginSettings.margins.left,
+            type: FilterType.defectFilter,
+            selectedValues: new Set(legendValues.concat(Object.keys(ArrayConstants.legendColors))),
         };
         for (let i = 0; i < legendValues.length; i++) {
-            const val = legendValues[i];
+            const val = legendValues[i] + '';
             const defaultColor = legendColors[val] ? legendColors[val] : 'FFFFFF';
-            const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
+            // const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
             const column = category ? category : value;
             defectLegend.legendValues.push({
                 color: getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
-                selectionId: selectionId,
+                // selectionId: selectionId,
                 value: val,
             });
         }
-        defectLegend.legendDataPoints = legendData.values
-            .map(
-                (val, i) =>
-                    <LegendDataPoint>{
-                        yValue: val,
-                        i,
-                    }
-            )
-            .filter((x) => x.yValue !== null);
+        legends.legends.push(defectLegend);
+
         // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
         //     legend.legendDataPoints.push({
         //         xValue: xData.values[i],
@@ -344,51 +372,63 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         // }
     }
-    if (defectGroupLegendData != null) {
-        const categories = categorical.categories.filter((x) => x.source.roles.defectGroup);
-        const category = categories.length > 0 ? categories[0] : null;
-        const legendSet = new Set(defectGroupLegendData.values);
-        const defaultLegendName = category ? category.source.displayName : 'Control Legend';
+    if (filterLegendData.length > 0) {
+        for (let i = 0; i < filterLegendData.length; i++) {
+            const data = filterLegendData[i];
 
-        if (legendSet.has(null)) {
-            legendSet.delete(null);
-        }
-        const legendValues = Array.from(legendSet);
-        defectGroupLegend = {
-            legendDataPoints: [],
-            legendValues: [],
-            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.defectGroupLegendTitle, defaultLegendName),
-            legendXEndPosition: 0,
-            legendXPosition: MarginSettings.margins.left,
-        };
-        for (let i = 0; i < legendValues.length; i++) {
-            const val = legendValues[i];
-            const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
+            // const columns = categorical.categories.filter((x) => x.source.roles.defectGroup).concat(categorical.categories.filter((x) => x.source.roles.defectGroup));
+            // const column = columns.length > 0 ? columns[0] : null;
+            const legendSet = new Set(data.values);
+            const defaultLegendName = data.metaDataColumn.displayName;
 
-            defectGroupLegend.legendValues.push({
-                color: 'white',
-                selectionId: selectionId,
-                value: val,
+            if (legendSet.has(null)) {
+                legendSet.delete(null);
+            }
+            const legendValues = Array.from(legendSet);
+
+            legends.legends.push(<Legend>{
+                legendDataPoints: data.values
+                    .map(
+                        (val, i) =>
+                            <LegendDataPoint>{
+                                yValue: val,
+                                i: i,
+                            }
+                    )
+                    .filter((x) => x.yValue !== null),
+                legendValues: legendValues.map((val) => {
+                    return <LegendValue>{
+                        color: 'white',
+                        // selectionId: selectionId,
+                        value: val,
+                    };
+                }),
+                //TODO: add settings for each one
+                legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.defectGroupLegendTitle, defaultLegendName),
+                legendXEndPosition: 0,
+                legendXPosition: MarginSettings.margins.left,
+                type: data.type,
+                selectedValues: legendSet,
             });
+            // for (let j = 0; j < legendValues.length; j++) {
+            //     const val = legendValues[j];
+            //     //const selectionId = column ? host.createSelectionIdBuilder().withCategory(column, j).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
+
+            //     defectGroupLegend.legendValues.push({
+            //         color: 'white',
+            //         // selectionId: selectionId,
+            //         value: val,
+            //     });
+            // }
+
+            // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
+            //     legend.legendDataPoints.push({
+            //         xValue: xData.values[i],
+            //         yValue: legendData.values[i]
+            //     });
+
+            // }
         }
-
-        defectGroupLegend.legendDataPoints = defectGroupLegendData.values
-            .map(
-                (val, i) =>
-                    <LegendDataPoint>{
-                        yValue: val,
-                        i: i,
-                    }
-            )
-            .filter((x) => x.yValue !== null);
-
-        // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
-        //     legend.legendDataPoints.push({
-        //         xValue: xData.values[i],
-        //         yValue: legendData.values[i]
-        //     });
-
-        // }
     }
 
     const formatSettings: FormatSettings[] = [];
@@ -441,8 +481,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         plotTitlesCount,
         xLabelsCount,
         heatmapCount,
-        defectLegend,
-        defectGroupLegend,
+        legends,
         xData,
         indexMap,
         axisBreak,
@@ -485,10 +524,14 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
             let color = plotSettings.plotSettings.fill;
             const xVal = xDataPoints[pointNr];
+            let filterValues = [];
             if (plotSettings.plotSettings.useLegendColor) {
-                if (defectLegend != null) {
+                const filtered = legends.legends.filter((x) => x.type === FilterType.defectFilter);
+                if (filtered.length === 1) {
+                    const defectLegend = filtered[0];
                     const legendVal = defectLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
                     color = legendVal === undefined ? color : defectLegend.legendValues.find((x) => x.value === legendVal).color;
+                    filterValues = legendFilter.map((a) => a[pointNr]);
                 } else {
                     viewModel.errors.push(new PlotLegendError(yAxis.name));
                 }
@@ -502,6 +545,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 selected: false,
                 color: color,
                 pointNr: pointNr,
+                filterValues: filterValues,
                 selectionId: host.createSelectionIdBuilder().withCategory(categorical.categories[0], pointNr).createSelectionId(),
             };
 
@@ -661,8 +705,7 @@ function createViewModel(
     plotTitlesCount: number,
     xLabelsCount: number,
     heatmapCount: number,
-    defectLegend: Legend,
-    defectGroupLegend: Legend,
+    legends: Legends,
     xData: XAxisData,
     indexMap: Map<number, number>,
     axisBreak: boolean,
@@ -671,7 +714,7 @@ function createViewModel(
     const margins = MarginSettings;
     let svgHeight: number = options.viewport.height - margins.scrollbarSpace;
     let svgWidth: number = options.viewport.width - margins.scrollbarSpace;
-    const legendHeight = defectLegend ? margins.legendHeight : 0;
+    const legendHeight = legends.legends.length > 0 ? margins.legendHeight : 0;
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
     }
@@ -751,8 +794,7 @@ function createViewModel(
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,
-        defectLegend: defectLegend,
-        defectGroupLegend: defectGroupLegend,
+        legends: legends,
         errors: [],
     };
     return ok(viewModel);

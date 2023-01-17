@@ -40,12 +40,11 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
-import VisualEnumerationInstanceKinds = powerbi.VisualEnumerationInstanceKinds;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
-import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
+import { getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import {
     TooltipInterface,
     ViewModel,
@@ -85,7 +84,7 @@ import {
     ArrayConstants,
     HeatmapSettingsNames,
     XAxisBreakSettingsNames,
-    RolloutSettingsNames,
+    FilterType,
 } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import {
@@ -102,7 +101,6 @@ import {
     PlotError,
     OverlayInformationError,
 } from './errors';
-import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 
 export class Visual implements IVisual {
@@ -133,7 +131,9 @@ export class Visual implements IVisual {
         const yPosition = margins.legendYPostion + 10;
         const legendData = legend.legendValues;
         const legendTitle = legend.legendTitle;
-        const legendSelection = this.legendSelection;
+        const legendSelection = legend.selectedValues;
+        const className = Constants.defectLegendClass + legend.legendXPosition;
+        debugger;
         const legendDeselected = this.legendDeselected;
         const widths = [];
         let width = legend.legendXPosition;
@@ -197,6 +197,7 @@ export class Visual implements IVisual {
                 e.stopImmediatePropagation();
                 const def = d.value.toString();
                 const selection = this.svg.selectAll('.' + Constants.defectLegendClass + '.' + def);
+                debugger;
                 if (legendSelection.has(def)) {
                     legendSelection.delete(def);
                     legendDeselected.add(def);
@@ -229,6 +230,7 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         try {
             this.dataview = options.dataViews[0];
+            console.log(this.dataview.categorical.categories[0].values.length);
             //findings: empty data is ignored on grouping => need grouping column as grouping and measure?
             // const xData = this.dataview.categorical.categories.filter((x) => x.source.displayName === 'Segment')[0].values;
             // // const insp = this.dataview.categorical.categories.filter((x) => x.source.displayName === 'INSP_ZUSTAND')[0].values;
@@ -263,20 +265,31 @@ export class Visual implements IVisual {
                         return;
                     }
                     this.drawPlots();
-                    if (this.viewModel.defectLegend != null) {
-                        this.viewModel.defectLegend.legendValues.map((val) => {
-                            if (!this.legendDeselected.has(val.value) && !this.legendSelection.has(<string>val.value)) {
-                                this.legendSelection.add(val.value.toString());
-                            }
-                        });
-                        this.drawLegend(this.viewModel.defectLegend);
-                        if (this.viewModel.defectGroupLegend != null) {
-                            this.viewModel.defectGroupLegend.legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+                    const legends = this.viewModel.legends;
+                    // if (this.viewModel.legends != null) {
+                    //     this.viewModel.defectLegend.legendValues.map((val) => {
+                    //         if (!this.legendDeselected.has(val.value) && !this.legendSelection.has(<string>val.value)) {
+                    //             this.legendSelection.add(val.value.toString());
+                    //         }
+                    //     });
+                    //     this.drawLegend(this.viewModel.defectLegend);
+                    //     // if (this.viewModel.defectGroupLegend != null) {
+                    //     //     this.viewModel.defectGroupLegend.legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+                    //     // }
+                    // }
+                    if (this.viewModel.legends && legends.legends.length > 0) {
+                        // if (this.viewModel.defectLegend) {
+                        //     legends.legends[0].legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+                        // }
+                        for (let i = 0; i < legends.legends.length; i++) {
+                            const l = legends.legends[i];
+                            this.drawLegend(l);
+                            if (i < legends.legends.length - 1) legends.legends[i + 1].legendXPosition = l.legendXEndPosition;
                         }
                     }
-                    if (this.viewModel.defectGroupLegend != null) {
-                        this.drawLegend(this.viewModel.defectGroupLegend);
-                    }
+                    // if (this.viewModel.defectGroupLegend != null) {
+                    //     this.drawLegend(this.viewModel.defectGroupLegend);
+                    // }
                     if (this.viewModel.rolloutRectangles) {
                         this.drawRolloutRectangles();
                         this.drawRolloutLegend();
@@ -390,9 +403,10 @@ export class Visual implements IVisual {
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion + 10;
         const rolloutRectangles = this.viewModel.rolloutRectangles;
-        let width = this.viewModel.defectLegend ? this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
-        if (this.viewModel.defectGroupLegend) {
-            width = this.viewModel.defectGroupLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+        const legendCount = this.viewModel.legends.legends.length;
+        let width = legendCount > 0 ? this.viewModel.legends.legends[legendCount - 1].legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
+        if (this.viewModel.legends.legends.length > 0) {
+            width = this.viewModel.legends.legends[this.viewModel.legends.legends.length - 1].legendXEndPosition + MarginSettings.legendSeparationMargin;
         }
         const widths = [];
 
@@ -803,16 +817,14 @@ export class Visual implements IVisual {
 
             if (plotModel.plotSettings.plotSettings.useLegendColor) {
                 dataPoints = dataPoints.filter((x) => {
-                    let draw = true;
-                    if (this.viewModel.defectLegend != null) {
-                        const val = this.viewModel.defectLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
-                        if (val) draw = draw && this.legendSelection.has(val);
-                    }
-                    if (this.viewModel.defectGroupLegend != null) {
-                        const val = this.viewModel.defectGroupLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
-                        if (val) draw = draw && this.legendSelection.has(val);
-                    }
-                    return draw;
+                    // let draw = true;
+                    // if (this.viewModel.defectLegend != null) {
+                    //     const val = this.viewModel.defectLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
+                    //     if (val) draw = draw && this.legendSelection.has(val);
+                    // }
+                    // draw = draw && this.viewModel.legends.drawDataPoint(x.pointNr);
+
+                    return this.viewModel.legends.drawDataPoint(x.pointNr);
                 });
                 dotSize = 3;
             }
@@ -1282,7 +1294,7 @@ export class Visual implements IVisual {
                     break;
                 //TODO: fix settings or remove
                 case Settings.legendSettings:
-                    if (!this.viewModel.defectLegend) break;
+                    if (this.viewModel.legends.legends.filter((x) => x.type === FilterType.defectFilter).length === 0) break;
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
@@ -1291,16 +1303,15 @@ export class Visual implements IVisual {
                                     objects,
                                     Settings.legendSettings,
                                     LegendSettingsNames.defectLegendTitle,
-                                    this.viewModel.defectLegend ? this.viewModel.defectLegend.legendTitle : 'Error Legend'
+                                    this.viewModel.legends.legends.filter((x) => x.type === FilterType.defectFilter)[0].legendTitle
                                 )
                             ),
-                            controlLegendTitle: <string>(
-                                getValue(
-                                    objects,
-                                    Settings.legendSettings,
-                                    LegendSettingsNames.defectGroupLegendTitle,
-                                    this.viewModel.defectGroupLegend ? this.viewModel.defectGroupLegend.legendTitle : 'Control Legend'
-                                )
+                            controlLegendTitle: <string>getValue(
+                                objects,
+                                Settings.legendSettings,
+                                LegendSettingsNames.defectGroupLegendTitle,
+                                //TODO: adapt for multiple columns
+                                this.viewModel.legends.legends.length > 0 ? this.viewModel.legends.legends[0].legendTitle : 'Control Legend'
                             ),
                         },
                         selector: null,

@@ -72,6 +72,19 @@
             "kind": "GroupingOrMeasure"
         },
         {
+            "displayName": "Legend Filter",
+            "name": "legendFilter",
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
+        },
+        {
             "displayName": "Defect Group",
             "name": "defectGroup",
             "kind": "GroupingOrMeasure"
@@ -179,6 +192,11 @@
                         },
                         {
                             "for": {
+                                "in": "legendFilter"
+                            }
+                        },
+                        {
+                            "for": {
                                 "in": "defectGroup"
                             }
                         },
@@ -229,6 +247,11 @@
                         {
                             "for": {
                                 "in": "legend"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "legendFilter"
                             }
                         },
                         {

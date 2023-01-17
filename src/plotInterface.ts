@@ -2,7 +2,7 @@ import { Primitive } from 'd3-array';
 import { BaseType } from 'd3-selection';
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
-import { ArrayConstants } from './constants';
+import { ArrayConstants, FilterType } from './constants';
 import { ParseAndTransformError } from './errors';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
@@ -19,8 +19,9 @@ export interface ViewModel {
     generalPlotSettings: GeneralPlotSettings;
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
-    defectLegend?: Legend;
-    defectGroupLegend?: Legend;
+    // defectLegend?: Legend;
+    // defectGroupLegend?: Legend;
+    legends: Legends;
     heatmapSettings: HeatmapSettings;
     // defectIndices: DefectIndices;
     rolloutRectangles: RolloutRectangles;
@@ -107,17 +108,17 @@ export class RolloutRectangles {
         }
         for (let i = 0; i < uniqueValues.length; i++) {
             const val = uniqueValues[i];
-            const settingsFiltered = settings && settings.filter((x) => x.val === val).length > 0 ? settings.filter((x) => x.val === val)[0] : null;
-            const selectionId = host
-                .createSelectionIdBuilder()
-                // .withMeasure('' + val)
-                .withCategory(category, settingsFiltered ? settingsFiltered.i : rollout.findIndex((x) => x === val))
-                .createSelectionId();
+            // const settingsFiltered = settings && settings.filter((x) => x.val === val).length > 0 ? settings.filter((x) => x.val === val)[0] : null;
+            // const selectionId = host
+            //     .createSelectionIdBuilder()
+            //     // .withMeasure('' + val)
+            //     .withCategory(category, settingsFiltered ? settingsFiltered.i : rollout.findIndex((x) => x === val))
+            //     .createSelectionId();
             //const color = settingsFiltered ? settingsFiltered.settings[Settings.rolloutSettings][RolloutSettingsNames.legendColor].solid.color : ArrayConstants.rolloutColors[i];
             const color = ArrayConstants.rolloutColors[<string>val] ? ArrayConstants.rolloutColors[<string>val] : ArrayConstants.colorArray[i];
             //getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]);
 
-            this.legendValues.push({ value: val, color: color, selectionId: selectionId });
+            this.legendValues.push({ value: val, color: color });
         }
 
         let rect = <RolloutRectangle>{
@@ -281,7 +282,7 @@ export interface LegendDataPoint {
 export interface LegendValue {
     color?: string;
     value: PrimitiveValue;
-    selectionId: ISelectionId;
+    // selectionId: ISelectionId;
 }
 
 export interface Legend {
@@ -290,6 +291,8 @@ export interface Legend {
     legendTitle: string;
     legendXEndPosition: number;
     legendXPosition: number;
+    type: FilterType;
+    selectedValues: Set<Primitive>;
 }
 
 export interface DataPoint extends SelectableDataPoint {
@@ -299,6 +302,7 @@ export interface DataPoint extends SelectableDataPoint {
     highlight?: boolean;
     opacity?: number;
     pointNr: number;
+    filterValues: number[];
     selectionId: ISelectionId;
 }
 
@@ -341,6 +345,32 @@ export interface OverlayPlotSettings {
     };
 }
 
+export class Legends {
+    legends: Legend[];
+
+    type: FilterType;
+    values: Primitive[];
+    name: string;
+    uniqueValues: Primitive[];
+
+    constructor() {
+        this.legends = [];
+        //type: FilterType, values: Primitive[], name: string
+        // this.type = type;
+        // this.values = values;
+        // this.name = name;
+        // this.uniqueValues = Array.from(new Set(values));
+    }
+    drawDataPoint(i: number): boolean {
+        let draw = true;
+        for (const l of this.legends) {
+            const point = l.legendDataPoints.filter((x) => x.i === i)[0];
+            draw = draw && l.selectedValues.has(point.yValue);
+        }
+        return draw;
+    }
+}
+
 // export interface Legend {
 //     text: string;
 //     transform?: string;
@@ -367,9 +397,10 @@ export interface TooltipColumnData {
 }
 
 export interface LegendData {
-    values: string[];
+    values: Primitive[];
     name?: string;
-    columnId: number;
+    type: FilterType;
+    metaDataColumn: powerbi.DataViewMetadataColumn;
 }
 export type D3Selection = d3.Selection<SVGGElement, unknown, BaseType, unknown>;
 

@@ -91,6 +91,13 @@ export enum Constants {
     axisBreakClass = 'axisBreakLines',
 }
 
+export enum FilterType {
+    booleanFilter = 'booleanFilter',
+    stringFilter = 'stringFilter',
+    numberFilter = 'numberFilter',
+    defectFilter = 'defectFilter',
+}
+
 export class ArrayConstants {
     static readonly colorSchemes = {
         sequential: ['BuGn', 'BuPu', 'GnBu', 'OrRd', 'PuBu', 'PuBuGn', 'PuRd', 'RdPu', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd'],
