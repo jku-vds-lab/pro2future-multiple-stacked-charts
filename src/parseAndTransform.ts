@@ -378,11 +378,14 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
             // const columns = categorical.categories.filter((x) => x.source.roles.defectGroup).concat(categorical.categories.filter((x) => x.source.roles.defectGroup));
             // const column = columns.length > 0 ? columns[0] : null;
-            const legendSet = new Set(data.values);
+            const legendSet = new Set(data.values.map((x) => (x !== null && x !== undefined ? x.toString() : x)));
             const defaultLegendName = data.metaDataColumn.displayName;
 
             if (legendSet.has(null)) {
                 legendSet.delete(null);
+            }
+            if ((legendSet.size === 1 && legendSet.has('0')) || legendSet.has('1') || (legendSet.size === 2 && legendSet.has('0') && legendSet.has('1'))) {
+                data.type = FilterType.booleanFilter;
             }
             const legendValues = Array.from(legendSet);
 

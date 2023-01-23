@@ -348,10 +348,10 @@ export interface OverlayPlotSettings {
 export class Legends {
     legends: Legend[];
 
-    type: FilterType;
-    values: Primitive[];
-    name: string;
-    uniqueValues: Primitive[];
+    // type: FilterType;
+    // values: Primitive[];
+    // name: string;
+    // uniqueValues: Primitive[];
 
     constructor() {
         this.legends = [];
@@ -365,7 +365,7 @@ export class Legends {
         let draw = true;
         for (const l of this.legends) {
             const point = l.legendDataPoints.filter((x) => x.i === i)[0];
-            draw = draw && l.selectedValues.has(point.yValue);
+            draw = draw && l.selectedValues.has(point.yValue.toString());
         }
         return draw;
     }
