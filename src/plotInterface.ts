@@ -91,21 +91,21 @@ export class RolloutRectangles {
         this.rolloutRectangles = [];
         this.legendValues = [];
         this.opacity = rolloutOpacity;
-        const column = dataView.categorical.categories.filter((x) => x.source.roles.rollout)[0]
-            ? dataView.categorical.categories.filter((x) => x.source.roles.rollout)[0]
-            : dataView.categorical.values.filter((x) => x.source.roles.rollout)[0];
+        // const column = dataView.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+        //     ? dataView.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+        //     : dataView.categorical.values.filter((x) => x.source.roles.rollout)[0];
         const uniqueValues = Array.from(new Set(rollout)).sort().reverse();
-        let settings = null;
-        if (column && column.objects) {
-            settings = column.objects
-                .map((x, i) => {
-                    return { settings: x, i: i };
-                })
-                .filter((x) => x.settings)
-                .map((x) => {
-                    return { val: column.values[x.i], settings: x.settings, i: x.i };
-                });
-        }
+        // let settings = null;
+        // if (column && column.objects) {
+        //     settings = column.objects
+        //         .map((x, i) => {
+        //             return { settings: x, i: i };
+        //         })
+        //         .filter((x) => x.settings)
+        //         .map((x) => {
+        //             return { val: column.values[x.i], settings: x.settings, i: x.i };
+        //         });
+        // }
         for (let i = 0; i < uniqueValues.length; i++) {
             const val = uniqueValues[i];
             // const settingsFiltered = settings && settings.filter((x) => x.val === val).length > 0 ? settings.filter((x) => x.val === val)[0] : null;
@@ -293,6 +293,7 @@ export interface Legend {
     legendXPosition: number;
     type: FilterType;
     selectedValues: Set<Primitive>;
+    metaDataColumn: powerbi.DataViewMetadataColumn;
 }
 
 export interface DataPoint extends SelectableDataPoint {

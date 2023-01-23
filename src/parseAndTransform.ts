@@ -3,7 +3,7 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
-import { getValue, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
+import { getValue, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
 import {
     ViewModel,
     DataPoint,
@@ -323,12 +323,12 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
     const legendColors = ArrayConstants.legendColors;
     if (legendData != null) {
-        const categories = categorical.categories ? categorical.categories.filter((x) => x.source.roles.legend) : [];
-        const category = categories.length > 0 ? categories[0] : null;
-        const values = categorical.values ? categorical.values.filter((x) => x.source.roles.legend) : [];
-        const value = values.length > 0 ? values[0] : null;
+        // const categories = categorical.categories ? categorical.categories.filter((x) => x.source.roles.legend) : [];
+        // const category = categories.length > 0 ? categories[0] : null;
+        // const values = categorical.values ? categorical.values.filter((x) => x.source.roles.legend) : [];
+        // const value = values.length > 0 ? values[0] : null;
         const legendSet = new Set(legendData.values);
-        const defaultLegendName = category ? category.source.displayName : 'Error Legend';
+        // const defaultLegendName = category ? category.source.displayName : 'Error Legend';
 
         if (legendSet.has(null)) {
             legendSet.delete(null);
@@ -345,19 +345,20 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 )
                 .filter((x) => x.yValue !== null),
             legendValues: [],
-            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.defectLegendTitle, defaultLegendName),
+            legendTitle: <string>getValue(legendData.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, legendData.metaDataColumn.displayName),
             legendXEndPosition: 0,
             legendXPosition: MarginSettings.margins.left,
             type: FilterType.defectFilter,
             selectedValues: new Set(legendValues.concat(Object.keys(ArrayConstants.legendColors))),
+            metaDataColumn: legendData.metaDataColumn,
         };
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i] + '';
             const defaultColor = legendColors[val] ? legendColors[val] : 'FFFFFF';
             // const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
-            const column = category ? category : value;
+            // const column = category ? category : value;
             defectLegend.legendValues.push({
-                color: getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
+                color: defaultColor, //getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
                 // selectionId: selectionId,
                 value: val,
             });
@@ -406,12 +407,12 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                         value: val,
                     };
                 }),
-                //TODO: add settings for each one
-                legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.defectGroupLegendTitle, defaultLegendName),
+                legendTitle: <string>getValue(data.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
                 legendXEndPosition: 0,
                 legendXPosition: MarginSettings.margins.left,
                 type: data.type,
                 selectedValues: legendSet,
+                metaDataColumn: data.metaDataColumn,
             });
             // for (let j = 0; j < legendValues.length; j++) {
             //     const val = legendValues[j];

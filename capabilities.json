@@ -430,8 +430,8 @@
         "legendSettings": {
             "displayName": "Legend Settings",
             "properties": {
-                "errorLegendTitle": {
-                    "displayName": "Defect Legend Title",
+                "legendTitle": {
+                    "displayName": "Legend Title",
                     "type": {
                         "text": true
                     }

@@ -1319,30 +1319,40 @@ export class Visual implements IVisual {
                         selector: null,
                     });
                     break;
-                //TODO: fix settings or remove
                 case Settings.legendSettings:
                     if (this.viewModel.legends.legends.filter((x) => x.type === FilterType.defectFilter).length === 0) break;
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            errorLegendTitle: <string>(
-                                getValue(
-                                    objects,
-                                    Settings.legendSettings,
-                                    LegendSettingsNames.defectLegendTitle,
-                                    this.viewModel.legends.legends.filter((x) => x.type === FilterType.defectFilter)[0].legendTitle
-                                )
-                            ),
-                            controlLegendTitle: <string>getValue(
-                                objects,
-                                Settings.legendSettings,
-                                LegendSettingsNames.defectGroupLegendTitle,
-                                //TODO: adapt for multiple columns
-                                this.viewModel.legends.legends.length > 0 ? this.viewModel.legends.legends[0].legendTitle : 'Control Legend'
-                            ),
-                        },
-                        selector: null,
-                    });
+                    for (const legend of this.viewModel.legends.legends) {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            displayName: 'Legend Title ' + legend.metaDataColumn.displayName,
+                            properties: {
+                                legendTitle: <string>getValue(legend.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, legend.legendTitle),
+                            },
+                            selector: { metadata: legend.metaDataColumn.queryName },
+                        });
+                    }
+
+                    // objectEnumeration.push({
+                    //     objectName: objectName,
+                    //     properties: {
+                    //         legendTitle: <string>(
+                    //             getValue(
+                    //                 objects,
+                    //                 Settings.legendSettings,
+                    //                 LegendSettingsNames.legendTitle,
+                    //                 this.viewModel.legends.legends.filter((x) => x.type === FilterType.defectFilter)[0].legendTitle
+                    //             )
+                    //         ),
+                    //         controlLegendTitle: <string>getValue(
+                    //             objects,
+                    //             Settings.legendSettings,
+                    //             LegendSettingsNames.defectGroupLegendTitle,
+                    //             //TODO: adapt for multiple columns
+                    //             this.viewModel.legends.legends.length > 0 ? this.viewModel.legends.legends[0].legendTitle : 'Control Legend'
+                    //         ),
+                    //     },
+                    //     selector: null,
+                    // });
                     //TODO: add settings for filter legend like this
                     // for (let i = 0; i < this.viewModel.defectLegend.legendValues.length; i++) {
                     //     const value = this.viewModel.defectLegend.legendValues[i];
