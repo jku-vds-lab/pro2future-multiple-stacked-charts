@@ -88,6 +88,11 @@
                     "integer": true
                 }
             ]
+        },
+        {
+            "displayName": "Grouping",
+            "name": "grouping",
+            "kind": "GroupingOrMeasure"
         }
     ],
     "sorting": {
@@ -120,7 +125,7 @@
                         "max": 1
                     },
                     "defectGroup": {
-                        "max": 1
+                        "max": 5
                     },
                     "rollout": {
                         "max": 1
@@ -133,6 +138,9 @@
                     },
                     "filterLegend": {
                         "max": 1
+                    },
+                    "grouping": {
+                        "max": 2
                     }
                 }
             ],
@@ -169,6 +177,7 @@
                                 "in": "legend"
                             }
                         },
+
                         {
                             "for": {
                                 "in": "defectGroup"
@@ -178,17 +187,73 @@
                             "for": {
                                 "in": "rollout"
                             }
+                        },
+                        {
+                            "for": {
+                                "in": "grouping"
+                            }
                         }
                     ],
                     "dataReductionAlgorithm": {
                         "top": {
-                            "count": 20000
+                            "count": 30000
                         }
                     }
+                },
+                "values": {
+                    "select": [
+                        {
+                            "for": {
+                                "in": "x_axis"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "y_axis"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "overlayX"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "overlayY"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "tooltip"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "legend"
+                            }
+                        },
+
+                        {
+                            "for": {
+                                "in": "defectGroup"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "rollout"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "grouping"
+                            }
+                        }
+                    ]
                 }
             }
         }
     ],
+    "supportsHighlight": true,
     "objects": {
         "axisSettings": {
             "displayName": "Axis Settings",
@@ -365,14 +430,36 @@
         "legendSettings": {
             "displayName": "Legend Settings",
             "properties": {
-                "errorLegendTitle": {
-                    "displayName": "Defect Legend Title",
+                "legendTitle": {
+                    "displayName": "Legend Title",
                     "type": {
                         "text": true
                     }
                 },
                 "controlLegendTitle": {
                     "displayName": "Defect Group Legend Title",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "legendColor": {
+                    "displayName": "Legend Color",
+                    "description": "The color of this legend type.",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "rolloutSettings": {
+            "displayName": "Rollout Settings",
+            "properties": {
+                "legendTitle": {
+                    "displayName": "Rollout Legend Title",
                     "type": {
                         "text": true
                     }

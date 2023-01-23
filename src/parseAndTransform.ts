@@ -3,7 +3,7 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
-import { getValue, getPlotFillColor, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
+import { getValue, getPlotFillColor, getColorSettings } from './objectEnumerationUtility';
 import {
     ViewModel,
     DataPoint,
@@ -27,8 +27,10 @@ import {
     RolloutRectangles,
     XAxisSettings,
     LegendDataPoint,
+    Legends,
+    LegendValue,
 } from './plotInterface';
-import { scaleLinear } from 'd3';
+import { Primitive, scaleLinear } from 'd3';
 import {
     AxisSettingsNames,
     PlotSettingsNames,
@@ -44,6 +46,7 @@ import {
     HeatmapSettingsNames,
     ArrayConstants,
     XAxisBreakSettingsNames,
+    FilterType,
 } from './constants';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { ok, err, Result } from 'neverthrow';
@@ -81,7 +84,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const categorical = dataViews[0].categorical;
     const metadataColumns = dataViews[0].metadata.columns;
     const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
-
     //count numbers of x-axis, y-axis and tooltipdata
     const yCategoriesCount =
         categorical.categories === undefined
@@ -142,7 +144,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const yData = new Array<YAxisData>(yCount);
     const tooltipData = new Array<TooltipColumnData>(tooltipCount);
     let legendData: LegendData = null;
-    let defectGroupLegendData: LegendData = null;
+    const filterLegendData: LegendData[] = [];
     // let defectIndices: DefectIndices = new DefectIndices();
 
     let xDataPoints: number[] = [];
@@ -150,10 +152,12 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     let dataPoints: DataPoint[] = [];
     let overlayWidth: number[] = [];
     let overlayLength: number[] = [];
-    let defectLegend: Legend = null;
-    let defectGroupLegend: Legend = null;
-    let rolloutRectangles: number[];
+    // let defectLegend: Legend = null;
+    // let defectGroupLegend: Legend = null;
+    const legends = new Legends();
+    let rolloutRectangles: Primitive[];
     let rolloutName: string;
+    const legendFilter: number[][] = [];
 
     //aquire all categorical values
     if (categorical.categories !== undefined) {
@@ -194,23 +198,33 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             if (roles.legend) {
                 legendData = {
                     name: category.source.displayName,
-                    values: <string[]>category.values,
-                    columnId: category.source.index,
+                    values: category.values,
+                    metaDataColumn: category.source,
+                    type: FilterType.stringFilter,
                 };
+            }
+            if (roles.legendFilter) {
+                if (category.source.type.numeric) {
+                    legendFilter.push(<number[]>category.values);
+                }
             }
 
             if (roles.defectGroup) {
-                defectGroupLegendData = {
-                    name: category.source.displayName,
-                    values: <string[]>category.values,
-                    columnId: category.source.index,
-                };
+                if (category.source.type.text || category.source.type.numeric) {
+                    const type = category.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
+                    filterLegendData.push({
+                        name: category.source.displayName,
+                        values: category.values,
+                        metaDataColumn: category.source,
+                        type,
+                    });
+                }
             }
             // if (roles.defectIndices) {
             //     defectIndices.defectIndices.set(category.source.displayName, <number[]>category.values)
             // }
             if (roles.rollout) {
-                rolloutRectangles = <number[]>category.values;
+                rolloutRectangles = category.values;
                 rolloutName = category.source.displayName;
             }
         }
@@ -227,18 +241,20 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             }
             if (roles.y_axis) {
                 const yId = value.source['rolesIndex']['y_axis'][0];
+                const yColumnObjects = getMetadataColumn(metadataColumns, value.source.index).objects;
+                const useHighlights = getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false);
                 const yAxis: YAxisData = {
                     name: value.source.displayName,
-                    values: <number[]>value.values,
+                    values: <number[]>(useHighlights && value.highlights ? value.highlights : value.values),
                     columnId: value.source.index,
                 };
                 yData[yId] = yAxis;
             }
             if (roles.overlayX) {
-                overlayLength = <number[]>value.values;
+                overlayLength = <number[]>(value.highlights ? value.highlights : value.values);
             }
             if (roles.overlayY) {
-                overlayWidth = <number[]>value.values;
+                overlayWidth = <number[]>(value.highlights ? value.highlights : value.values);
             }
             if (roles.tooltip) {
                 const columnId = value.source.index;
@@ -255,15 +271,25 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 legendData = {
                     name: value.source.displayName,
                     values: <string[]>value.values,
-                    columnId: value.source.index,
+                    metaDataColumn: value.source,
+                    type: FilterType.stringFilter,
                 };
             }
+            if (roles.legendFilter) {
+                if (value.source.type.numeric) {
+                    legendFilter.push(<number[]>value.values);
+                }
+            }
             if (roles.defectGroup) {
-                defectGroupLegendData = {
-                    name: value.source.displayName,
-                    values: <string[]>value.values,
-                    columnId: value.source.index,
-                };
+                if (value.source.type.text || value.source.type.numeric) {
+                    const type = value.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
+                    filterLegendData.push({
+                        name: value.source.displayName,
+                        values: value.values,
+                        metaDataColumn: value.source,
+                        type,
+                    });
+                }
             }
             // if (roles.defectIndices) {
             //     defectIndices.defectIndices.set(value.source.displayName, <number[]>value.values);
@@ -293,44 +319,52 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     //     //xData.values.filter((x,i)=>xData.values.findIndex(y=>y===x)!==i)
     // }
 
+    // console.log(categorical.values ? categorical.values.filter((x) => x.source.displayName === 'Average of SEGMENT_LENGTH') : 'no values');
+
     const legendColors = ArrayConstants.legendColors;
     if (legendData != null) {
-        const categories = categorical.categories.filter((x) => x.source.roles.legend);
-        const category = categories.length > 0 ? categories[0] : null;
+        // const categories = categorical.categories ? categorical.categories.filter((x) => x.source.roles.legend) : [];
+        // const category = categories.length > 0 ? categories[0] : null;
+        // const values = categorical.values ? categorical.values.filter((x) => x.source.roles.legend) : [];
+        // const value = values.length > 0 ? values[0] : null;
         const legendSet = new Set(legendData.values);
-        const defaultLegendName = category ? category.source.displayName : 'Error Legend';
+        // const defaultLegendName = category ? category.source.displayName : 'Error Legend';
 
         if (legendSet.has(null)) {
             legendSet.delete(null);
         }
         const legendValues = Array.from(legendSet);
-        defectLegend = {
-            legendDataPoints: [],
+        const defectLegend = <Legend>{
+            legendDataPoints: legendData.values
+                .map(
+                    (val, i) =>
+                        <LegendDataPoint>{
+                            yValue: val,
+                            i,
+                        }
+                )
+                .filter((x) => x.yValue !== null),
             legendValues: [],
-            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.defectLegendTitle, defaultLegendName),
+            legendTitle: <string>getValue(legendData.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, legendData.metaDataColumn.displayName),
             legendXEndPosition: 0,
             legendXPosition: MarginSettings.margins.left,
+            type: FilterType.defectFilter,
+            selectedValues: new Set(legendValues.concat(Object.keys(ArrayConstants.legendColors))),
+            metaDataColumn: legendData.metaDataColumn,
         };
         for (let i = 0; i < legendValues.length; i++) {
-            const val = legendValues[i];
+            const val = legendValues[i] + '';
             const defaultColor = legendColors[val] ? legendColors[val] : 'FFFFFF';
-            const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
-
+            // const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
+            // const column = category ? category : value;
             defectLegend.legendValues.push({
-                color: getCategoricalObjectColor(category, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
-                selectionId: selectionId,
+                color: defaultColor, //getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
+                // selectionId: selectionId,
                 value: val,
             });
         }
-        defectLegend.legendDataPoints = legendData.values
-            .map(
-                (val, i) =>
-                    <LegendDataPoint>{
-                        yValue: val,
-                        i,
-                    }
-            )
-            .filter((x) => x.yValue !== null);
+        legends.legends.push(defectLegend);
+
         // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
         //     legend.legendDataPoints.push({
         //         xValue: xData.values[i],
@@ -339,56 +373,71 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
         // }
     }
-    if (defectGroupLegendData != null) {
-        const categories = categorical.categories.filter((x) => x.source.roles.defectGroup);
-        const category = categories.length > 0 ? categories[0] : null;
-        const legendSet = new Set(defectGroupLegendData.values);
-        const defaultLegendName = category ? category.source.displayName : 'Control Legend';
+    if (filterLegendData.length > 0) {
+        for (let i = 0; i < filterLegendData.length; i++) {
+            const data = filterLegendData[i];
 
-        if (legendSet.has(null)) {
-            legendSet.delete(null);
-        }
-        const legendValues = Array.from(legendSet);
-        defectGroupLegend = {
-            legendDataPoints: [],
-            legendValues: [],
-            legendTitle: <string>getValue(objects, Settings.legendSettings, LegendSettingsNames.defectGroupLegendTitle, defaultLegendName),
-            legendXEndPosition: 0,
-            legendXPosition: MarginSettings.margins.left,
-        };
-        for (let i = 0; i < legendValues.length; i++) {
-            const val = legendValues[i];
-            const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
+            // const columns = categorical.categories.filter((x) => x.source.roles.defectGroup).concat(categorical.categories.filter((x) => x.source.roles.defectGroup));
+            // const column = columns.length > 0 ? columns[0] : null;
+            const legendSet = new Set(data.values.map((x) => (x !== null && x !== undefined ? x.toString() : x)));
+            const defaultLegendName = data.metaDataColumn.displayName;
 
-            defectGroupLegend.legendValues.push({
-                color: 'white',
-                selectionId: selectionId,
-                value: val,
+            if (legendSet.has(null)) {
+                legendSet.delete(null);
+            }
+            if ((legendSet.size === 1 && legendSet.has('0')) || legendSet.has('1') || (legendSet.size === 2 && legendSet.has('0') && legendSet.has('1'))) {
+                data.type = FilterType.booleanFilter;
+            }
+            const legendValues = Array.from(legendSet);
+
+            legends.legends.push(<Legend>{
+                legendDataPoints: data.values
+                    .map(
+                        (val, i) =>
+                            <LegendDataPoint>{
+                                yValue: val,
+                                i: i,
+                            }
+                    )
+                    .filter((x) => x.yValue !== null),
+                legendValues: legendValues.map((val) => {
+                    return <LegendValue>{
+                        color: 'white',
+                        // selectionId: selectionId,
+                        value: val,
+                    };
+                }),
+                legendTitle: <string>getValue(data.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
+                legendXEndPosition: 0,
+                legendXPosition: MarginSettings.margins.left,
+                type: data.type,
+                selectedValues: legendSet,
+                metaDataColumn: data.metaDataColumn,
             });
+            // for (let j = 0; j < legendValues.length; j++) {
+            //     const val = legendValues[j];
+            //     //const selectionId = column ? host.createSelectionIdBuilder().withCategory(column, j).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
+
+            //     defectGroupLegend.legendValues.push({
+            //         color: 'white',
+            //         // selectionId: selectionId,
+            //         value: val,
+            //     });
+            // }
+
+            // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
+            //     legend.legendDataPoints.push({
+            //         xValue: xData.values[i],
+            //         yValue: legendData.values[i]
+            //     });
+
+            // }
         }
-
-        defectGroupLegend.legendDataPoints = defectGroupLegendData.values
-            .map(
-                (val, i) =>
-                    <LegendDataPoint>{
-                        yValue: val,
-                        i: i,
-                    }
-            )
-            .filter((x) => x.yValue !== null);
-
-        // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
-        //     legend.legendDataPoints.push({
-        //         xValue: xData.values[i],
-        //         yValue: legendData.values[i]
-        //     });
-
-        // }
     }
 
     const formatSettings: FormatSettings[] = [];
     const plotTitles: string[] = [];
-    const plotSettings: PlotSettings[] = [];
+    const plotSettingsArray: PlotSettings[] = [];
 
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
         const yAxis: YAxisData = yData[plotNr];
@@ -415,10 +464,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 yAxis: yAxisInformation,
             },
         });
-
-        plotSettings.push({
+        plotSettingsArray.push({
             plotSettings: {
-                fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
+                fill: getPlotFillColor(yColumnObjects, colorPalette, ArrayConstants.colorArray[plotNr]),
                 plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
                 useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
                 showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
@@ -427,7 +475,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
     const plotTitlesCount = plotTitles.filter((x) => x.length > 0).length;
     const xLabelsCount = formatSettings.filter((x) => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
-    const heatmapCount = plotSettings.filter((x) => x.plotSettings.showHeatmap).length;
+    const heatmapCount = plotSettingsArray.filter((x) => x.plotSettings.showHeatmap).length;
     let viewModel: ViewModel;
     const viewModelResult = createViewModel(
         options,
@@ -437,8 +485,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         plotTitlesCount,
         xLabelsCount,
         heatmapCount,
-        defectLegend,
-        defectGroupLegend,
+        legends,
         xData,
         indexMap,
         axisBreak,
@@ -467,23 +514,28 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         dataPoints = [];
         const yColumnId = yData[plotNr].columnId;
         const yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
-        const plotSettings: PlotSettings = {
-            plotSettings: {
-                fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
-                plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
-                showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
-            },
-        };
+        const plotSettings = plotSettingsArray[plotNr];
+        // : PlotSettings = {
+        //     plotSettings: {
+        //         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
+        //         plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+        //         useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
+        //         showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
+        //     },
+        // };
         //create datapoints
         for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
             let color = plotSettings.plotSettings.fill;
             const xVal = xDataPoints[pointNr];
+            let filterValues = [];
             if (plotSettings.plotSettings.useLegendColor) {
-                if (defectLegend != null) {
+                const filtered = legends.legends.filter((x) => x.type === FilterType.defectFilter);
+                if (filtered.length === 1) {
+                    const defectLegend = filtered[0];
                     const legendVal = defectLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
                     color = legendVal === undefined ? color : defectLegend.legendValues.find((x) => x.value === legendVal).color;
+                    filterValues = legendFilter.map((a) => a[pointNr]);
                 } else {
                     viewModel.errors.push(new PlotLegendError(yAxis.name));
                 }
@@ -497,6 +549,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 selected: false,
                 color: color,
                 pointNr: pointNr,
+                filterValues: filterValues,
                 selectionId: host.createSelectionIdBuilder().withCategory(categorical.categories[0], pointNr).createSelectionId(),
             };
 
@@ -547,6 +600,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         plotTop += plotModel.plotSettings.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
     }
     if (rolloutRectangles) {
+        const category = categorical.categories.filter((x) => x.source.roles.rollout)[0];
         const rolloutY = viewModel.plotModels[0].plotTop;
         const rolloutHeight = viewModel.plotModels[viewModel.plotModels.length - 1].plotTop + viewModel.generalPlotSettings.plotHeight - rolloutY;
         viewModel.rolloutRectangles = new RolloutRectangles(
@@ -554,6 +608,9 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             rolloutRectangles,
             rolloutY,
             rolloutHeight,
+            host,
+            category,
+            dataViews[0],
             rolloutName
         );
     }
@@ -652,8 +709,7 @@ function createViewModel(
     plotTitlesCount: number,
     xLabelsCount: number,
     heatmapCount: number,
-    defectLegend: Legend,
-    defectGroupLegend: Legend,
+    legends: Legends,
     xData: XAxisData,
     indexMap: Map<number, number>,
     axisBreak: boolean,
@@ -662,7 +718,7 @@ function createViewModel(
     const margins = MarginSettings;
     let svgHeight: number = options.viewport.height - margins.scrollbarSpace;
     let svgWidth: number = options.viewport.width - margins.scrollbarSpace;
-    const legendHeight = defectLegend ? margins.legendHeight : 0;
+    const legendHeight = legends.legends.length > 0 ? margins.legendHeight : 0;
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
     }
@@ -742,8 +798,7 @@ function createViewModel(
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,
-        defectLegend: defectLegend,
-        defectGroupLegend: defectGroupLegend,
+        legends: legends,
         errors: [],
     };
     return ok(viewModel);

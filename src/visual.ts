@@ -44,7 +44,7 @@ import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
-import { getPlotFillColor, getValue, getColorSettings, getCategoricalObjectColor } from './objectEnumerationUtility';
+import { getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import {
     TooltipInterface,
     ViewModel,
@@ -84,6 +84,7 @@ import {
     ArrayConstants,
     HeatmapSettingsNames,
     XAxisBreakSettingsNames,
+    FilterType,
 } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import {
@@ -100,7 +101,6 @@ import {
     PlotError,
     OverlayInformationError,
 } from './errors';
-import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 
 export class Visual implements IVisual {
@@ -131,7 +131,9 @@ export class Visual implements IVisual {
         const yPosition = margins.legendYPostion + 10;
         const legendData = legend.legendValues;
         const legendTitle = legend.legendTitle;
-        const legendSelection = this.legendSelection;
+        const legendSelection = legend.selectedValues;
+        const className = Constants.defectLegendClass + Math.trunc(legend.legendXPosition);
+        console.log(className);
         const legendDeselected = this.legendDeselected;
         const widths = [];
         let width = legend.legendXPosition;
@@ -142,6 +144,7 @@ export class Visual implements IVisual {
             .append('text')
             .text((d) => d)
             .attr('text-anchor', 'left')
+            .attr('class', className + legend.type)
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
             .attr('x', function () {
@@ -149,69 +152,96 @@ export class Visual implements IVisual {
                 width = width + this.getComputedTextLength() + 15;
                 return x;
             })
-            .attr('y', yPosition);
-
-        this.svg
-            .selectAll('legendText')
-            .data(legendData)
-            .enter()
-            .append('text')
-            .text(function (d) {
-                return String(d.value);
-            })
-            .attr('text-anchor', 'left')
-            .attr('class', (d) => Constants.defectLegendClass + ' ' + d.value)
-            .style('alignment-baseline', 'middle')
-            .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function () {
-                const x = width;
-                widths.push(width);
-                width = width + 25 + this.getComputedTextLength();
-                return 10 + x;
-            })
             .attr('y', yPosition)
-            .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-        this.svg
-            .selectAll('legendDots')
-            .data(legendData)
-            .enter()
-            .append('circle')
-            .attr('cx', function (d, i) {
-                return widths[i];
-            })
-            .attr('cy', yPosition)
-            .attr('r', 7)
-            .style('fill', function (d) {
-                return d.color;
-            })
-            .style('stroke', 'grey')
-            .attr('class', (d) => Constants.defectLegendClass + ' ' + d.value)
-            .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-        this.svg.selectAll('.' + Constants.defectLegendClass).on(
-            'click',
-            function (e: Event, d: LegendValue) {
-                e.stopPropagation();
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                const def = d.value.toString();
-                const selection = this.svg.selectAll('.' + Constants.defectLegendClass + '.' + def);
-                if (legendSelection.has(def)) {
-                    legendSelection.delete(def);
-                    legendDeselected.add(def);
-                    selection.style('opacity', unselectedOpacity);
-                } else {
-                    legendSelection.add(def);
-                    legendDeselected.delete(def);
-                    selection.style('opacity', 1);
-                }
-                for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
-                    if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                        this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
-                        this.drawPlot(plotModel);
+            .on(
+                'click',
+                function (e: Event) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    const selection = this.svg.selectAll('.' + className + legend.type);
+                    const def = '1';
+                    if (legendSelection.has(def)) {
+                        legendSelection.delete(def);
+                        selection.style('opacity', unselectedOpacity);
+                        legendDeselected.add(def);
+                    } else {
+                        legendSelection.add(def);
+                        selection.style('opacity', 1);
+                        legendDeselected.delete(def);
                     }
-                }
-            }.bind(this)
-        );
+
+                    for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
+                        if (plotModel.plotSettings.plotSettings.useLegendColor) {
+                            this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                            this.drawPlot(plotModel);
+                        }
+                    }
+                }.bind(this)
+            );
+        if (legend.type !== FilterType.booleanFilter) {
+            this.svg
+                .selectAll('legendText')
+                .data(legendData)
+                .enter()
+                .append('text')
+                .text(function (d) {
+                    return String(d.value);
+                })
+                .attr('text-anchor', 'left')
+                .attr('class', (d) => className + ' val' + d.value)
+                .style('alignment-baseline', 'middle')
+                .style('font-size', this.viewModel.generalPlotSettings.fontSize)
+                .attr('x', function () {
+                    const x = width;
+                    widths.push(width);
+                    width = width + 25 + this.getComputedTextLength();
+                    return 10 + x;
+                })
+                .attr('y', yPosition)
+                .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
+            this.svg
+                .selectAll('legendDots')
+                .data(legendData)
+                .enter()
+                .append('circle')
+                .attr('cx', function (d, i) {
+                    return widths[i];
+                })
+                .attr('cy', yPosition)
+                .attr('r', 7)
+                .style('fill', function (d) {
+                    return d.color;
+                })
+                .style('stroke', 'grey')
+                .attr('class', (d) => className + ' val' + d.value)
+                .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
+            this.svg.selectAll('.' + className).on(
+                'click',
+                function (e: Event, d: LegendValue) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    const def = d.value.toString();
+                    const selection = this.svg.selectAll('.' + className + '.val' + def);
+                    if (legendSelection.has(def)) {
+                        legendSelection.delete(def);
+                        legendDeselected.add(def);
+                        selection.style('opacity', unselectedOpacity);
+                    } else {
+                        legendSelection.add(def);
+                        legendDeselected.delete(def);
+                        selection.style('opacity', 1);
+                    }
+                    for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
+                        if (plotModel.plotSettings.plotSettings.useLegendColor) {
+                            this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                            this.drawPlot(plotModel);
+                        }
+                    }
+                }.bind(this)
+            );
+        }
 
         legend.legendXEndPosition = width;
         this.checkOversize(width);
@@ -227,6 +257,15 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         try {
             this.dataview = options.dataViews[0];
+            console.log(this.dataview.categorical.categories[0].values.length);
+            //findings: empty data is ignored on grouping => need grouping column as grouping and measure?
+            // const xData = this.dataview.categorical.categories.filter((x) => x.source.displayName === 'Segment')[0].values;
+            // // const insp = this.dataview.categorical.categories.filter((x) => x.source.displayName === 'INSP_ZUSTAND')[0].values;
+            // const duplicates = Array.from(new Set(xData.filter((x, i, a) => a.indexOf(x) !== i)));
+            // console.log('x: ', xData[xData.length - 1]);
+            // console.log('duplicates: ', duplicates);
+            // console.log('datapoints: ', this.dataview.categorical.categories ? this.dataview.categorical.categories[0].values.length + '' : 'no categories');
+            // console.log('unique x: ', Array.from(new Set(xData)));
             const categoryIndices = new Set();
             if (this.dataview.categorical.categories) {
                 this.dataview.categorical.categories = this.dataview.categorical.categories.filter((cat) => {
@@ -253,20 +292,31 @@ export class Visual implements IVisual {
                         return;
                     }
                     this.drawPlots();
-                    if (this.viewModel.defectLegend != null) {
-                        this.viewModel.defectLegend.legendValues.map((val) => {
-                            if (!this.legendDeselected.has(val.value) && !this.legendSelection.has(<string>val.value)) {
-                                this.legendSelection.add(val.value.toString());
-                            }
-                        });
-                        this.drawLegend(this.viewModel.defectLegend);
-                        if (this.viewModel.defectGroupLegend != null) {
-                            this.viewModel.defectGroupLegend.legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+                    const legends = this.viewModel.legends;
+                    // if (this.viewModel.legends != null) {
+                    //     this.viewModel.defectLegend.legendValues.map((val) => {
+                    //         if (!this.legendDeselected.has(val.value) && !this.legendSelection.has(<string>val.value)) {
+                    //             this.legendSelection.add(val.value.toString());
+                    //         }
+                    //     });
+                    //     this.drawLegend(this.viewModel.defectLegend);
+                    //     // if (this.viewModel.defectGroupLegend != null) {
+                    //     //     this.viewModel.defectGroupLegend.legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+                    //     // }
+                    // }
+                    if (this.viewModel.legends && legends.legends.length > 0) {
+                        // if (this.viewModel.defectLegend) {
+                        //     legends.legends[0].legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+                        // }
+                        for (let i = 0; i < legends.legends.length; i++) {
+                            const l = legends.legends[i];
+                            this.drawLegend(l);
+                            if (i < legends.legends.length - 1) legends.legends[i + 1].legendXPosition = l.legendXEndPosition;
                         }
                     }
-                    if (this.viewModel.defectGroupLegend != null) {
-                        this.drawLegend(this.viewModel.defectGroupLegend);
-                    }
+                    // if (this.viewModel.defectGroupLegend != null) {
+                    //     this.drawLegend(this.viewModel.defectGroupLegend);
+                    // }
                     if (this.viewModel.rolloutRectangles) {
                         this.drawRolloutRectangles();
                         this.drawRolloutLegend();
@@ -380,9 +430,10 @@ export class Visual implements IVisual {
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion + 10;
         const rolloutRectangles = this.viewModel.rolloutRectangles;
-        let width = this.viewModel.defectLegend ? this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
-        if (this.viewModel.defectGroupLegend) {
-            width = this.viewModel.defectGroupLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
+        const legendCount = this.viewModel.legends.legends.length;
+        let width = legendCount > 0 ? this.viewModel.legends.legends[legendCount - 1].legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
+        if (this.viewModel.legends.legends.length > 0) {
+            width = this.viewModel.legends.legends[this.viewModel.legends.legends.length - 1].legendXEndPosition + MarginSettings.legendSeparationMargin;
         }
         const widths = [];
 
@@ -404,10 +455,11 @@ export class Visual implements IVisual {
 
         this.svg
             .selectAll('rolloutLegendText')
-            .data(ArrayConstants.rolloutNames)
+            // .data(ArrayConstants.rolloutNames)
+            .data(rolloutRectangles.legendValues)
             .enter()
             .append('text')
-            .text((d) => d)
+            .text((d) => '' + d.value)
             .attr('text-anchor', 'left')
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
@@ -421,7 +473,7 @@ export class Visual implements IVisual {
 
         this.svg
             .selectAll('rolloutLegendDots')
-            .data(ArrayConstants.rolloutColors)
+            .data(rolloutRectangles.legendValues)
             .enter()
             .append('circle')
             .attr('cx', function (d, i) {
@@ -429,7 +481,7 @@ export class Visual implements IVisual {
             })
             .attr('cy', yPosition)
             .attr('r', 7)
-            .style('fill', (d) => d)
+            .style('fill', (d) => d.color)
             .style('stroke', 'grey')
             .style('opacity', rolloutRectangles.opacity * 2);
         this.checkOversize(width);
@@ -792,16 +844,14 @@ export class Visual implements IVisual {
 
             if (plotModel.plotSettings.plotSettings.useLegendColor) {
                 dataPoints = dataPoints.filter((x) => {
-                    let draw = true;
-                    if (this.viewModel.defectLegend != null) {
-                        const val = this.viewModel.defectLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
-                        if (val) draw = draw && this.legendSelection.has(val);
-                    }
-                    if (this.viewModel.defectGroupLegend != null) {
-                        const val = this.viewModel.defectGroupLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
-                        if (val) draw = draw && this.legendSelection.has(val);
-                    }
-                    return draw;
+                    // let draw = true;
+                    // if (this.viewModel.defectLegend != null) {
+                    //     const val = this.viewModel.defectLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
+                    //     if (val) draw = draw && this.legendSelection.has(val);
+                    // }
+                    // draw = draw && this.viewModel.legends.drawDataPoint(x.pointNr);
+
+                    return this.viewModel.legends.drawDataPoint(x.pointNr);
                 });
                 dotSize = 3;
             }
@@ -1270,51 +1320,96 @@ export class Visual implements IVisual {
                     });
                     break;
                 case Settings.legendSettings:
-                    if (!this.viewModel.defectLegend) break;
-
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            errorLegendTitle: <string>(
-                                getValue(
-                                    objects,
-                                    Settings.legendSettings,
-                                    LegendSettingsNames.defectLegendTitle,
-                                    this.viewModel.defectLegend ? this.viewModel.defectLegend.legendTitle : 'Error Legend'
-                                )
-                            ),
-                            controlLegendTitle: <string>(
-                                getValue(
-                                    objects,
-                                    Settings.legendSettings,
-                                    LegendSettingsNames.defectGroupLegendTitle,
-                                    this.viewModel.defectGroupLegend ? this.viewModel.defectGroupLegend.legendTitle : 'Control Legend'
-                                )
-                            ),
-                        },
-                        selector: null,
-                    });
-                    //TODO: add settings for filter legend like this
-                    for (let i = 0; i < this.viewModel.defectLegend.legendValues.length; i++) {
-                        const value = this.viewModel.defectLegend.legendValues[i];
+                    if (this.viewModel.legends.legends.filter((x) => x.type === FilterType.defectFilter).length === 0) break;
+                    for (const legend of this.viewModel.legends.legends) {
                         objectEnumeration.push({
                             objectName: objectName,
-                            displayName: String(value.value),
+                            displayName: 'Legend Title ' + legend.metaDataColumn.displayName,
                             properties: {
-                                legendColor: getCategoricalObjectColor(
-                                    this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0],
-                                    i,
-                                    Settings.legendSettings,
-                                    LegendSettingsNames.legendColor,
-                                    value.color
-                                ),
+                                legendTitle: <string>getValue(legend.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, legend.legendTitle),
                             },
-                            altConstantValueSelector: value.selectionId.getSelector(),
-                            selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
+                            selector: { metadata: legend.metaDataColumn.queryName },
                         });
-                        i++;
                     }
+
+                    // objectEnumeration.push({
+                    //     objectName: objectName,
+                    //     properties: {
+                    //         legendTitle: <string>(
+                    //             getValue(
+                    //                 objects,
+                    //                 Settings.legendSettings,
+                    //                 LegendSettingsNames.legendTitle,
+                    //                 this.viewModel.legends.legends.filter((x) => x.type === FilterType.defectFilter)[0].legendTitle
+                    //             )
+                    //         ),
+                    //         controlLegendTitle: <string>getValue(
+                    //             objects,
+                    //             Settings.legendSettings,
+                    //             LegendSettingsNames.defectGroupLegendTitle,
+                    //             //TODO: adapt for multiple columns
+                    //             this.viewModel.legends.legends.length > 0 ? this.viewModel.legends.legends[0].legendTitle : 'Control Legend'
+                    //         ),
+                    //     },
+                    //     selector: null,
+                    // });
+                    //TODO: add settings for filter legend like this
+                    // for (let i = 0; i < this.viewModel.defectLegend.legendValues.length; i++) {
+                    //     const value = this.viewModel.defectLegend.legendValues[i];
+                    //     const column = this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
+                    //         ? this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
+                    //         : this.dataview.categorical.values.filter((x) => x.source.roles.legend)[0];
+                    //     objectEnumeration.push({
+                    //         objectName: objectName,
+                    //         displayName: String(value.value),
+                    //         properties: {
+                    //             legendColor: getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, value.color),
+                    //         },
+                    //         altConstantValueSelector: value.selectionId.getSelector(),
+                    //         selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
+                    //     });
+                    // }
                     break;
+                //TODO: fix settings or remove
+                case Settings.rolloutSettings:
+                    // if (!this.viewModel.rolloutRectangles) break;
+                    // objectEnumeration.push({
+                    //     objectName: objectName,
+                    //     properties: {
+                    //         legendTitle: <string>(
+                    //             getValue(
+                    //                 objects,
+                    //                 Settings.rolloutSettings,
+                    //                 RolloutSettingsNames.legendTitle,
+                    //                 this.viewModel.rolloutRectangles ? this.viewModel.rolloutRectangles.name : 'Rollout Legend'
+                    //             )
+                    //         ),
+                    //     },
+                    //     selector: null,
+                    // });
+
+                    // for (let i = 0; i < this.viewModel.rolloutRectangles.legendValues.length; i++) {
+                    //     const value = this.viewModel.rolloutRectangles.legendValues[i];
+                    //     // const column = this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+                    //     //     ? this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+                    //     //     : this.dataview.categorical.values.filter((x) => x.source.roles.rollout)[0];
+
+                    //     objectEnumeration.push({
+                    //         objectName: objectName,
+                    //         displayName: String(value.value),
+                    //         properties: {
+                    //             legendColor: value.color, //getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]),
+                    //         },
+                    //         propertyInstanceKind: {
+                    //             fill: VisualEnumerationInstanceKinds.ConstantOrRule,
+                    //         },
+                    //         altConstantValueSelector: value.selectionId.getSelector(),
+                    //         selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
+                    //     });
+                    // }
+
+                    break;
+
                 case Settings.zoomingSettings:
                     objectEnumeration.push({
                         objectName: objectName,
@@ -1352,7 +1447,7 @@ export class Visual implements IVisual {
                             };
                             properties = {
                                 plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                                fill: getPlotFillColor(columnObjects, colorPalette, '#000000'),
+                                fill: getPlotFillColor(columnObjects, colorPalette, ArrayConstants.colorArray[yIndex]),
                                 useLegendColor: getValue<boolean>(columnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
                                 showHeatmap: <boolean>getValue(columnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
                             };

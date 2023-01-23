@@ -25,7 +25,6 @@ export function getValue<T>(objects: DataViewObjects, objectName: string, proper
             }
         }
     }
-
     return defaultValue;
 }
 
@@ -58,7 +57,13 @@ export function getCategoricalObjectValue<T>(category: DataViewCategoryColumn, i
     return defaultValue;
 }
 
-export function getCategoricalObjectColor(category: DataViewCategoryColumn, index: number, objectName: string, propertyName: string, defaultValue: string): string {
+export function getCategoricalObjectColor(
+    category: DataViewCategoryColumn | powerbi.DataViewValueColumn,
+    index: number,
+    objectName: string,
+    propertyName: string,
+    defaultValue: string
+): string {
     const categoryObjects = category.objects;
 
     if (categoryObjects) {

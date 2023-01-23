@@ -1,11 +1,13 @@
+import { Primitive } from 'd3-array';
 import { BaseType } from 'd3-selection';
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
-import { ArrayConstants } from './constants';
+import { ArrayConstants, FilterType } from './constants';
 import { ParseAndTransformError } from './errors';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 
 export interface ViewModel {
     plotModels: PlotModel[];
@@ -17,8 +19,9 @@ export interface ViewModel {
     generalPlotSettings: GeneralPlotSettings;
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
-    defectLegend?: Legend;
-    defectGroupLegend?: Legend;
+    // defectLegend?: Legend;
+    // defectGroupLegend?: Legend;
+    legends: Legends;
     heatmapSettings: HeatmapSettings;
     // defectIndices: DefectIndices;
     rolloutRectangles: RolloutRectangles;
@@ -69,17 +72,62 @@ export class RolloutRectangles {
     rolloutRectangles: RolloutRectangle[];
     name: string;
     opacity: number;
+    // uniqueValues: Primitive[];
+    legendValues: LegendValue[];
+    // colors: string[];
 
-    constructor(xValues: number[], rollout: number[], y, width, rolloutName = 'Rollout', rolloutOpacity = 0.1) {
+    constructor(
+        xValues: number[],
+        rollout: Primitive[],
+        y,
+        width,
+        host: IVisualHost,
+        category: powerbi.DataViewCategoryColumn,
+        dataView: powerbi.DataView,
+        rolloutName = 'Rollout',
+        rolloutOpacity = 0.2
+    ) {
         this.name = rolloutName;
         this.rolloutRectangles = [];
+        this.legendValues = [];
         this.opacity = rolloutOpacity;
+        // const column = dataView.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+        //     ? dataView.categorical.categories.filter((x) => x.source.roles.rollout)[0]
+        //     : dataView.categorical.values.filter((x) => x.source.roles.rollout)[0];
+        const uniqueValues = Array.from(new Set(rollout)).sort().reverse();
+        // let settings = null;
+        // if (column && column.objects) {
+        //     settings = column.objects
+        //         .map((x, i) => {
+        //             return { settings: x, i: i };
+        //         })
+        //         .filter((x) => x.settings)
+        //         .map((x) => {
+        //             return { val: column.values[x.i], settings: x.settings, i: x.i };
+        //         });
+        // }
+        for (let i = 0; i < uniqueValues.length; i++) {
+            const val = uniqueValues[i];
+            // const settingsFiltered = settings && settings.filter((x) => x.val === val).length > 0 ? settings.filter((x) => x.val === val)[0] : null;
+            // const selectionId = host
+            //     .createSelectionIdBuilder()
+            //     // .withMeasure('' + val)
+            //     .withCategory(category, settingsFiltered ? settingsFiltered.i : rollout.findIndex((x) => x === val))
+            //     .createSelectionId();
+            //const color = settingsFiltered ? settingsFiltered.settings[Settings.rolloutSettings][RolloutSettingsNames.legendColor].solid.color : ArrayConstants.rolloutColors[i];
+            const color = ArrayConstants.rolloutColors[<string>val] ? ArrayConstants.rolloutColors[<string>val] : ArrayConstants.colorArray[i];
+            //getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]);
+
+            this.legendValues.push({ value: val, color: color });
+        }
+
         let rect = <RolloutRectangle>{
             y,
             width,
             x: xValues[0],
-            color: ArrayConstants.rolloutColors[rollout[0]],
+            color: this.getColor(rollout[0]),
         };
+
         let lastX = xValues[0];
         let lastRollout = rollout[0];
         for (let i = 0; i < xValues.length; i++) {
@@ -94,12 +142,16 @@ export class RolloutRectangles {
                     y,
                     width,
                     x: xValues[i],
-                    color: ArrayConstants.rolloutColors[rollout[i]],
+                    color: this.getColor(rollout[i]),
                 };
             }
         }
         rect.length = xValues[xValues.length - 1] - lastX;
         this.rolloutRectangles.push(rect);
+    }
+
+    private getColor(rollout: Primitive): string {
+        return this.legendValues.filter((x) => x.value === rollout)[0].color;
     }
 }
 
@@ -230,7 +282,7 @@ export interface LegendDataPoint {
 export interface LegendValue {
     color?: string;
     value: PrimitiveValue;
-    selectionId: ISelectionId;
+    // selectionId: ISelectionId;
 }
 
 export interface Legend {
@@ -239,6 +291,9 @@ export interface Legend {
     legendTitle: string;
     legendXEndPosition: number;
     legendXPosition: number;
+    type: FilterType;
+    selectedValues: Set<Primitive>;
+    metaDataColumn: powerbi.DataViewMetadataColumn;
 }
 
 export interface DataPoint extends SelectableDataPoint {
@@ -248,6 +303,7 @@ export interface DataPoint extends SelectableDataPoint {
     highlight?: boolean;
     opacity?: number;
     pointNr: number;
+    filterValues: number[];
     selectionId: ISelectionId;
 }
 
@@ -290,6 +346,32 @@ export interface OverlayPlotSettings {
     };
 }
 
+export class Legends {
+    legends: Legend[];
+
+    // type: FilterType;
+    // values: Primitive[];
+    // name: string;
+    // uniqueValues: Primitive[];
+
+    constructor() {
+        this.legends = [];
+        //type: FilterType, values: Primitive[], name: string
+        // this.type = type;
+        // this.values = values;
+        // this.name = name;
+        // this.uniqueValues = Array.from(new Set(values));
+    }
+    drawDataPoint(i: number): boolean {
+        let draw = true;
+        for (const l of this.legends) {
+            const point = l.legendDataPoints.filter((x) => x.i === i)[0];
+            draw = draw && l.selectedValues.has(point.yValue.toString());
+        }
+        return draw;
+    }
+}
+
 // export interface Legend {
 //     text: string;
 //     transform?: string;
@@ -316,9 +398,10 @@ export interface TooltipColumnData {
 }
 
 export interface LegendData {
-    values: string[];
+    values: Primitive[];
     name?: string;
-    columnId: number;
+    type: FilterType;
+    metaDataColumn: powerbi.DataViewMetadataColumn;
 }
 export type D3Selection = d3.Selection<SVGGElement, unknown, BaseType, unknown>;
 
