@@ -615,7 +615,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         );
     }
 
-    viewModel.generalPlotSettings.legendYPostion = plotTop;
+    viewModel.generalPlotSettings.legendYPostion = plotTop + MarginSettings.legendTopMargin;
 
     return ok(viewModel);
 }

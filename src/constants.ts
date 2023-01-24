@@ -89,6 +89,8 @@ export enum Constants {
     defectLegendClass = 'defectLegend',
     zoomState = 'zoomState',
     axisBreakClass = 'axisBreakLines',
+    legendTitleSelection = 'legendTitle',
+    rolloutLegendTitleSelection = 'rolloutLegendTitle',
 }
 
 export enum FilterType {
@@ -143,4 +145,8 @@ export class ArrayConstants {
     ];
 
     //static readonly rolloutNames = ['nicht gewalzt', 'BBS gewalzt', 'Beize gewalzt', 'KB gewalzt ohne Fehler', 'KB gewalzt mit Fehler'];
+}
+
+export class NumberConstants {
+    static readonly legendDeselectionOpacity = 0.3;
 }

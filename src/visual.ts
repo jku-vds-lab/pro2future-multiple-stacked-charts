@@ -85,6 +85,7 @@ import {
     HeatmapSettingsNames,
     XAxisBreakSettingsNames,
     FilterType,
+    NumberConstants,
 } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import {
@@ -102,6 +103,7 @@ import {
     OverlayInformationError,
 } from './errors';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
+import { Primitive } from 'd3';
 
 export class Visual implements IVisual {
     private host: IVisualHost;
@@ -109,8 +111,7 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-    private legendSelection = new Set(Object.keys(ArrayConstants.legendColors).concat(Object.keys(ArrayConstants.groupValues)));
-    private legendDeselected = new Set();
+    private legendDeselected = new Set<Primitive>();
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
@@ -123,135 +124,6 @@ export class Visual implements IVisual {
         this.selectionManager = this.host.createSelectionManager();
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true).attr('width', this.element.clientWidth).attr('height', this.element.clientHeight);
         this.storage = this.host.storageService;
-    }
-
-    private drawLegend(legend: Legend) {
-        const unselectedOpacity = 0.3;
-        const margins = this.viewModel.generalPlotSettings;
-        const yPosition = margins.legendYPostion + 10;
-        const legendData = legend.legendValues;
-        const legendTitle = legend.legendTitle;
-        const legendSelection = legend.selectedValues;
-        const className = Constants.defectLegendClass + Math.trunc(legend.legendXPosition);
-        console.log(className);
-        const legendDeselected = this.legendDeselected;
-        const widths = [];
-        let width = legend.legendXPosition;
-        this.svg
-            .selectAll('legendTitle')
-            .data([legendTitle])
-            .enter()
-            .append('text')
-            .text((d) => d)
-            .attr('text-anchor', 'left')
-            .attr('class', className + legend.type)
-            .style('alignment-baseline', 'middle')
-            .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function () {
-                const x = width;
-                width = width + this.getComputedTextLength() + 15;
-                return x;
-            })
-            .attr('y', yPosition)
-            .on(
-                'click',
-                function (e: Event) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    const selection = this.svg.selectAll('.' + className + legend.type);
-                    const def = '1';
-                    if (legendSelection.has(def)) {
-                        legendSelection.delete(def);
-                        selection.style('opacity', unselectedOpacity);
-                        legendDeselected.add(def);
-                    } else {
-                        legendSelection.add(def);
-                        selection.style('opacity', 1);
-                        legendDeselected.delete(def);
-                    }
-
-                    for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
-                        if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                            this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
-                            this.drawPlot(plotModel);
-                        }
-                    }
-                }.bind(this)
-            );
-        if (legend.type !== FilterType.booleanFilter) {
-            this.svg
-                .selectAll('legendText')
-                .data(legendData)
-                .enter()
-                .append('text')
-                .text(function (d) {
-                    return String(d.value);
-                })
-                .attr('text-anchor', 'left')
-                .attr('class', (d) => className + ' val' + d.value)
-                .style('alignment-baseline', 'middle')
-                .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-                .attr('x', function () {
-                    const x = width;
-                    widths.push(width);
-                    width = width + 25 + this.getComputedTextLength();
-                    return 10 + x;
-                })
-                .attr('y', yPosition)
-                .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-            this.svg
-                .selectAll('legendDots')
-                .data(legendData)
-                .enter()
-                .append('circle')
-                .attr('cx', function (d, i) {
-                    return widths[i];
-                })
-                .attr('cy', yPosition)
-                .attr('r', 7)
-                .style('fill', function (d) {
-                    return d.color;
-                })
-                .style('stroke', 'grey')
-                .attr('class', (d) => className + ' val' + d.value)
-                .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-            this.svg.selectAll('.' + className).on(
-                'click',
-                function (e: Event, d: LegendValue) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    const def = d.value.toString();
-                    const selection = this.svg.selectAll('.' + className + '.val' + def);
-                    if (legendSelection.has(def)) {
-                        legendSelection.delete(def);
-                        legendDeselected.add(def);
-                        selection.style('opacity', unselectedOpacity);
-                    } else {
-                        legendSelection.add(def);
-                        legendDeselected.delete(def);
-                        selection.style('opacity', 1);
-                    }
-                    for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
-                        if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                            this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
-                            this.drawPlot(plotModel);
-                        }
-                    }
-                }.bind(this)
-            );
-        }
-
-        legend.legendXEndPosition = width;
-        this.checkOversize(width);
-    }
-
-    private checkOversize(width: number) {
-        if (width > this.viewModel.svgWidth) {
-            this.viewModel.svgWidth = width;
-            this.svg.attr('width', this.viewModel.svgWidth);
-        }
     }
 
     public update(options: VisualUpdateOptions) {
@@ -304,14 +176,15 @@ export class Visual implements IVisual {
                     //     //     this.viewModel.defectGroupLegend.legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
                     //     // }
                     // }
-                    if (this.viewModel.legends && legends.legends.length > 0) {
+                    if (legends && legends.legends.length > 0) {
                         // if (this.viewModel.defectLegend) {
                         //     legends.legends[0].legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
                         // }
+                        legends.setDeselectedValues(this.legendDeselected);
                         for (let i = 0; i < legends.legends.length; i++) {
                             const l = legends.legends[i];
                             this.drawLegend(l);
-                            if (i < legends.legends.length - 1) legends.legends[i + 1].legendXPosition = l.legendXEndPosition;
+                            if (i < legends.legends.length - 1) legends.legends[i + 1].legendXPosition = l.legendXEndPosition + MarginSettings.legendSeparationMargin;
                         }
                     }
                     // if (this.viewModel.defectGroupLegend != null) {
@@ -358,6 +231,155 @@ export class Visual implements IVisual {
         } catch (error) {
             //try catch can be removed in the end, should not display any errors
             console.log(error);
+        }
+    }
+
+    private drawLegend(legend: Legend) {
+        const yPosition = this.viewModel.generalPlotSettings.legendYPostion;
+        const className = Constants.defectLegendClass + Math.trunc(legend.legendXPosition);
+        const dotsXPositions = [];
+        let xPos = legend.legendXPosition;
+        xPos = this.drawLegendTitle(legend.legendTitle, className + legend.type, xPos, yPosition);
+        if (legend.type === FilterType.booleanFilter) {
+            this.addBooleanLegendClickHandler(legend);
+        } else {
+            xPos = this.drawLegendTexts(legend.legendValues, className, xPos, dotsXPositions, yPosition, legend.selectedValues);
+            this.drawLegendDots(legend.legendValues, dotsXPositions, yPosition, className, legend.selectedValues);
+            this.addLegendValuesClickHandler(className, legend);
+        }
+        legend.legendXEndPosition = xPos;
+        this.checkOutOfSvg(xPos);
+    }
+
+    private addLegendValuesClickHandler(className: string, legend: Legend) {
+        this.svg.selectAll('.' + className).on(
+            'click',
+            function (e: Event, d: LegendValue) {
+                e.stopPropagation();
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                const def = d.value.toString();
+                const selection = this.svg.selectAll('.' + className + '.val' + def);
+                if (legend.selectedValues.has(def)) {
+                    legend.selectedValues.delete(def);
+                    this.legendDeselected.add(def);
+                    selection.style('opacity', NumberConstants.legendDeselectionOpacity);
+                } else {
+                    legend.selectedValues.add(def);
+                    this.legendDeselected.delete(def);
+                    selection.style('opacity', 1);
+                }
+                for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
+                    if (plotModel.plotSettings.plotSettings.useLegendColor) {
+                        this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                        this.drawPlot(plotModel);
+                    }
+                }
+            }.bind(this)
+        );
+    }
+
+    private drawLegendDots(legendValues: LegendValue[], dotsXPositions: number[], yPosition: number, className: string, selection?: Set<Primitive>, opacity?: number) {
+        const s = this.svg
+            .selectAll('legendDots')
+            .data(legendValues)
+            .enter()
+            .append('circle')
+            .attr('cx', function (d, i) {
+                return dotsXPositions[i];
+            })
+            .attr('cy', yPosition)
+            .attr('r', 7)
+            .style('fill', function (d) {
+                return d.color;
+            })
+            .style('stroke', 'grey')
+            .attr('class', (d) => className + ' val' + d.value);
+        if (selection) {
+            s.style('opacity', (d) => (selection.has(d.value.toString()) ? 1 : NumberConstants.legendDeselectionOpacity));
+        } else if (opacity) {
+            s.style('opacity', opacity);
+        }
+    }
+
+    private drawLegendTexts(legendValues: LegendValue[], className: string, xPos: number, dotsXPositions: number[], yPosition: number, selection: Set<Primitive>) {
+        this.svg
+            .selectAll('legendText')
+            .data(legendValues)
+            .enter()
+            .append('text')
+            .text(function (d) {
+                return String(d.value);
+            })
+            .attr('text-anchor', 'left')
+            .attr('class', (d) => className + ' val' + d.value)
+            .style('alignment-baseline', 'middle')
+            .style('font-size', this.viewModel.generalPlotSettings.fontSize)
+            .attr('x', function () {
+                const x = xPos;
+                dotsXPositions.push(xPos);
+                xPos = xPos + 25 + this.getComputedTextLength();
+                return 10 + x;
+            })
+            .attr('y', yPosition)
+            .style('opacity', (d) => (selection.has(d.value.toString()) ? 1 : NumberConstants.legendDeselectionOpacity));
+        return xPos;
+    }
+
+    private addBooleanLegendClickHandler(legend: Legend) {
+        const className = Constants.defectLegendClass + Math.trunc(legend.legendXPosition) + legend.type;
+        const legendTitleSelection = this.svg.selectAll('.' + className);
+        const legendSelection = legend.selectedValues;
+        legendTitleSelection.on(
+            'click',
+            function (e: Event) {
+                e.stopPropagation();
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                const def = '1';
+                if (legendSelection.has(def)) {
+                    legendSelection.delete(def);
+                    legendTitleSelection.style('opacity', NumberConstants.legendDeselectionOpacity);
+                    this.legendDeselected.add(def);
+                } else {
+                    legendSelection.add(def);
+                    legendTitleSelection.style('opacity', 1);
+                    this.legendDeselected.delete(def);
+                }
+                for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
+                    if (plotModel.plotSettings.plotSettings.useLegendColor) {
+                        this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                        this.drawPlot(plotModel);
+                    }
+                }
+            }.bind(this)
+        );
+    }
+
+    private drawLegendTitle(legendTitle: string, className: string, xPosition: number, yPosition: number, selectionName: string = Constants.legendTitleSelection) {
+        this.svg
+            .selectAll(selectionName)
+            .data([legendTitle])
+            .enter()
+            .append('text')
+            .text((d) => d)
+            .attr('text-anchor', 'left')
+            .attr('class', className)
+            .style('alignment-baseline', 'middle')
+            .style('font-size', this.viewModel.generalPlotSettings.fontSize)
+            .attr('x', function () {
+                const x = xPosition;
+                xPosition = xPosition + this.getComputedTextLength() + 15;
+                return x;
+            })
+            .attr('y', yPosition);
+        return xPosition;
+    }
+
+    private checkOutOfSvg(width: number) {
+        if (width > this.viewModel.svgWidth) {
+            this.viewModel.svgWidth = width;
+            this.svg.attr('width', this.viewModel.svgWidth);
         }
     }
 
@@ -428,63 +450,18 @@ export class Visual implements IVisual {
 
     private drawRolloutLegend() {
         const margins = this.viewModel.generalPlotSettings;
-        const yPosition = margins.legendYPostion + 10;
+        const yPosition = margins.legendYPostion;
         const rolloutRectangles = this.viewModel.rolloutRectangles;
         const legendCount = this.viewModel.legends.legends.length;
-        let width = legendCount > 0 ? this.viewModel.legends.legends[legendCount - 1].legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
+        let xPos = legendCount > 0 ? this.viewModel.legends.legends[legendCount - 1].legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
         if (this.viewModel.legends.legends.length > 0) {
-            width = this.viewModel.legends.legends[this.viewModel.legends.legends.length - 1].legendXEndPosition + MarginSettings.legendSeparationMargin;
+            xPos = this.viewModel.legends.legends[this.viewModel.legends.legends.length - 1].legendXEndPosition + MarginSettings.legendSeparationMargin;
         }
-        const widths = [];
-
-        this.svg
-            .selectAll('rolloutLegendTitle')
-            .data([rolloutRectangles.name])
-            .enter()
-            .append('text')
-            .text((d) => d)
-            .attr('text-anchor', 'left')
-            .style('alignment-baseline', 'middle')
-            .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function () {
-                const x = width;
-                width = width + this.getComputedTextLength() + 15;
-                return x;
-            })
-            .attr('y', yPosition);
-
-        this.svg
-            .selectAll('rolloutLegendText')
-            // .data(ArrayConstants.rolloutNames)
-            .data(rolloutRectangles.legendValues)
-            .enter()
-            .append('text')
-            .text((d) => '' + d.value)
-            .attr('text-anchor', 'left')
-            .style('alignment-baseline', 'middle')
-            .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function () {
-                const x = width;
-                widths.push(width);
-                width = width + 25 + this.getComputedTextLength();
-                return 10 + x;
-            })
-            .attr('y', yPosition);
-
-        this.svg
-            .selectAll('rolloutLegendDots')
-            .data(rolloutRectangles.legendValues)
-            .enter()
-            .append('circle')
-            .attr('cx', function (d, i) {
-                return widths[i];
-            })
-            .attr('cy', yPosition)
-            .attr('r', 7)
-            .style('fill', (d) => d.color)
-            .style('stroke', 'grey')
-            .style('opacity', rolloutRectangles.opacity * 2);
-        this.checkOversize(width);
+        const dotsXPosition = [];
+        xPos = this.drawLegendTitle(rolloutRectangles.name, Constants.rolloutLegendTitleSelection, xPos, yPosition, Constants.rolloutLegendTitleSelection);
+        xPos = this.drawLegendTexts(rolloutRectangles.legendValues, '', xPos, dotsXPosition, yPosition, new Set(rolloutRectangles.legendValues.map((x) => x.value)));
+        this.drawLegendDots(rolloutRectangles.legendValues, dotsXPosition, yPosition, '', null, rolloutRectangles.opacity * 2);
+        this.checkOutOfSvg(xPos);
     }
 
     private drawRolloutRectangles() {

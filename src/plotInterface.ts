@@ -370,6 +370,14 @@ export class Legends {
         }
         return draw;
     }
+    setDeselectedValues(deselected: Set<Primitive>) {
+        if (deselected.size === 0) return;
+        for (const l of this.legends) {
+            for (const val of Array.from(l.selectedValues).filter((x) => deselected.has(x))) {
+                l.selectedValues.delete(val);
+            }
+        }
+    }
 }
 
 // export interface Legend {
