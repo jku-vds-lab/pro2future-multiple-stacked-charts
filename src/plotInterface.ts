@@ -189,8 +189,8 @@ export interface XAxisSettings {
         min: number;
         max: number;
     };
-    xScale: d3.ScaleLinear<number, number, never>;
-    xScaleZoomed: d3.ScaleLinear<number, number, never>;
+    xScale: d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
+    xScaleZoomed: d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
 }
 
 export interface Margins {
