@@ -30,7 +30,7 @@ import {
     Legends,
     LegendValue,
 } from './plotInterface';
-import { Primitive, scaleLinear } from 'd3';
+import { Primitive, scaleLinear, scaleTime } from 'd3';
 import {
     AxisSettingsNames,
     PlotSettingsNames,
@@ -148,7 +148,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const filterLegendData: LegendData[] = [];
     // let defectIndices: DefectIndices = new DefectIndices();
 
-    let xDataPoints: number[] = [];
+    let xDataPoints: number[] | Date[] = [];
     let yDataPoints: number[] = [];
     let dataPoints: DataPoint[] = [];
     let overlayWidth: number[] = [];
@@ -165,10 +165,19 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         for (const category of categorical.categories) {
             const roles = category.source.roles;
             if (roles.x_axis) {
-                xData = {
-                    name: category.source.displayName,
-                    values: <number[]>category.values,
-                };
+                if (category.source.type.dateTime) {
+                    xData = {
+                        name: category.source.displayName,
+                        values: <Date[]>category.values,
+                        isDate: true,
+                    };
+                } else if (category.source.type.numeric) {
+                    xData = {
+                        name: category.source.displayName,
+                        values: <number[]>category.values,
+                        isDate: false,
+                    };
+                }
             }
             if (roles.y_axis) {
                 const yId = category.source['rolesIndex']['y_axis'][0];
@@ -235,10 +244,19 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         for (const value of categorical.values) {
             const roles = value.source.roles;
             if (roles.x_axis) {
-                xData = {
-                    name: value.source.displayName,
-                    values: <number[]>value.values,
-                };
+                if (value.source.type.dateTime) {
+                    xData = {
+                        name: value.source.displayName,
+                        values: <Date[]>value.values,
+                        isDate: true,
+                    };
+                } else if (value.source.type.numeric) {
+                    xData = {
+                        name: value.source.displayName,
+                        values: <number[]>value.values,
+                        isDate: false,
+                    };
+                }
             }
             if (roles.y_axis) {
                 const yId = value.source['rolesIndex']['y_axis'][0];
@@ -302,18 +320,20 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         }
     }
 
-    const nullValues = xData.values.filter((x) => x === null || x === undefined);
+    const nullValues = xData.isDate ? (<Date[]>xData.values).filter((x) => x === null || x === undefined) : (<number[]>xData.values).filter((x) => x === null || x === undefined);
     if (nullValues.length > 0) {
         return err(new AxisNullValuesError(xData.name));
     }
-    const axisBreak = <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, true);
-    const uniqueXValues = Array.from(new Set(xData.values));
+    const axisBreak = xData.isDate ? false : <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false);
+    const uniqueXValues = Array.from(new Set<Date | number>(xData.values));
     const indexMap = new Map(uniqueXValues.map((x, i) => [x, i]));
-    const a = uniqueXValues
-        .map((x, i, a) => {
-            return { i: i, gapSize: i < a.length ? a[i + 1] - x : 0 };
-        })
-        .filter((x) => x.gapSize > 1);
+    const a = xData.isDate
+        ? []
+        : uniqueXValues
+              .map((x: number, i, a: number[]) => {
+                  return { i: i, gapSize: i < a.length ? a[i + 1] - x : 0 };
+              })
+              .filter((x) => x.gapSize > 1);
     const breakIndices = a.map((x) => x.i + 0.5);
     // if (axisBreak) {
     //     debugger;
@@ -681,14 +701,25 @@ function createTooltipModels(
     }
 }
 
-function createOverlayInformation(overlayLength: number[], overlayWidth: number[], xValues: number[], viewModel: ViewModel): Result<void, OverlayDataError> {
+function createOverlayInformation(overlayLength: number[], overlayWidth: number[], xValues: number[] | Date[], viewModel: ViewModel): Result<void, OverlayDataError> {
     if (overlayLength.length == overlayWidth.length && overlayWidth.length > 0) {
         let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(overlayLength.length);
         const xAxisSettings = viewModel.generalPlotSettings.xAxisSettings;
+        let endX = null;
         for (let i = 0; i < overlayLength.length; i++) {
+            if (overlayLength[i]) {
+                if (viewModel.generalPlotSettings.xAxisSettings.isDate) {
+                    const index = i + overlayLength[i] < xValues.length ? i + overlayLength[i] : xValues.length - 1;
+                    endX = xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[index]) : xValues[index];
+                } else {
+                    endX = xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) + overlayLength[i] : <number>xValues[i] + overlayLength[i];
+                }
+            } else {
+                endX = null;
+            }
             overlayRectangles[i] = {
                 width: overlayWidth[i],
-                length: overlayLength[i],
+                endX: endX,
                 y: 0,
                 x: xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) : xValues[i],
             };
@@ -702,6 +733,7 @@ function createOverlayInformation(overlayLength: number[], overlayWidth: number[
     return ok(null);
 }
 
+// eslint-disable-next-line max-lines-per-function
 function createViewModel(
     options: VisualUpdateOptions,
     yCount: number,
@@ -712,7 +744,7 @@ function createViewModel(
     heatmapCount: number,
     legends: Legends,
     xData: XAxisData,
-    indexMap: Map<number, number>,
+    indexMap: Map<number | Date, number>,
     axisBreak: boolean,
     breakIndices: number[]
 ): Result<ViewModel, ParseAndTransformError> {
@@ -744,16 +776,21 @@ function createViewModel(
         svgWidth = svgWidth + widthDif;
         // return err(new PlotSizeError('horizontal'));
     }
-    const xRange = {
-        min: Math.min(...xData.values),
-        max: Math.max(...xData.values),
-    };
+    const xRange = xData.isDate
+        ? {
+              min: Math.min(...(<number[]>xData.values)),
+              max: Math.max(...(<number[]>xData.values)),
+          }
+        : {
+              min: (<Date[]>xData.values).reduce((a: Date, b: Date) => (a < b ? a : b)),
+              max: (<Date[]>xData.values).reduce((a: Date, b: Date) => (a > b ? a : b)),
+          };
 
     if (axisBreak) {
         xRange.min = indexMap.get(xRange.min);
         xRange.max = indexMap.get(xRange.max);
     }
-    const xScale = scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
+    const xScale = xData.isDate ? scaleTime().domain([xRange.min, xRange.max]).range([0, plotWidth]) : scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
     const xAxisSettings = <XAxisSettings>{
         axisBreak,
         breakIndices,

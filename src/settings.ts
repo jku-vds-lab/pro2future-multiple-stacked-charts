@@ -17,8 +17,8 @@ export class CircleSettings extends FormattingSettingsCard {
         value: 2,
     });
 
-    public name: string = 'circle';
-    public displayName: string = 'Circle';
+    public name = 'circle';
+    public displayName = 'Circle';
     public slices: FormattingSettingsSlice[] = [this.circleColor, this.circleThickness];
 }
 

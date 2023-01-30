@@ -466,7 +466,7 @@ export class Visual implements IVisual {
             .enter()
             .append('rect')
             .attr('class', Constants.rolloutClass)
-            .attr('width', (d) => xScale(d.length + d.x) - xScale(d.x))
+            .attr('width', (d) => xScale(d.endX) - xScale(d.x))
             .attr('height', (d) => d.width)
             .attr('x', (d) => xScale(d.x))
             .attr('y', (d) => d.y)
@@ -583,14 +583,18 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxis = plot.append('g').classed('xAxis', true);
 
-            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed).tickFormat((d) => {
-                const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
-                let key = '';
-                for (const [k, v] of xAxisSettings.indexMap.entries()) {
-                    if (v === d) key = '' + k;
-                }
-                return key;
-            });
+            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed);
+            if (generalPlotSettings.xAxisSettings.axisBreak) {
+                xAxisValue.tickFormat((d) => {
+                    const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
+                    let key = '';
+                    for (const [k, v] of xAxisSettings.indexMap.entries()) {
+                        if (v === d) key = '' + k;
+                    }
+                    return key;
+                });
+            }
+
             let xLabel = null;
             if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
                 xAxisValue.tickValues([]);
@@ -683,7 +687,7 @@ export class Visual implements IVisual {
                             return yScale(d.width - d.y);
                         })
                         .attr('width', function (d) {
-                            return xScale(d.length + d.x) - xScale(d.x);
+                            return xScale(d.endX) - xScale(d.x);
                         })
                         .attr('height', function (d) {
                             return yScale(d.y) - yScale(d.width);
@@ -976,7 +980,7 @@ export class Visual implements IVisual {
                 return xScale(d.x);
             })
             .attr('width', function (d: RolloutRectangle) {
-                return xScale(d.length + d.x) - xScale(d.x);
+                return xScale(d.endX) - xScale(d.x);
             });
     }
 
@@ -989,7 +993,7 @@ export class Visual implements IVisual {
                 return xScaleZoomed(d.x);
             })
             .attr('width', function (d: OverlayRectangle) {
-                return xScaleZoomed(d.length + d.x) - xScaleZoomed(d.x);
+                return xScaleZoomed(d.endX) - xScaleZoomed(d.x);
             });
         overlayBars
             .selectAll('line')
@@ -1208,6 +1212,7 @@ export class Visual implements IVisual {
         }
     }
 
+    // eslint-disable-next-line max-lines-per-function
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
         const colorPalette = this.host.colorPalette;
@@ -1277,7 +1282,7 @@ export class Visual implements IVisual {
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
-                            enable: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, true),
+                            enable: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false),
                             showLines: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, true),
                         },
                         selector: null,
@@ -1391,6 +1396,7 @@ export class Visual implements IVisual {
         }
         return objectEnumeration;
 
+        // eslint-disable-next-line max-lines-per-function
         function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], settingsCount = 1) {
             objectEnumeration = new Array<VisualObjectInstance>(yCount * settingsCount);
 
