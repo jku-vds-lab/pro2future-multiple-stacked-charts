@@ -255,6 +255,24 @@
     ],
     "supportsHighlight": true,
     "objects": {
+        "circle": {
+            "properties": {
+                "circleColor": {
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "circleThickness": {
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
         "axisSettings": {
             "displayName": "Axis Settings",
             "properties": {

@@ -73,6 +73,7 @@ import {
  * @param {IVisualHost} host            - Contains references to the host which contains services
  */
 
+// eslint-disable-next-line max-lines-per-function
 export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Result<ViewModel, ParseAndTransformError> {
     // try {
     let parseAndTransformError: ParseAndTransformError;

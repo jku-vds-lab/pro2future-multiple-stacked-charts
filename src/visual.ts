@@ -41,6 +41,8 @@ import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import { FormattingSettingsService } from 'powerbi-visuals-utils-formattingmodel';
+import { VisualSettings } from './settings';
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
@@ -115,8 +117,11 @@ export class Visual implements IVisual {
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
+    private formattingSettingsService: FormattingSettingsService;
+    private visualSettings: VisualSettings;
 
     constructor(options: VisualConstructorOptions) {
+        this.formattingSettingsService = new FormattingSettingsService();
         this.host = options.host;
         options.element.style.overflow = 'auto';
         options.element.style.scrollbarGutter = 'stable';
@@ -146,6 +151,17 @@ export class Visual implements IVisual {
             .mapErr((err) => this.displayError(err));
 
         this.restoreZoomState();
+        // this.setupSettings(options);
+    }
+
+    private setupSettings(options: VisualUpdateOptions) {
+        this.visualSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualSettings, options.dataViews);
+        this.visualSettings.circle.circleThickness.value = Math.max(0, this.visualSettings.circle.circleThickness.value);
+        this.visualSettings.circle.circleThickness.value = Math.min(10, this.visualSettings.circle.circleThickness.value);
+    }
+
+    public getFormattingModel(): powerbi.visuals.FormattingModel {
+        return this.formattingSettingsService.buildFormattingModel(this.visualSettings);
     }
 
     private removeDuplicateColumns() {
@@ -1157,8 +1173,6 @@ export class Visual implements IVisual {
                             .text(':\t' + t.yValue)
                             .append('br');
                     });
-
-                    //tooltip.text(Array.from(tooltipSet).join(''));
                     const tooltipHeight = tooltip.node().getBoundingClientRect().height;
                     tooltipY = Math.max(tooltipY, 0);
                     tooltipY = Math.min(tooltipY, viewModel.svgHeight - tooltipHeight);
