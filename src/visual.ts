@@ -151,13 +151,15 @@ export class Visual implements IVisual {
             .mapErr((err) => this.displayError(err));
 
         this.restoreZoomState();
-        // this.setupSettings(options);
+        this.setupSettings(options);
     }
 
     private setupSettings(options: VisualUpdateOptions) {
         this.visualSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualSettings, options.dataViews);
         this.visualSettings.circle.circleThickness.value = Math.max(0, this.visualSettings.circle.circleThickness.value);
         this.visualSettings.circle.circleThickness.value = Math.min(10, this.visualSettings.circle.circleThickness.value);
+        this.visualSettings.populateSettings(this.viewModel);
+        debugger;
     }
 
     public getFormattingModel(): powerbi.visuals.FormattingModel {
@@ -269,8 +271,8 @@ export class Visual implements IVisual {
                 selection.style('opacity', 1);
             }
             for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
-                if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                    this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                if (plotModel.plotSettings.useLegendColor) {
+                    this.svg.selectAll('.' + plotModel.plotSettings.plotType + plotModel.plotId).remove();
                     this.drawPlot(plotModel);
                 }
             }
@@ -343,8 +345,8 @@ export class Visual implements IVisual {
                 this.legendDeselected.delete(def);
             }
             for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
-                if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                    this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                if (plotModel.plotSettings.useLegendColor) {
+                    this.svg.selectAll('.' + plotModel.plotSettings.plotType + plotModel.plotId).remove();
                     this.drawPlot(plotModel);
                 }
             }
@@ -477,7 +479,7 @@ export class Visual implements IVisual {
     }
 
     private constructBasicPlot(plotModel: PlotModel): Result<void, PlotError> {
-        const plotType = plotModel.plotSettings.plotSettings.plotType;
+        const plotType = plotModel.plotSettings.plotType;
         let root;
         let x: D3PlotXAxis;
         let y: D3PlotYAxis;
@@ -564,7 +566,7 @@ export class Visual implements IVisual {
 
     private appendPlotG(plotModel: PlotModel): Result<D3Selection, PlotError> {
         try {
-            const plotType = plotModel.plotSettings.plotSettings.plotType;
+            const plotType = plotModel.plotSettings.plotType;
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plot = this.svg
                 .append('g')
@@ -801,7 +803,7 @@ export class Visual implements IVisual {
             let dataPoints = plotModel.dataPoints;
             dataPoints = filterNullValues(dataPoints);
 
-            if (plotModel.plotSettings.plotSettings.useLegendColor) {
+            if (plotModel.plotSettings.useLegendColor) {
                 dataPoints = dataPoints.filter((x) => this.viewModel.legends.drawDataPoint(x.pointNr));
                 dotSize = 3;
             }
@@ -817,7 +819,7 @@ export class Visual implements IVisual {
                 .attr('stroke', this.viewModel.colorSettings.colorSettings.yZeroLineColor)
                 .attr('class', Constants.yZeroLine);
 
-            const plotType = plotModel.plotSettings.plotSettings.plotType;
+            const plotType = plotModel.plotSettings.plotType;
 
             if (plotType == PlotType.LinePlot) {
                 const line = d3
@@ -830,7 +832,7 @@ export class Visual implements IVisual {
                     .attr('class', 'path')
                     .attr('d', line)
                     .attr('fill', 'none')
-                    .attr('stroke', plotModel.plotSettings.plotSettings.fill)
+                    .attr('stroke', plotModel.plotSettings.fill)
                     .attr('stroke-width', 1.5)
                     .attr('clip-path', 'url(#clip)');
             }
@@ -857,7 +859,7 @@ export class Visual implements IVisual {
                 .mapErr((err) => (plotError = err));
             if (plotError) return err(plotError);
             d3Plot.points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-            if (plotModel.plotSettings.plotSettings.showHeatmap) {
+            if (plotModel.plotSettings.showHeatmap) {
                 this.drawHeatmap(dataPoints, plotModel)
                     .map((x) => (plotModel.d3Plot.heatmap = x))
                     .mapErr((err) => (plotError = err));

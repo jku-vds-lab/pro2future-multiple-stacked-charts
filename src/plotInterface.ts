@@ -241,6 +241,7 @@ export interface PlotModel {
         minFixed: boolean;
     };
     d3Plot: D3Plot;
+    metaDataColumn: powerbi.DataViewMetadataColumn;
 }
 
 export interface LabelNames {
@@ -333,12 +334,10 @@ export interface HeatmapSettings {
 }
 
 export interface PlotSettings {
-    plotSettings: {
-        fill: string;
-        plotType: PlotType;
-        useLegendColor: boolean;
-        showHeatmap: boolean;
-    };
+    fill: string;
+    plotType: PlotType;
+    useLegendColor: boolean;
+    showHeatmap: boolean;
 }
 
 export interface OverlayPlotSettings {

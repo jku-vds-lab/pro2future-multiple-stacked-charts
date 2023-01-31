@@ -14,6 +14,7 @@ export enum Settings {
     xAxisBreakSettings = 'xAxisBreakSettings',
     rolloutSettings = 'rolloutSettings',
 }
+
 export enum AxisLabelSettingsNames {
     xLabel = 'xLabel',
     yLabel = 'yLabel',

@@ -486,17 +486,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             },
         });
         plotSettingsArray.push({
-            plotSettings: {
-                fill: getPlotFillColor(yColumnObjects, colorPalette, ArrayConstants.colorArray[plotNr]),
-                plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
-                showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
-            },
+            fill: getPlotFillColor(yColumnObjects, colorPalette, ArrayConstants.colorArray[plotNr]),
+            plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
+            useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
+            showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
         });
     }
     const plotTitlesCount = plotTitles.filter((x) => x.length > 0).length;
     const xLabelsCount = formatSettings.filter((x) => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
-    const heatmapCount = plotSettingsArray.filter((x) => x.plotSettings.showHeatmap).length;
+    const heatmapCount = plotSettingsArray.filter((x) => x.showHeatmap).length;
     let viewModel: ViewModel;
     const viewModelResult = createViewModel(
         options,
@@ -534,7 +532,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
         dataPoints = [];
         const yColumnId = yData[plotNr].columnId;
-        const yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
+        const metaDataColumn = getMetadataColumn(metadataColumns, yColumnId);
+        const yColumnObjects = metaDataColumn.objects;
         const plotSettings = plotSettingsArray[plotNr];
         // : PlotSettings = {
         //     plotSettings: {
@@ -547,10 +546,10 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         //create datapoints
         for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
-            let color = plotSettings.plotSettings.fill;
+            let color = plotSettings.fill;
             const xVal = xDataPoints[pointNr];
             let filterValues = [];
-            if (plotSettings.plotSettings.useLegendColor) {
+            if (plotSettings.useLegendColor) {
                 const filtered = legends.legends.filter((x) => x.type === FilterType.defectFilter);
                 if (filtered.length === 1) {
                     const defectLegend = filtered[0];
@@ -611,6 +610,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             },
             dataPoints: dataPoints,
             d3Plot: null,
+            metaDataColumn: metaDataColumn,
         };
         plotModel.yRange.min = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
         plotModel.yRange.max = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
@@ -618,7 +618,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const formatXAxis = plotModel.formatSettings.axisSettings.xAxis;
         plotTop = formatXAxis.lables && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;
         plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
-        plotTop += plotModel.plotSettings.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
+        plotTop += plotModel.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
     }
     if (rolloutRectangles) {
         const category = categorical.categories.filter((x) => x.source.roles.rollout)[0];
