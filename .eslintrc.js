@@ -13,7 +13,6 @@ module.exports = {
     plugins: ['prettier', 'powerbi-visuals', '@typescript-eslint'],
     extends: ['prettier', 'plugin:powerbi-visuals/recommended', 'eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'],
     rules: {
-        'max-lines-per-function': ['error', 600],
         'no-debugger': 1,
     },
 };

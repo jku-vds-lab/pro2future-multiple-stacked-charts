@@ -77,7 +77,7 @@ export class RolloutRectangles {
     // colors: string[];
 
     constructor(
-        xValues: number[],
+        xValues: number[] | Date[],
         rollout: Primitive[],
         y,
         width,
@@ -128,15 +128,15 @@ export class RolloutRectangles {
             color: this.getColor(rollout[0]),
         };
 
-        let lastX = xValues[0];
+        // let lastX = xValues[0];
         let lastRollout = rollout[0];
         for (let i = 0; i < xValues.length; i++) {
             const x = xValues[i];
             const r = rollout[i];
             if (r != lastRollout) {
                 lastRollout = r;
-                rect.length = x - lastX;
-                lastX = x;
+                rect.endX = x;
+                //lastX = x;
                 this.rolloutRectangles.push(rect);
                 rect = <RolloutRectangle>{
                     y,
@@ -146,7 +146,7 @@ export class RolloutRectangles {
                 };
             }
         }
-        rect.length = xValues[xValues.length - 1] - lastX;
+        rect.endX = xValues[xValues.length - 1];
         this.rolloutRectangles.push(rect);
     }
 
@@ -157,7 +157,7 @@ export class RolloutRectangles {
 
 export interface RolloutRectangle {
     width: number;
-    length: number;
+    endX: number | Date;
     x: number;
     y: number;
     color: string;
@@ -181,15 +181,16 @@ export interface GeneralPlotSettings {
 export interface XAxisSettings {
     axisBreak: boolean;
     breakIndices: number[];
-    indexMap: Map<number, number>;
+    indexMap: Map<number | Date, number>;
     showBreakLines: boolean;
+    isDate: boolean;
     xName: string;
     xRange: {
         min: number;
         max: number;
     };
-    xScale: d3.ScaleLinear<number, number, never>;
-    xScaleZoomed: d3.ScaleLinear<number, number, never>;
+    xScale: d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
+    xScaleZoomed: d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
 }
 
 export interface Margins {
@@ -259,8 +260,8 @@ export interface PlotTitleSettings {
 
 export interface OverlayRectangle {
     width: number;
-    length: number;
-    x: number;
+    endX: number;
+    x: number | Date;
     y: number;
 }
 
@@ -370,6 +371,14 @@ export class Legends {
         }
         return draw;
     }
+    setDeselectedValues(deselected: Set<Primitive>) {
+        if (deselected.size === 0) return;
+        for (const l of this.legends) {
+            for (const val of Array.from(l.selectedValues).filter((x) => deselected.has(x))) {
+                l.selectedValues.delete(val);
+            }
+        }
+    }
 }
 
 // export interface Legend {
@@ -380,8 +389,9 @@ export class Legends {
 // }
 
 export interface XAxisData {
-    values: number[];
+    values: number[] | Date[];
     name?: string;
+    isDate: boolean;
 }
 
 export interface YAxisData {

@@ -41,6 +41,8 @@ import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import { FormattingSettingsService } from 'powerbi-visuals-utils-formattingmodel';
+import { VisualSettings } from './settings';
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
@@ -85,6 +87,7 @@ import {
     HeatmapSettingsNames,
     XAxisBreakSettingsNames,
     FilterType,
+    NumberConstants,
 } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import {
@@ -102,6 +105,7 @@ import {
     OverlayInformationError,
 } from './errors';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
+import { Primitive } from 'd3';
 
 export class Visual implements IVisual {
     private host: IVisualHost;
@@ -109,13 +113,15 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-    private legendSelection = new Set(Object.keys(ArrayConstants.legendColors).concat(Object.keys(ArrayConstants.groupValues)));
-    private legendDeselected = new Set();
+    private legendDeselected = new Set<Primitive>();
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
+    private formattingSettingsService: FormattingSettingsService;
+    private visualSettings: VisualSettings;
 
     constructor(options: VisualConstructorOptions) {
+        this.formattingSettingsService = new FormattingSettingsService();
         this.host = options.host;
         options.element.style.overflow = 'auto';
         options.element.style.scrollbarGutter = 'stable';
@@ -125,239 +131,250 @@ export class Visual implements IVisual {
         this.storage = this.host.storageService;
     }
 
+    public update(options: VisualUpdateOptions) {
+        this.dataview = options.dataViews[0];
+        this.removeDuplicateColumns();
+        visualTransform(options, this.host)
+            .map((model) => {
+                this.viewModel = model;
+                this.svg.selectAll('*').remove();
+                this.svg.attr('width', this.viewModel.svgWidth).attr('height', this.viewModel.svgHeight);
+                if (model.errors.length > 0) {
+                    this.displayError(model.errors[0]);
+                    return;
+                }
+                this.drawPlots();
+                this.drawLegends();
+                this.drawAxisBreakLines();
+                this.addcontextMenu();
+            })
+            .mapErr((err) => this.displayError(err));
+
+        this.restoreZoomState();
+        // this.setupSettings(options);
+    }
+
+    private setupSettings(options: VisualUpdateOptions) {
+        this.visualSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualSettings, options.dataViews);
+        this.visualSettings.circle.circleThickness.value = Math.max(0, this.visualSettings.circle.circleThickness.value);
+        this.visualSettings.circle.circleThickness.value = Math.min(10, this.visualSettings.circle.circleThickness.value);
+    }
+
+    public getFormattingModel(): powerbi.visuals.FormattingModel {
+        return this.formattingSettingsService.buildFormattingModel(this.visualSettings);
+    }
+
+    private removeDuplicateColumns() {
+        const categoryIndices = new Set();
+        if (this.dataview.categorical.categories) {
+            this.dataview.categorical.categories = this.dataview.categorical.categories.filter((cat) => {
+                const duplicate = categoryIndices.has(cat.source.index);
+                categoryIndices.add(cat.source.index);
+                return !duplicate;
+            });
+        }
+        if (this.dataview.categorical.values) {
+            const valueIndices = new Set();
+            this.dataview.categorical.values = <powerbi.DataViewValueColumns>this.dataview.categorical.values.filter((val) => {
+                const duplicate = valueIndices.has(val.source.index);
+                valueIndices.add(val.source.index);
+                return !duplicate;
+            });
+        }
+    }
+
+    private addcontextMenu() {
+        this.svg.on('contextmenu', (event) => {
+            if (event.shiftKey) return;
+            const dataPoint = d3.select(event.target).datum();
+            this.selectionManager.showContextMenu(dataPoint && (<DataPoint>dataPoint).selectionId ? (<DataPoint>dataPoint).selectionId : {}, {
+                x: event.clientX,
+                y: event.clientY,
+            });
+            event.preventDefault();
+        });
+    }
+
+    private drawAxisBreakLines() {
+        if (this.viewModel.generalPlotSettings.xAxisSettings.showBreakLines) {
+            const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
+            const xScale = xAxisSettings.xScaleZoomed;
+            const plotModels = this.viewModel.plotModels;
+            const generalPlotSettings = this.viewModel.generalPlotSettings;
+            const linesG = this.svg.append('g').attr('transform', 'translate(' + generalPlotSettings.margins.left + ',0)');
+            const lines = linesG
+                .selectAll('.' + Constants.axisBreakClass)
+                .data(xAxisSettings.breakIndices)
+                .join('line')
+                .attr('class', Constants.axisBreakClass)
+                .attr('stroke', '#cccccc')
+                .attr('x1', (d) => xScale(d))
+                .attr('x2', (d) => xScale(d))
+                .attr('y1', plotModels[0].plotTop)
+                .attr('y2', plotModels[plotModels.length - 1].plotTop + generalPlotSettings.plotHeight)
+                .attr('stroke-dasharray', '5,5')
+                .attr('clip-path', 'url(#rolloutClip)')
+                .attr('pointer-events', 'none');
+            lines.raise();
+        }
+    }
+
+    private drawLegends() {
+        const legends = this.viewModel.legends;
+        if (legends && legends.legends.length > 0) {
+            legends.setDeselectedValues(this.legendDeselected);
+            for (let i = 0; i < legends.legends.length; i++) {
+                const l = legends.legends[i];
+                this.drawLegend(l);
+                if (i < legends.legends.length - 1) legends.legends[i + 1].legendXPosition = l.legendXEndPosition + MarginSettings.legendSeparationMargin;
+            }
+        }
+        if (this.viewModel.rolloutRectangles) {
+            this.drawRolloutRectangles();
+            this.drawRolloutLegend();
+        }
+    }
+
     private drawLegend(legend: Legend) {
-        const unselectedOpacity = 0.3;
-        const margins = this.viewModel.generalPlotSettings;
-        const yPosition = margins.legendYPostion + 10;
-        const legendData = legend.legendValues;
-        const legendTitle = legend.legendTitle;
-        const legendSelection = legend.selectedValues;
+        const yPosition = this.viewModel.generalPlotSettings.legendYPostion;
         const className = Constants.defectLegendClass + Math.trunc(legend.legendXPosition);
-        console.log(className);
-        const legendDeselected = this.legendDeselected;
-        const widths = [];
-        let width = legend.legendXPosition;
+        const dotsXPositions = [];
+        let xPos = legend.legendXPosition;
+        xPos = this.drawLegendTitle(legend.legendTitle, className + legend.type, xPos, yPosition);
+        if (legend.type === FilterType.booleanFilter) {
+            this.addBooleanLegendClickHandler(legend);
+        } else {
+            xPos = this.drawLegendTexts(legend.legendValues, className, xPos, dotsXPositions, yPosition, legend.selectedValues);
+            this.drawLegendDots(legend.legendValues, dotsXPositions, yPosition, className, legend.selectedValues);
+            this.addLegendValuesClickHandler(className, legend);
+        }
+        legend.legendXEndPosition = xPos;
+        this.checkOutOfSvg(xPos);
+    }
+
+    private addLegendValuesClickHandler(className: string, legend: Legend) {
+        this.svg.selectAll('.' + className).on('click', (e: Event, d: LegendValue) => {
+            e.stopPropagation();
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            const def = d.value.toString();
+            const selection = this.svg.selectAll('.' + className + '.val' + def);
+            if (legend.selectedValues.has(def)) {
+                legend.selectedValues.delete(def);
+                this.legendDeselected.add(def);
+                selection.style('opacity', NumberConstants.legendDeselectionOpacity);
+            } else {
+                legend.selectedValues.add(def);
+                this.legendDeselected.delete(def);
+                selection.style('opacity', 1);
+            }
+            for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
+                if (plotModel.plotSettings.plotSettings.useLegendColor) {
+                    this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                    this.drawPlot(plotModel);
+                }
+            }
+        });
+    }
+
+    private drawLegendDots(legendValues: LegendValue[], dotsXPositions: number[], yPosition: number, className: string, selection?: Set<Primitive>, opacity?: number) {
+        const s = this.svg
+            .selectAll('legendDots')
+            .data(legendValues)
+            .enter()
+            .append('circle')
+            .attr('cx', function (d, i) {
+                return dotsXPositions[i];
+            })
+            .attr('cy', yPosition)
+            .attr('r', 7)
+            .style('fill', function (d) {
+                return d.color;
+            })
+            .style('stroke', 'grey')
+            .attr('class', (d) => className + ' val' + d.value);
+        if (selection) {
+            s.style('opacity', (d) => (selection.has(d.value.toString()) ? 1 : NumberConstants.legendDeselectionOpacity));
+        } else if (opacity) {
+            s.style('opacity', opacity);
+        }
+    }
+
+    private drawLegendTexts(legendValues: LegendValue[], className: string, xPos: number, dotsXPositions: number[], yPosition: number, selection: Set<Primitive>) {
         this.svg
-            .selectAll('legendTitle')
+            .selectAll('legendText')
+            .data(legendValues)
+            .enter()
+            .append('text')
+            .text(function (d) {
+                return String(d.value);
+            })
+            .attr('text-anchor', 'left')
+            .attr('class', (d) => className + ' val' + d.value)
+            .style('alignment-baseline', 'middle')
+            .style('font-size', this.viewModel.generalPlotSettings.fontSize)
+            .attr('x', function () {
+                const x = xPos;
+                dotsXPositions.push(xPos);
+                xPos = xPos + 25 + this.getComputedTextLength();
+                return 10 + x;
+            })
+            .attr('y', yPosition)
+            .style('opacity', (d) => (selection.has(d.value.toString()) ? 1 : NumberConstants.legendDeselectionOpacity));
+        return xPos;
+    }
+
+    private addBooleanLegendClickHandler(legend: Legend) {
+        const className = Constants.defectLegendClass + Math.trunc(legend.legendXPosition) + legend.type;
+        const legendTitleSelection = this.svg.selectAll('.' + className);
+        const legendSelection = legend.selectedValues;
+        legendTitleSelection.on('click', (e: Event) => {
+            e.stopPropagation();
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            const def = '1';
+            if (legendSelection.has(def)) {
+                legendSelection.delete(def);
+                legendTitleSelection.style('opacity', NumberConstants.legendDeselectionOpacity);
+                this.legendDeselected.add(def);
+            } else {
+                legendSelection.add(def);
+                legendTitleSelection.style('opacity', 1);
+                this.legendDeselected.delete(def);
+            }
+            for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
+                if (plotModel.plotSettings.plotSettings.useLegendColor) {
+                    this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                    this.drawPlot(plotModel);
+                }
+            }
+        });
+    }
+
+    private drawLegendTitle(legendTitle: string, className: string, xPosition: number, yPosition: number, selectionName: string = Constants.legendTitleSelection) {
+        this.svg
+            .selectAll(selectionName)
             .data([legendTitle])
             .enter()
             .append('text')
             .text((d) => d)
             .attr('text-anchor', 'left')
-            .attr('class', className + legend.type)
+            .attr('class', className)
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
             .attr('x', function () {
-                const x = width;
-                width = width + this.getComputedTextLength() + 15;
+                const x = xPosition;
+                xPosition = xPosition + this.getComputedTextLength() + 15;
                 return x;
             })
-            .attr('y', yPosition)
-            .on(
-                'click',
-                function (e: Event) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    const selection = this.svg.selectAll('.' + className + legend.type);
-                    const def = '1';
-                    if (legendSelection.has(def)) {
-                        legendSelection.delete(def);
-                        selection.style('opacity', unselectedOpacity);
-                        legendDeselected.add(def);
-                    } else {
-                        legendSelection.add(def);
-                        selection.style('opacity', 1);
-                        legendDeselected.delete(def);
-                    }
-
-                    for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
-                        if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                            this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
-                            this.drawPlot(plotModel);
-                        }
-                    }
-                }.bind(this)
-            );
-        if (legend.type !== FilterType.booleanFilter) {
-            this.svg
-                .selectAll('legendText')
-                .data(legendData)
-                .enter()
-                .append('text')
-                .text(function (d) {
-                    return String(d.value);
-                })
-                .attr('text-anchor', 'left')
-                .attr('class', (d) => className + ' val' + d.value)
-                .style('alignment-baseline', 'middle')
-                .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-                .attr('x', function () {
-                    const x = width;
-                    widths.push(width);
-                    width = width + 25 + this.getComputedTextLength();
-                    return 10 + x;
-                })
-                .attr('y', yPosition)
-                .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-            this.svg
-                .selectAll('legendDots')
-                .data(legendData)
-                .enter()
-                .append('circle')
-                .attr('cx', function (d, i) {
-                    return widths[i];
-                })
-                .attr('cy', yPosition)
-                .attr('r', 7)
-                .style('fill', function (d) {
-                    return d.color;
-                })
-                .style('stroke', 'grey')
-                .attr('class', (d) => className + ' val' + d.value)
-                .style('opacity', (d) => (legendSelection.has(d.value.toString()) ? 1 : unselectedOpacity));
-            this.svg.selectAll('.' + className).on(
-                'click',
-                function (e: Event, d: LegendValue) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    const def = d.value.toString();
-                    const selection = this.svg.selectAll('.' + className + '.val' + def);
-                    if (legendSelection.has(def)) {
-                        legendSelection.delete(def);
-                        legendDeselected.add(def);
-                        selection.style('opacity', unselectedOpacity);
-                    } else {
-                        legendSelection.add(def);
-                        legendDeselected.delete(def);
-                        selection.style('opacity', 1);
-                    }
-                    for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
-                        if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                            this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
-                            this.drawPlot(plotModel);
-                        }
-                    }
-                }.bind(this)
-            );
-        }
-
-        legend.legendXEndPosition = width;
-        this.checkOversize(width);
+            .attr('y', yPosition);
+        return xPosition;
     }
 
-    private checkOversize(width: number) {
+    private checkOutOfSvg(width: number) {
         if (width > this.viewModel.svgWidth) {
             this.viewModel.svgWidth = width;
             this.svg.attr('width', this.viewModel.svgWidth);
-        }
-    }
-
-    public update(options: VisualUpdateOptions) {
-        try {
-            this.dataview = options.dataViews[0];
-            console.log(this.dataview.categorical.categories[0].values.length);
-            //findings: empty data is ignored on grouping => need grouping column as grouping and measure?
-            // const xData = this.dataview.categorical.categories.filter((x) => x.source.displayName === 'Segment')[0].values;
-            // // const insp = this.dataview.categorical.categories.filter((x) => x.source.displayName === 'INSP_ZUSTAND')[0].values;
-            // const duplicates = Array.from(new Set(xData.filter((x, i, a) => a.indexOf(x) !== i)));
-            // console.log('x: ', xData[xData.length - 1]);
-            // console.log('duplicates: ', duplicates);
-            // console.log('datapoints: ', this.dataview.categorical.categories ? this.dataview.categorical.categories[0].values.length + '' : 'no categories');
-            // console.log('unique x: ', Array.from(new Set(xData)));
-            const categoryIndices = new Set();
-            if (this.dataview.categorical.categories) {
-                this.dataview.categorical.categories = this.dataview.categorical.categories.filter((cat) => {
-                    const duplicate = categoryIndices.has(cat.source.index);
-                    categoryIndices.add(cat.source.index);
-                    return !duplicate;
-                });
-            }
-            if (this.dataview.categorical.values) {
-                const valueIndices = new Set();
-                this.dataview.categorical.values = <powerbi.DataViewValueColumns>this.dataview.categorical.values.filter((val) => {
-                    const duplicate = valueIndices.has(val.source.index);
-                    valueIndices.add(val.source.index);
-                    return !duplicate;
-                });
-            }
-            visualTransform(options, this.host)
-                .map((model) => {
-                    this.viewModel = model;
-                    this.svg.selectAll('*').remove();
-                    this.svg.attr('width', this.viewModel.svgWidth).attr('height', this.viewModel.svgHeight);
-                    if (model.errors.length > 0) {
-                        this.displayError(model.errors[0]);
-                        return;
-                    }
-                    this.drawPlots();
-                    const legends = this.viewModel.legends;
-                    // if (this.viewModel.legends != null) {
-                    //     this.viewModel.defectLegend.legendValues.map((val) => {
-                    //         if (!this.legendDeselected.has(val.value) && !this.legendSelection.has(<string>val.value)) {
-                    //             this.legendSelection.add(val.value.toString());
-                    //         }
-                    //     });
-                    //     this.drawLegend(this.viewModel.defectLegend);
-                    //     // if (this.viewModel.defectGroupLegend != null) {
-                    //     //     this.viewModel.defectGroupLegend.legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
-                    //     // }
-                    // }
-                    if (this.viewModel.legends && legends.legends.length > 0) {
-                        // if (this.viewModel.defectLegend) {
-                        //     legends.legends[0].legendXPosition = this.viewModel.defectLegend.legendXEndPosition + MarginSettings.legendSeparationMargin;
-                        // }
-                        for (let i = 0; i < legends.legends.length; i++) {
-                            const l = legends.legends[i];
-                            this.drawLegend(l);
-                            if (i < legends.legends.length - 1) legends.legends[i + 1].legendXPosition = l.legendXEndPosition;
-                        }
-                    }
-                    // if (this.viewModel.defectGroupLegend != null) {
-                    //     this.drawLegend(this.viewModel.defectGroupLegend);
-                    // }
-                    if (this.viewModel.rolloutRectangles) {
-                        this.drawRolloutRectangles();
-                        this.drawRolloutLegend();
-                    }
-                    if (this.viewModel.generalPlotSettings.xAxisSettings.showBreakLines) {
-                        const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
-                        const xScale = xAxisSettings.xScaleZoomed;
-                        const plotModels = this.viewModel.plotModels;
-                        const generalPlotSettings = this.viewModel.generalPlotSettings;
-                        const linesG = this.svg.append('g').attr('transform', 'translate(' + generalPlotSettings.margins.left + ',0)');
-                        const lines = linesG
-                            .selectAll('.' + Constants.axisBreakClass)
-                            .data(xAxisSettings.breakIndices)
-                            .join('line')
-                            .attr('class', Constants.axisBreakClass)
-                            .attr('stroke', '#cccccc')
-                            .attr('x1', (d) => xScale(d))
-                            .attr('x2', (d) => xScale(d))
-                            .attr('y1', plotModels[0].plotTop)
-                            .attr('y2', plotModels[plotModels.length - 1].plotTop + generalPlotSettings.plotHeight)
-                            .attr('stroke-dasharray', '5,5')
-                            .attr('clip-path', 'url(#rolloutClip)')
-                            .attr('pointer-events', 'none');
-                        lines.raise();
-                    }
-                    this.svg.on('contextmenu', (event) => {
-                        if (event.shiftKey) return;
-                        const dataPoint = d3.select(event.target).datum();
-                        this.selectionManager.showContextMenu(dataPoint && (<DataPoint>dataPoint).selectionId ? (<DataPoint>dataPoint).selectionId : {}, {
-                            x: event.clientX,
-                            y: event.clientY,
-                        });
-                        event.preventDefault();
-                    });
-                })
-                .mapErr((err) => this.displayError(err));
-
-            this.restoreZoomState();
-        } catch (error) {
-            //try catch can be removed in the end, should not display any errors
-            console.log(error);
         }
     }
 
@@ -380,24 +397,22 @@ export class Visual implements IVisual {
             });
     }
 
-    public displayError(error: Error, _this = this) {
-        _this.svg.selectAll('*').remove();
-        _this.svg
+    public displayError(error: Error) {
+        this.svg.selectAll('*').remove();
+        this.svg
             .append('text')
-            .attr('width', _this.element.clientWidth)
+            .attr('width', this.element.clientWidth)
             .attr('x', 0)
             .attr('y', 20)
             .text('ERROR: ' + error.name);
-        _this.svg
+        this.svg
             .append('text')
-            .attr('width', _this.element.clientWidth)
-            .attr('height', _this.element.clientHeight - 40)
+            .attr('width', this.element.clientWidth)
+            .attr('height', this.element.clientHeight - 40)
             .attr('x', 0)
             .attr('y', 40)
             .text(error.message)
             .style('font-size', '12px');
-
-        // ("<p style='font-size:12px;'>" + error.message + '</p>');
 
         console.log('error: ', error.name);
         console.log(error.message);
@@ -428,77 +443,30 @@ export class Visual implements IVisual {
 
     private drawRolloutLegend() {
         const margins = this.viewModel.generalPlotSettings;
-        const yPosition = margins.legendYPostion + 10;
+        const yPosition = margins.legendYPostion;
         const rolloutRectangles = this.viewModel.rolloutRectangles;
         const legendCount = this.viewModel.legends.legends.length;
-        let width = legendCount > 0 ? this.viewModel.legends.legends[legendCount - 1].legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
+        let xPos = legendCount > 0 ? this.viewModel.legends.legends[legendCount - 1].legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
         if (this.viewModel.legends.legends.length > 0) {
-            width = this.viewModel.legends.legends[this.viewModel.legends.legends.length - 1].legendXEndPosition + MarginSettings.legendSeparationMargin;
+            xPos = this.viewModel.legends.legends[this.viewModel.legends.legends.length - 1].legendXEndPosition + MarginSettings.legendSeparationMargin;
         }
-        const widths = [];
-
-        this.svg
-            .selectAll('rolloutLegendTitle')
-            .data([rolloutRectangles.name])
-            .enter()
-            .append('text')
-            .text((d) => d)
-            .attr('text-anchor', 'left')
-            .style('alignment-baseline', 'middle')
-            .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function () {
-                const x = width;
-                width = width + this.getComputedTextLength() + 15;
-                return x;
-            })
-            .attr('y', yPosition);
-
-        this.svg
-            .selectAll('rolloutLegendText')
-            // .data(ArrayConstants.rolloutNames)
-            .data(rolloutRectangles.legendValues)
-            .enter()
-            .append('text')
-            .text((d) => '' + d.value)
-            .attr('text-anchor', 'left')
-            .style('alignment-baseline', 'middle')
-            .style('font-size', this.viewModel.generalPlotSettings.fontSize)
-            .attr('x', function () {
-                const x = width;
-                widths.push(width);
-                width = width + 25 + this.getComputedTextLength();
-                return 10 + x;
-            })
-            .attr('y', yPosition);
-
-        this.svg
-            .selectAll('rolloutLegendDots')
-            .data(rolloutRectangles.legendValues)
-            .enter()
-            .append('circle')
-            .attr('cx', function (d, i) {
-                return widths[i];
-            })
-            .attr('cy', yPosition)
-            .attr('r', 7)
-            .style('fill', (d) => d.color)
-            .style('stroke', 'grey')
-            .style('opacity', rolloutRectangles.opacity * 2);
-        this.checkOversize(width);
+        const dotsXPosition = [];
+        xPos = this.drawLegendTitle(rolloutRectangles.name, Constants.rolloutLegendTitleSelection, xPos, yPosition, Constants.rolloutLegendTitleSelection);
+        xPos = this.drawLegendTexts(rolloutRectangles.legendValues, '', xPos, dotsXPosition, yPosition, new Set(rolloutRectangles.legendValues.map((x) => x.value)));
+        this.drawLegendDots(rolloutRectangles.legendValues, dotsXPosition, yPosition, '', null, rolloutRectangles.opacity * 2);
+        this.checkOutOfSvg(xPos);
     }
 
     private drawRolloutRectangles() {
         const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
-
         const rolloutG = this.svg.append('g').attr('transform', 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')');
-
         rolloutG
             .selectAll('.' + Constants.rolloutClass)
             .data(this.viewModel.rolloutRectangles.rolloutRectangles)
             .enter()
             .append('rect')
             .attr('class', Constants.rolloutClass)
-            .attr('width', (d) => xScale(d.length + d.x) - xScale(d.x))
+            .attr('width', (d) => xScale(d.endX) - xScale(d.x))
             .attr('height', (d) => d.width)
             .attr('x', (d) => xScale(d.x))
             .attr('y', (d) => d.y)
@@ -515,7 +483,7 @@ export class Visual implements IVisual {
         let y: D3PlotYAxis;
         let plotError: PlotError;
         let yZeroLine;
-        const PlotResult = this.buildBasicPlot(plotModel)
+        const PlotResult = this.appendPlotG(plotModel)
             .map((plt) => {
                 root = plt;
                 root.append('g').attr('class', Constants.overlayClass).attr('clip-path', 'url(#overlayClip)');
@@ -548,31 +516,20 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plotWidth = generalPlotSettings.plotWidth;
             const plotHeight = generalPlotSettings.plotHeight;
-            this.svg
-                .append('defs')
-                .append('clipPath')
+            const defs = this.svg.append('defs');
+            defs.append('clipPath')
                 .attr('id', 'clip')
                 .append('rect')
                 .attr('y', -generalPlotSettings.dotMargin)
                 .attr('x', -generalPlotSettings.dotMargin)
                 .attr('width', plotWidth + 2 * generalPlotSettings.dotMargin)
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
-            this.svg.append('defs').append('clipPath').attr('id', 'overlayClip').append('rect').attr('y', 0).attr('x', 0).attr('width', plotWidth).attr('height', plotHeight);
-            this.svg
-                .append('defs')
-                .append('clipPath')
-                .attr('id', 'hclip')
-                .append('rect')
-                .attr('y', 0)
-                .attr('x', 0)
-                .attr('width', plotWidth)
-                .attr('height', Heatmapmargins.heatmapHeight);
+            defs.append('clipPath').attr('id', 'overlayClip').append('rect').attr('y', 0).attr('x', 0).attr('width', plotWidth).attr('height', plotHeight);
+            defs.append('clipPath').attr('id', 'hclip').append('rect').attr('y', 0).attr('x', 0).attr('width', plotWidth).attr('height', Heatmapmargins.heatmapHeight);
             if (this.viewModel.rolloutRectangles) {
                 const rolloutRectangle = this.viewModel.rolloutRectangles.rolloutRectangles[0];
                 const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
-                this.svg
-                    .append('defs')
-                    .append('clipPath')
+                defs.append('clipPath')
                     .attr('id', 'rolloutClip')
                     .append('rect')
                     .attr('y', rolloutRectangle.y)
@@ -605,7 +562,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private buildBasicPlot(plotModel: PlotModel): Result<D3Selection, PlotError> {
+    private appendPlotG(plotModel: PlotModel): Result<D3Selection, PlotError> {
         try {
             const plotType = plotModel.plotSettings.plotSettings.plotType;
             const generalPlotSettings = this.viewModel.generalPlotSettings;
@@ -626,16 +583,18 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxis = plot.append('g').classed('xAxis', true);
 
-            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed).tickFormat(
-                ((d) => {
+            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed);
+            if (generalPlotSettings.xAxisSettings.axisBreak) {
+                xAxisValue.tickFormat((d) => {
                     const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
                     let key = '';
                     for (const [k, v] of xAxisSettings.indexMap.entries()) {
                         if (v === d) key = '' + k;
                     }
                     return key;
-                }).bind(this)
-            );
+                });
+            }
+
             let xLabel = null;
             if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
                 xAxisValue.tickValues([]);
@@ -728,7 +687,7 @@ export class Visual implements IVisual {
                             return yScale(d.width - d.y);
                         })
                         .attr('width', function (d) {
-                            return xScale(d.length + d.x) - xScale(d.x);
+                            return xScale(d.endX) - xScale(d.x);
                         })
                         .attr('height', function (d) {
                             return yScale(d.y) - yScale(d.width);
@@ -843,16 +802,7 @@ export class Visual implements IVisual {
             dataPoints = filterNullValues(dataPoints);
 
             if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                dataPoints = dataPoints.filter((x) => {
-                    // let draw = true;
-                    // if (this.viewModel.defectLegend != null) {
-                    //     const val = this.viewModel.defectLegend.legendDataPoints.find((ldp) => ldp.i === x.pointNr)?.yValue.toString();
-                    //     if (val) draw = draw && this.legendSelection.has(val);
-                    // }
-                    // draw = draw && this.viewModel.legends.drawDataPoint(x.pointNr);
-
-                    return this.viewModel.legends.drawDataPoint(x.pointNr);
-                });
+                dataPoints = dataPoints.filter((x) => this.viewModel.legends.drawDataPoint(x.pointNr));
                 dotSize = 3;
             }
             d3Plot.yZeroLine
@@ -890,7 +840,7 @@ export class Visual implements IVisual {
                 .data(dataPoints)
                 .enter()
                 .append('circle')
-                .attr('fill', (d: DataPoint) => d.color) //plotModel.plotSettings.plotSettings.fill)
+                .attr('fill', (d: DataPoint) => d.color)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
                 .attr('cy', (d) => yScale(<number>d.yValue))
@@ -919,15 +869,6 @@ export class Visual implements IVisual {
             return err(new DrawPlotError(error.stack));
         }
     }
-
-    // private getX(x: number): d3.NumberValue {
-    //     try {
-    //         const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
-    //         return xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(x) : x;
-    //     } catch (e) {
-    //         debugger;
-    //     }
-    // }
 
     private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel): Result<D3Heatmap, HeatmapError> {
         try {
@@ -1031,12 +972,51 @@ export class Visual implements IVisual {
         }
     }
 
+    private zoomRollout() {
+        const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
+        this.svg
+            .selectAll('.' + Constants.rolloutClass)
+            .attr('x', function (d: RolloutRectangle) {
+                return xScale(d.x);
+            })
+            .attr('width', function (d: RolloutRectangle) {
+                return xScale(d.endX) - xScale(d.x);
+            });
+    }
+
+    private zoomOverlay(plot: D3Plot) {
+        const xScaleZoomed = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
+        const overlayBars = plot.root.select(`.${Constants.overlayClass}`);
+        overlayBars
+            .selectAll('rect')
+            .attr('x', function (d: OverlayRectangle) {
+                return xScaleZoomed(d.x);
+            })
+            .attr('width', function (d: OverlayRectangle) {
+                return xScaleZoomed(d.endX) - xScaleZoomed(d.x);
+            });
+        overlayBars
+            .selectAll('line')
+            .attr('x1', function (d: OverlayRectangle) {
+                return xScaleZoomed(d.x);
+            })
+            .attr('x2', function (d: OverlayRectangle) {
+                return xScaleZoomed(d.x);
+            });
+    }
+    private zoomAxisBreak() {
+        const xScaleZoomed = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
+        this.svg
+            .selectAll('.' + Constants.axisBreakClass)
+            .attr('x1', (d: number) => xScaleZoomed(d))
+            .attr('x2', (d: number) => xScaleZoomed(d));
+    }
     private addZoom(zoomingSettings: ZoomingSettings): Result<void, PlotError> {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plots = this.viewModel.plotModels;
             const errorFunction = this.displayError;
-            const zoomed = function (event) {
+            const zoomed = (event) => {
                 try {
                     const transform: d3.ZoomTransform = event.transform;
                     if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
@@ -1045,101 +1025,91 @@ export class Visual implements IVisual {
                     }
                     this.storage.set(Constants.zoomState, transform.x + ';' + transform.y + ';' + transform.k).catch((reason) => console.log('set error: ' + reason));
                     const xScaleZoomed = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
-                    const xMin = xScaleZoomed.domain()[0];
-                    const xMax = xScaleZoomed.domain()[1];
                     this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed = xScaleZoomed;
-                    this.svg
-                        .selectAll('.' + Constants.rolloutClass)
-                        .attr('x', function (d: RolloutRectangle) {
-                            return xScaleZoomed(d.x);
-                        })
-                        .attr('width', function (d: RolloutRectangle) {
-                            return xScaleZoomed(d.length + d.x) - xScaleZoomed(d.x);
-                        });
+                    this.zoomRollout();
+                    this.zoomAxisBreak();
                     for (const plot of plots.map((x) => x.d3Plot)) {
-                        plot.x.xAxis.attr('clip-path', 'url(#clip)');
-                        const xAxisValue = plot.x.xAxisValue;
-                        xAxisValue.scale(xScaleZoomed);
-                        plot.x.xAxis.call(xAxisValue);
-                        plot.points.attr('cx', (d) => {
-                            return xScaleZoomed(<number>d.xValue);
-                        });
-
-                        const plotModel = this.viewModel.plotModels.filter((x) => x.yName === plot.yName)[0];
-                        const yDataPoints = plotModel.dataPoints.filter((x) => x.xValue >= xMin && x.xValue <= xMax).map((x) => Number(x.yValue));
-                        const yMin = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
-                        const yMax = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
-                        plot.y.yScaleZoomed = plot.y.yScaleZoomed.domain([yMin, yMax]);
-                        plot.points.attr('cy', (d) => {
-                            return plot.y.yScaleZoomed(<number>d.yValue);
-                        });
-                        const yAxisValue = plot.y.yAxisValue;
-                        yAxisValue.scale(plot.y.yScaleZoomed);
-                        plot.y.yAxis.call(yAxisValue);
-
-                        plot.points.attr('clip-path', 'url(#clip)');
-                        const overlayBars = plot.root.select(`.${Constants.overlayClass}`);
-                        overlayBars
-                            .selectAll('rect')
-                            .attr('x', function (d: OverlayRectangle) {
-                                return xScaleZoomed(d.x);
-                            })
-                            .attr('width', function (d: OverlayRectangle) {
-                                return xScaleZoomed(d.length + d.x) - xScaleZoomed(d.x);
-                            });
-                        overlayBars
-                            .selectAll('line')
-                            .attr('x1', function (d: OverlayRectangle) {
-                                return xScaleZoomed(d.x);
-                            })
-                            .attr('x2', function (d: OverlayRectangle) {
-                                return xScaleZoomed(d.x);
-                            });
-
-                        if (plot.type === 'LinePlot') {
-                            plot.plotLine.attr('clip-path', 'url(#clip)');
-
-                            const line = d3
-                                .line<DataPoint>()
-                                .x((d) => xScaleZoomed(<number>d.xValue))
-                                .y((d) => plot.y.yScaleZoomed(<number>d.yValue));
-
-                            plot.plotLine.attr('d', line);
-                        }
-
-                        const yZero = plot.y.yScaleZoomed(0);
-
-                        plot.yZeroLine.selectAll('line').attr('y1', yZero).attr('y2', yZero);
-                        //TODO: test heatmap with axis break
-                        if (plot.heatmap) {
-                            const values = plot.heatmap.values;
-                            const scale = transform.rescaleX(plot.heatmap.scale);
-                            values
-                                .attr('x', function (d, i) {
-                                    return scale(i);
-                                })
-                                .attr('width', function (d, i) {
-                                    return scale(i) - scale(i - 1);
-                                })
-                                .attr('clip-path', 'url(#hclip)');
-                        }
-                        this.svg
-                            .selectAll('.' + Constants.axisBreakClass)
-                            .attr('x1', (d) => xScaleZoomed(d))
-                            .attr('x2', (d) => xScaleZoomed(d));
+                        this.zoomPlot(plot, transform);
                     }
                 } catch (error) {
                     error.message = 'error in zoom function: ' + error.message;
                     errorFunction(error);
                 }
-            }.bind(this);
+            };
             this.zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed);
-
             this.svg.call(this.zoom);
             return ok(null);
         } catch (error) {
             return err(new AddZoomError(error.stack));
         }
+    }
+
+    private zoomHeatmap(plot: D3Plot, transform: d3.ZoomTransform) {
+        if (plot.heatmap) {
+            const values = plot.heatmap.values;
+            const scale = transform.rescaleX(plot.heatmap.scale);
+            values
+                .attr('x', function (d, i) {
+                    return scale(i);
+                })
+                .attr('width', function (d, i) {
+                    return scale(i) - scale(i - 1);
+                })
+                .attr('clip-path', 'url(#hclip)');
+        }
+    }
+
+    private zoomPlot(plot: D3Plot, transform: d3.ZoomTransform) {
+        this.zoomXAxis(plot);
+        this.zoomYAxis(plot);
+        this.zoomPlotContent(plot);
+        this.zoomOverlay(plot);
+        this.zoomHeatmap(plot, transform);
+    }
+
+    private zoomXAxis(plot: D3Plot) {
+        const xScaleZoomed = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
+        plot.x.xAxis.attr('clip-path', 'url(#clip)');
+        const xAxisValue = plot.x.xAxisValue;
+        xAxisValue.scale(xScaleZoomed);
+        plot.x.xAxis.call(xAxisValue);
+    }
+
+    private zoomYAxis(plot: D3Plot) {
+        const xScaleZoomed = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
+        const xMin = xScaleZoomed.domain()[0];
+        const xMax = xScaleZoomed.domain()[1];
+        const plotModel = this.viewModel.plotModels.filter((x) => x.yName === plot.yName)[0];
+        const yDataPoints = plotModel.dataPoints.filter((x) => x.xValue >= xMin && x.xValue <= xMax).map((x) => Number(x.yValue));
+        const yMin = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
+        const yMax = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
+        plot.y.yScaleZoomed = plot.y.yScaleZoomed.domain([yMin, yMax]);
+    }
+
+    private zoomPlotContent(plot: D3Plot) {
+        const xScaleZoomed = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
+        plot.points.attr('cx', (d) => {
+            return xScaleZoomed(<number>d.xValue);
+        });
+        plot.points.attr('clip-path', 'url(#clip)');
+        plot.points.attr('cy', (d) => {
+            return plot.y.yScaleZoomed(<number>d.yValue);
+        });
+        const yAxisValue = plot.y.yAxisValue;
+        yAxisValue.scale(plot.y.yScaleZoomed);
+        plot.y.yAxis.call(yAxisValue);
+        if (plot.type === 'LinePlot') {
+            plot.plotLine.attr('clip-path', 'url(#clip)');
+
+            const line = d3
+                .line<DataPoint>()
+                .x((d) => xScaleZoomed(<number>d.xValue))
+                .y((d) => plot.y.yScaleZoomed(<number>d.yValue));
+
+            plot.plotLine.attr('d', line);
+        }
+        const yZero = plot.y.yScaleZoomed(0);
+        plot.yZeroLine.selectAll('line').attr('y1', yZero).attr('y2', yZero);
     }
 
     private addTooltips(): Result<TooltipInterface, PlotError> {
@@ -1163,11 +1133,11 @@ export class Visual implements IVisual {
                 .style('padding', '10px');
             tooltip.append('text').text('No tooltip info available');
 
-            const mouseover = function () {
+            const mouseover = (event) => {
                 try {
                     lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
                     tooltip.style('visibility', 'visible');
-                    const element = d3.select(this);
+                    const element = d3.select(event.target);
                     element
                         .attr('r', Number(element.attr('r')) * 2)
                         .style('stroke', 'black')
@@ -1179,7 +1149,7 @@ export class Visual implements IVisual {
                 }
             };
 
-            const mousemove = function (event, dataPoint: DataPoint) {
+            const mousemove = (event, dataPoint: DataPoint) => {
                 try {
                     const height = visualContainer.clientHeight;
                     const width = visualContainer.clientWidth;
@@ -1207,8 +1177,6 @@ export class Visual implements IVisual {
                             .text(':\t' + t.yValue)
                             .append('br');
                     });
-
-                    //tooltip.text(Array.from(tooltipSet).join(''));
                     const tooltipHeight = tooltip.node().getBoundingClientRect().height;
                     tooltipY = Math.max(tooltipY, 0);
                     tooltipY = Math.min(tooltipY, viewModel.svgHeight - tooltipHeight);
@@ -1224,10 +1192,10 @@ export class Visual implements IVisual {
                 }
             };
 
-            const mouseout = function () {
+            const mouseout = (e) => {
                 try {
                     tooltip.style('visibility', 'hidden');
-                    const element = d3.select(this);
+                    const element = d3.select(e.target);
                     element
                         .attr('r', Number(element.attr('r')) / 2)
                         .style('stroke', 'none')
@@ -1244,6 +1212,7 @@ export class Visual implements IVisual {
         }
     }
 
+    // eslint-disable-next-line max-lines-per-function
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const objectName = options.objectName;
         const colorPalette = this.host.colorPalette;
@@ -1313,7 +1282,7 @@ export class Visual implements IVisual {
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
-                            enable: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, true),
+                            enable: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false),
                             showLines: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, true),
                         },
                         selector: null,
@@ -1427,6 +1396,7 @@ export class Visual implements IVisual {
         }
         return objectEnumeration;
 
+        // eslint-disable-next-line max-lines-per-function
         function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], settingsCount = 1) {
             objectEnumeration = new Array<VisualObjectInstance>(yCount * settingsCount);
 

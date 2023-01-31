@@ -6,6 +6,7 @@ export class MarginSettings {
     static readonly plotTitleHeight = 10;
     static readonly legendHeight = 20;
     static readonly legendSeparationMargin = 20;
+    static readonly legendTopMargin = 10;
     static readonly dotMargin = 4;
     static readonly xLabelSpace = 10;
     static readonly scrollbarSpace = 23;
