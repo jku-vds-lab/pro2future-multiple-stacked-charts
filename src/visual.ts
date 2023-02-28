@@ -68,6 +68,7 @@ import {
     LegendValue,
     Legend,
     D3Selection,
+    AxisInformationInterface,
 } from './plotInterface';
 import { SettingsGetter, visualTransform } from './parseAndTransform';
 import {
@@ -168,6 +169,24 @@ export class Visual implements IVisual {
     // }
     // eslint-disable-next-line max-lines-per-function
     public getFormattingModel(): powerbi.visuals.FormattingModel {
+        const axisCard: powerbi.visuals.FormattingCard = this.createAxisCard();
+
+        const axisLabelsCard: powerbi.visuals.FormattingCard = {
+            description: 'Axis Label Settings',
+            displayName: 'Axis Label Settings',
+            uid: Settings.axisLabelSettings + Constants.uid,
+            groups: [],
+        };
+        axisLabelsCard.revertToDefaultDescriptors = [
+            {
+                objectName: Settings.axisLabelSettings,
+                propertyName: AxisLabelSettingsNames.xLabel,
+            },
+            {
+                objectName: Settings.axisLabelSettings,
+                propertyName: AxisLabelSettingsNames.yLabel,
+            },
+        ];
         const colorCard: powerbi.visuals.FormattingCard = {
             description: 'Data Card Description',
             displayName: 'Legend Settings',
@@ -195,16 +214,63 @@ export class Visual implements IVisual {
                 },
             ],
         };
+        const plotCard: powerbi.visuals.FormattingCard = this.createPlotSettingsCard();
+        const formattingModel: powerbi.visuals.FormattingModel = { cards: [axisCard, axisLabelsCard, colorCard, plotCard] };
+
+        for (const plotModel of this.viewModel.plotModels) {
+            this.addPlotSettingsGroup(plotModel, plotCard);
+            this.addAxisSettingsGroup(plotModel, axisCard);
+            const groupName = 'axisLabelSettingsGroup_' + plotModel.plotId;
+            axisLabelsCard.groups.push({
+                displayName: plotModel.metaDataColumn.displayName,
+                uid: groupName + Constants.uid,
+                slices: [
+                    {
+                        displayName: 'X-Label',
+                        uid: groupName + AxisLabelSettingsNames.xLabel + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.TextInput,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.axisLabelSettings,
+                                    propertyName: AxisLabelSettingsNames.xLabel,
+                                    selector: { metadata: plotModel.metaDataColumn.queryName },
+                                },
+                                placeholder: plotModel.labelNames.xLabel,
+                                value: plotModel.labelNames.xLabel,
+                            },
+                        },
+                    },
+                    {
+                        displayName: 'Y-Label',
+                        uid: groupName + AxisLabelSettingsNames.yLabel + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.TextInput,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.axisLabelSettings,
+                                    propertyName: AxisLabelSettingsNames.yLabel,
+                                    selector: { metadata: plotModel.metaDataColumn.queryName },
+                                },
+                                placeholder: plotModel.labelNames.yLabel,
+                                value: plotModel.labelNames.yLabel,
+                            },
+                        },
+                    },
+                ],
+            });
+        }
+
+        return formattingModel;
+    }
+
+    private createPlotSettingsCard() {
         const plotCard: powerbi.visuals.FormattingCard = {
             description: 'Plot Settings',
             displayName: 'Plot Settings',
             uid: Settings.plotSettings + Constants.uid,
             groups: [],
         };
-        for (const plotModel of this.viewModel.plotModels) {
-            this.addPlotSettingsGroup(plotModel, plotCard);
-        }
-        const formattingModel: powerbi.visuals.FormattingModel = { cards: [colorCard, plotCard] };
         plotCard.revertToDefaultDescriptors = [
             {
                 objectName: Settings.plotSettings,
@@ -224,7 +290,79 @@ export class Visual implements IVisual {
                 propertyName: PlotSettingsNames.showHeatmap,
             },
         ];
-        return formattingModel;
+        return plotCard;
+    }
+
+    private addAxisSettingsGroup(plotModel: PlotModel, axisCard: powerbi.visuals.FormattingCard) {
+        const groupName = 'axisSettingsGroup_' + plotModel.plotId;
+        axisCard.groups.push({
+            displayName: plotModel.metaDataColumn.displayName,
+            uid: groupName + Constants.uid,
+            slices: [
+                {
+                    displayName: 'X-Axis',
+                    uid: groupName + AxisSettingsNames.xAxis + Constants.uid,
+                    control: {
+                        type: powerbi.visuals.FormattingComponent.Dropdown,
+                        properties: {
+                            descriptor: {
+                                objectName: Settings.axisSettings,
+                                propertyName: AxisSettingsNames.xAxis,
+                                selector: { metadata: plotModel.metaDataColumn.queryName },
+                            },
+                            value: this.getAxisInformationEnumValue(plotModel.formatSettings.axisSettings.xAxis),
+                        },
+                    },
+                },
+                {
+                    displayName: 'Y-Axis',
+                    uid: groupName + AxisSettingsNames.yAxis + Constants.uid,
+                    control: {
+                        type: powerbi.visuals.FormattingComponent.Dropdown,
+                        properties: {
+                            descriptor: {
+                                objectName: Settings.axisSettings,
+                                propertyName: AxisSettingsNames.yAxis,
+                                selector: { metadata: plotModel.metaDataColumn.queryName },
+                            },
+                            value: this.getAxisInformationEnumValue(plotModel.formatSettings.axisSettings.yAxis),
+                        },
+                    },
+                },
+            ],
+        });
+    }
+
+    private createAxisCard() {
+        const axisCard: powerbi.visuals.FormattingCard = {
+            description: 'Axis Settings',
+            displayName: 'Axis Settings',
+            uid: Settings.axisSettings + Constants.uid,
+            groups: [],
+        };
+        axisCard.revertToDefaultDescriptors = [
+            {
+                objectName: Settings.axisSettings,
+                propertyName: AxisSettingsNames.xAxis,
+            },
+            {
+                objectName: Settings.axisSettings,
+                propertyName: AxisSettingsNames.yAxis,
+            },
+        ];
+        return axisCard;
+    }
+
+    private getAxisInformationEnumValue(axisInfo: AxisInformationInterface): AxisInformation {
+        let axisEnumValue = AxisInformation.None;
+        if (axisInfo.lables && axisInfo.ticks) {
+            axisEnumValue = AxisInformation.TicksLabels;
+        } else if (!axisInfo.lables && axisInfo.ticks) {
+            axisEnumValue = AxisInformation.Ticks;
+        } else if (axisInfo.lables && !axisInfo.ticks) {
+            axisEnumValue = AxisInformation.Labels;
+        }
+        return axisEnumValue;
     }
 
     private addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.FormattingCard) {
