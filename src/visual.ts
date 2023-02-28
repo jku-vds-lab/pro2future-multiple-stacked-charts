@@ -151,19 +151,151 @@ export class Visual implements IVisual {
             .mapErr((err) => this.displayError(err));
 
         this.restoreZoomState();
-        this.setupSettings(options);
+        // this.setupSettings(options);
     }
 
-    private setupSettings(options: VisualUpdateOptions) {
-        this.visualSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualSettings, options.dataViews);
-        this.visualSettings.circle.circleThickness.value = Math.max(0, this.visualSettings.circle.circleThickness.value);
-        this.visualSettings.circle.circleThickness.value = Math.min(10, this.visualSettings.circle.circleThickness.value);
-        this.visualSettings.populateSettings(this.viewModel);
-        debugger;
-    }
+    // private setupSettings(options: VisualUpdateOptions) {
+    //     this.visualSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualSettings, options.dataViews);
+    //     this.visualSettings.circle.circleThickness.value = Math.max(0, this.visualSettings.circle.circleThickness.value);
+    //     this.visualSettings.circle.circleThickness.value = Math.min(10, this.visualSettings.circle.circleThickness.value);
+    //     this.visualSettings.populateSettings(this.viewModel);
+    //     debugger;
+    // }
 
+    // public getFormattingModel(): powerbi.visuals.FormattingModel {
+    //     return this.visualSettings;
+    //     // return this.formattingSettingsService.buildFormattingModel(this.visualSettings);
+    // }
+    // eslint-disable-next-line max-lines-per-function
     public getFormattingModel(): powerbi.visuals.FormattingModel {
-        return this.formattingSettingsService.buildFormattingModel(this.visualSettings);
+        const colorCard: powerbi.visuals.FormattingCard = {
+            description: 'Data Card Description',
+            displayName: 'Legend Settings',
+            uid: Settings.legendSettings + Constants.uid,
+            groups: [
+                {
+                    displayName: 'Data Design Group',
+                    uid: 'dataCard_dataDesign_group_uid',
+                    slices: [
+                        {
+                            displayName: 'test',
+                            uid: 'dataCard_dataDesign_fontColor___slice',
+                            control: {
+                                type: powerbi.visuals.FormattingComponent.ColorPicker,
+                                properties: {
+                                    descriptor: {
+                                        objectName: Settings.colorSettings,
+                                        propertyName: ColorSettingsNames.verticalRulerColor,
+                                    },
+                                    value: { value: this.viewModel.colorSettings.colorSettings.verticalRulerColor },
+                                },
+                            },
+                        },
+                    ],
+                },
+            ],
+        };
+        const plotCard: powerbi.visuals.FormattingCard = {
+            description: 'Plot Settings',
+            displayName: 'Plot Settings',
+            uid: Settings.plotSettings + Constants.uid,
+            groups: [],
+        };
+        for (const plotModel of this.viewModel.plotModels) {
+            this.addPlotSettingsGroup(plotModel, plotCard);
+        }
+        const formattingModel: powerbi.visuals.FormattingModel = { cards: [colorCard, plotCard] };
+        plotCard.revertToDefaultDescriptors = [
+            {
+                objectName: Settings.plotSettings,
+                propertyName: PlotSettingsNames.plotType,
+            },
+            {
+                objectName: Settings.plotSettings,
+                propertyName: PlotSettingsNames.fill,
+            },
+
+            {
+                objectName: Settings.plotSettings,
+                propertyName: PlotSettingsNames.useLegendColor,
+            },
+            {
+                objectName: Settings.plotSettings,
+                propertyName: PlotSettingsNames.showHeatmap,
+            },
+        ];
+        return formattingModel;
+    }
+
+    private addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.FormattingCard) {
+        const groupName = 'plotSettingsGroup_' + plotModel.plotId;
+        plotCard.groups.push({
+            displayName: plotModel.metaDataColumn.displayName,
+            uid: groupName + Constants.uid,
+            slices: [
+                {
+                    displayName: 'Plot Type',
+                    uid: groupName + PlotSettingsNames.plotType + Constants.uid,
+                    control: {
+                        type: powerbi.visuals.FormattingComponent.Dropdown,
+                        properties: {
+                            descriptor: {
+                                objectName: Settings.plotSettings,
+                                propertyName: PlotSettingsNames.plotType,
+                                selector: { metadata: plotModel.metaDataColumn.queryName },
+                            },
+                            value: plotModel.plotSettings.plotType,
+                        },
+                    },
+                },
+                {
+                    displayName: 'Plot Color',
+                    uid: groupName + PlotSettingsNames.fill + Constants.uid,
+                    control: {
+                        type: powerbi.visuals.FormattingComponent.ColorPicker,
+                        properties: {
+                            descriptor: {
+                                objectName: Settings.plotSettings,
+                                propertyName: PlotSettingsNames.fill,
+                                selector: { metadata: plotModel.metaDataColumn.queryName },
+                            },
+                            value: { value: plotModel.plotSettings.fill },
+                        },
+                    },
+                },
+                {
+                    //TODO: fix error when setting to true on some plots
+                    displayName: 'Use Legend Color',
+                    uid: groupName + PlotSettingsNames.useLegendColor + Constants.uid,
+                    control: {
+                        type: powerbi.visuals.FormattingComponent.ToggleSwitch,
+                        properties: {
+                            descriptor: {
+                                objectName: Settings.plotSettings,
+                                propertyName: PlotSettingsNames.useLegendColor,
+                                selector: { metadata: plotModel.metaDataColumn.queryName },
+                            },
+                            value: plotModel.plotSettings.useLegendColor,
+                        },
+                    },
+                },
+                {
+                    displayName: 'Show Heatmap',
+                    uid: groupName + PlotSettingsNames.showHeatmap + Constants.uid,
+                    control: {
+                        type: powerbi.visuals.FormattingComponent.ToggleSwitch,
+                        properties: {
+                            descriptor: {
+                                objectName: Settings.plotSettings,
+                                propertyName: PlotSettingsNames.showHeatmap,
+                                selector: { metadata: plotModel.metaDataColumn.queryName },
+                            },
+                            value: plotModel.plotSettings.showHeatmap,
+                        },
+                    },
+                },
+            ],
+        });
     }
 
     private removeDuplicateColumns() {

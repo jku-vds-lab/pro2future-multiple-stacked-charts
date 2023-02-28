@@ -255,24 +255,6 @@
     ],
     "supportsHighlight": true,
     "objects": {
-        "circle": {
-            "properties": {
-                "circleColor": {
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                },
-                "circleThickness": {
-                    "type": {
-                        "numeric": true
-                    }
-                }
-            }
-        },
         "axisSettings": {
             "displayName": "Axis Settings",
             "properties": {
@@ -498,6 +480,12 @@
         "plotSettings": {
             "displayName": "Plot Settings",
             "properties": {
+                "plotName": {
+                    "displayName": "Plot name",
+                    "type": {
+                        "text": true
+                    }
+                },
                 "plotType": {
                     "displayName": "Choose Type",
                     "type": {

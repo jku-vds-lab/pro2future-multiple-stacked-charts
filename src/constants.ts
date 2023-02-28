@@ -50,6 +50,7 @@ export enum PlotSettingsNames {
     fill = 'fill',
     useLegendColor = 'useLegendColor',
     showHeatmap = 'showHeatmap',
+    plotName = 'plotName',
 }
 export enum TooltipTitleSettingsNames {
     title = 'title',
@@ -92,6 +93,7 @@ export enum Constants {
     axisBreakClass = 'axisBreakLines',
     legendTitleSelection = 'legendTitle',
     rolloutLegendTitleSelection = 'rolloutLegendTitle',
+    uid = '_uid',
 }
 
 export enum FilterType {
