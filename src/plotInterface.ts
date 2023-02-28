@@ -253,6 +253,7 @@ export interface TooltipModel {
     tooltipId: number;
     tooltipName: string;
     tooltipData: TooltipDataPoint[];
+    metaDataColumn: powerbi.DataViewMetadataColumn;
 }
 
 export interface PlotTitleSettings {
@@ -404,6 +405,7 @@ export interface TooltipColumnData {
     values: PrimitiveValue[];
     name?: string;
     columnId: number;
+    metaDataColumn: powerbi.DataViewMetadataColumn;
 }
 
 export interface LegendData {

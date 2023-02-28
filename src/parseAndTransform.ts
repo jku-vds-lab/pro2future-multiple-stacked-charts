@@ -202,6 +202,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     name: category.source.displayName,
                     values: <number[]>category.values,
                     columnId,
+                    metaDataColumn: category.source,
                 };
                 tooltipData[tooltipId] = data;
             }
@@ -283,6 +284,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                     name: value.source.displayName,
                     values: <number[]>value.values,
                     columnId,
+                    metaDataColumn: value.source,
                 };
                 tooltipData[tooltipId] = data;
             }
@@ -695,6 +697,7 @@ function createTooltipModels(
                 tooltipName: getValue<string>(column.objects, Settings.tooltipTitleSettings, TooltipTitleSettingsNames.title, column.displayName),
                 tooltipId: tooltip.columnId,
                 tooltipData: tooltipPoints,
+                metaDataColumn: tooltip.metaDataColumn,
             };
             viewModel.tooltipModels.push(tooltipModel);
         }
