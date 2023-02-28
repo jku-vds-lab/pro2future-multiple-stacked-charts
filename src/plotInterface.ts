@@ -366,8 +366,12 @@ export class Legends {
     drawDataPoint(i: number): boolean {
         let draw = true;
         for (const l of this.legends) {
-            const point = l.legendDataPoints.filter((x) => x.i === i)[0];
-            draw = draw && l.selectedValues.has(point.yValue.toString());
+            const filtered = l.legendDataPoints.filter((x) => x.i === i);
+            if (filtered.length === 0) {
+                draw = false;
+            } else {
+                draw = draw && l.selectedValues.has(filtered[0].yValue.toString());
+            }
         }
         return draw;
     }

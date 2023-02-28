@@ -705,60 +705,13 @@ export class Visual implements IVisual {
         }
     }
 
-    // private drawScatterPlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
-    //     try {
-    //         let basicPlot: D3Plot;
-    //         let plotError: PlotError;
-    //         let x: D3PlotXAxis;
-    //         let y: D3PlotYAxis;
-    //         let type: PlotType;
-    //         let plot: any;
-    //         this.constructBasicPlot(plotModel)
-    //             .map(plt => {
-    //                 basicPlot = plt;
-    //                 x = basicPlot.x;
-    //                 y = basicPlot.y;
-    //                 type = plotModel.plotSettings.plotSettings.plotType;
-    //                 plot = basicPlot.root;
-    //             }).mapErr(err => plotError = err);
-    //         if (plotError) return err(plotError);
-    //         const dataPoints = filterNullValues(plotModel.dataPoints);
-    //         const points = plot
-    //             .selectAll(Constants.dotClass)
-    //             .data(dataPoints)
-    //             .enter()
-    //             .append('circle')
-    //             .attr('fill', (d: DataPoint) => d.color)
-    //             .attr('stroke', 'none')
-    //             .attr('cx', (d) => x.xScale(<number>d.xValue))
-    //             .attr('cy', (d) => y.yScale(<number>d.yValue))
-    //             .attr('r', 2)
-    //             .attr('clip-path', 'url(#clip)')
-    //             .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
-
-    //         let mouseEvents: TooltipInterface;
-    //         this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
-    //         if (plotError) return err(plotError);
-    //         points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-    //         let heatmap = null;
-    //         if (plotModel.plotSettings.plotSettings.showHeatmap) {
-    //             this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
-    //             if (plotError) return err(plotError);
-    //         }
-
-    //         return ok(<D3Plot>{ yName: plotModel.yName, type, plotLine, plot, root: plot, points, x, y, heatmap });
-
-    //     } catch (error) {
-    //         return err(new DrawScatterPlotError(error.stack));
-    //     }
-    // }
-
     private drawPlot(plotModel: PlotModel): Result<void, PlotError> {
         try {
             let dotSize = 2;
             let plotError: PlotError;
             const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
             const xScale = xAxisSettings.xScaleZoomed;
+
             this.constructBasicPlot(plotModel).mapErr((err) => (plotError = err));
             if (plotError) return err(plotError);
             const d3Plot = plotModel.d3Plot;
@@ -984,7 +937,7 @@ export class Visual implements IVisual {
             const zoomed = (event) => {
                 try {
                     const transform: d3.ZoomTransform = event.transform;
-                    if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
+                    if ((transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) || !this.viewModel.zoomingSettings.enableZoom) {
                         this.svg.call(this.zoom.transform, d3.zoomIdentity);
                         return;
                     }

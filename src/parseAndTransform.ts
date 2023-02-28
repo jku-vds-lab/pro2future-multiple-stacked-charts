@@ -537,14 +537,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         const metaDataColumn = getMetadataColumn(metadataColumns, yColumnId);
         const yColumnObjects = metaDataColumn.objects;
         const plotSettings = plotSettingsArray[plotNr];
-        // : PlotSettings = {
-        //     plotSettings: {
-        //         fill: getPlotFillColor(yColumnObjects, colorPalette, '#000000'),
-        //         plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-        //         useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
-        //         showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
-        //     },
-        // };
         //create datapoints
         for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
@@ -639,7 +631,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     }
 
     viewModel.generalPlotSettings.legendYPostion = plotTop + MarginSettings.legendTopMargin;
-
     return ok(viewModel);
 }
 
