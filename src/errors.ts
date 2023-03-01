@@ -19,7 +19,7 @@ export class AxisError extends ParseAndTransformError {
      */
     constructor() {
         const name = 'Axis error';
-        const message = 'Axis count must be either one or match the Values count.';
+        const message = 'There must be exactly one axis column';
         super(message, name);
     }
 }

@@ -63,6 +63,29 @@ import {
     XDataError,
 } from './errors';
 
+export class DataModel {
+    xData: XAxisData;
+    yData: YAxisData[];
+    tooltipData: TooltipColumnData[];
+    defectLegendData: LegendData;
+    filterLegendData: LegendData[];
+    overlayWidth: number[];
+    overlayLength: number[];
+    rolloutRectangles: Primitive[];
+    rolloutName: string;
+    legends: Legends;
+
+    constructor(yCount: number, tooltipCount: number) {
+        this.yData = new Array<YAxisData>(yCount);
+        this.tooltipData = new Array<TooltipColumnData>(tooltipCount);
+        this.filterLegendData = [];
+        this.overlayLength = [];
+        this.overlayWidth = [];
+        this.rolloutRectangles = [];
+        this.legends = new Legends();
+    }
+}
+
 /**
  * Function that converts queried data into a viewmodel that will be used by the visual.
  *
@@ -73,19 +96,8 @@ import {
  * @param {IVisualHost} host            - Contains references to the host which contains services
  */
 
-// eslint-disable-next-line max-lines-per-function
-export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Result<ViewModel, ParseAndTransformError> {
-    // try {
-    let parseAndTransformError: ParseAndTransformError;
-    const dataViews = options.dataViews;
-    if (!dataViews || !dataViews[0] || !dataViews[0].categorical || !dataViews[0].metadata) {
-        return err(new ParseAndTransformError('No categorical data in Axis or Values'));
-    }
-    const objects = dataViews[0].metadata.objects;
-    const categorical = dataViews[0].categorical;
-    const metadataColumns = dataViews[0].metadata.columns;
-    const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
-    //count numbers of x-axis, y-axis and tooltipdata
+function checkForData(categorical: powerbi.DataViewCategorical): Result<number, ParseAndTransformError> {
+    //count numbers of x-axis and y-axis
     const yCategoriesCount =
         categorical.categories === undefined
             ? 0
@@ -112,20 +124,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                   return val.source.roles.x_axis;
               }).length;
     const xCount = xCategoriesCount + xValuesCount;
-    const tooltipCategoriesCount =
-        categorical.categories === undefined
-            ? 0
-            : categorical.categories.filter((cat) => {
-                  return cat.source.roles.tooltip;
-              }).length;
-    const tooltipValuesCount =
-        categorical.values === undefined
-            ? 0
-            : categorical.values.filter((val) => {
-                  return val.source.roles.tooltip;
-              }).length;
-    const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
-    const sharedXAxis = xCount == 1;
 
     //check if input data count is ok
     if (yCount === 0) {
@@ -134,328 +132,64 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     if (xCount === 0) {
         return err(new XDataError());
     }
-    if (xCount !== yCount && !sharedXAxis) {
+    if (xCount !== 1) {
         return err(new AxisError());
     }
     if ((yCategoriesCount > 0 && categorical.categories[0].values.length === 0) || (yValuesCount > 0 && categorical.values[0].values.length === 0)) {
         return err(new NoDataError());
     }
+    return ok(yCount);
+}
 
-    let xData: XAxisData;
-    const yData = new Array<YAxisData>(yCount);
-    const tooltipData = new Array<TooltipColumnData>(tooltipCount);
-    let legendData: LegendData = null;
-    const filterLegendData: LegendData[] = [];
-    // let defectIndices: DefectIndices = new DefectIndices();
+// eslint-disable-next-line max-lines-per-function
+export function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Result<ViewModel, ParseAndTransformError> {
+    let parseAndTransformError: ParseAndTransformError;
+    const dataViews = options.dataViews;
+    if (!dataViews || !dataViews[0] || !dataViews[0].categorical || !dataViews[0].metadata) {
+        return err(new ParseAndTransformError('No categorical data in Axis or Values'));
+    }
+    const objects = dataViews[0].metadata.objects;
+    const categorical = dataViews[0].categorical;
+    const metadataColumns = dataViews[0].metadata.columns;
+    const colorPalette: ISandboxExtendedColorPalette = host.colorPalette;
+    let yCount;
+    checkForData(categorical)
+        .map((count) => (yCount = count))
+        .mapErr((e) => (parseAndTransformError = e));
+    if (parseAndTransformError) return err(parseAndTransformError);
+    const tooltipCount = getTooltipCount(categorical);
+    const dataModel = new DataModel(yCount, tooltipCount);
 
+    getCategoricalData(categorical, dataModel);
+    getMeasureData(categorical, dataModel, metadataColumns);
+    let viewModel = new ViewModel();
     let xDataPoints: number[] | Date[] = [];
     let yDataPoints: number[] = [];
     let dataPoints: DataPoint[] = [];
-    let overlayWidth: number[] = [];
-    let overlayLength: number[] = [];
-    // let defectLegend: Legend = null;
-    // let defectGroupLegend: Legend = null;
-    const legends = new Legends();
-    let rolloutRectangles: Primitive[];
-    let rolloutName: string;
-    const legendFilter: number[][] = [];
 
-    //aquire all categorical values
-    if (categorical.categories !== undefined) {
-        for (const category of categorical.categories) {
-            const roles = category.source.roles;
-            if (roles.x_axis) {
-                if (category.source.type.dateTime) {
-                    xData = {
-                        name: category.source.displayName,
-                        values: <Date[]>category.values,
-                        isDate: true,
-                    };
-                } else if (category.source.type.numeric) {
-                    xData = {
-                        name: category.source.displayName,
-                        values: <number[]>category.values,
-                        isDate: false,
-                    };
-                }
-            }
-            if (roles.y_axis) {
-                const yId = category.source['rolesIndex']['y_axis'][0];
-                const yAxis: YAxisData = {
-                    name: category.source.displayName,
-                    values: <number[]>category.values,
-                    columnId: category.source.index,
-                };
-                yData[yId] = yAxis;
-            }
-            if (roles.overlayX) {
-                overlayLength = <number[]>category.values;
-            }
-            if (category.source.roles.overlayY) {
-                overlayWidth = <number[]>category.values;
-            }
-            if (roles.tooltip) {
-                const columnId = category.source.index;
-                const tooltipId = category.source['rolesIndex']['tooltip'][0];
-                const data: TooltipColumnData = {
-                    type: category.source.type,
-                    name: category.source.displayName,
-                    values: <number[]>category.values,
-                    columnId,
-                    metaDataColumn: category.source,
-                };
-                tooltipData[tooltipId] = data;
-            }
-            if (roles.legend) {
-                legendData = {
-                    name: category.source.displayName,
-                    values: category.values,
-                    metaDataColumn: category.source,
-                    type: FilterType.stringFilter,
-                };
-            }
-            if (roles.legendFilter) {
-                if (category.source.type.numeric) {
-                    legendFilter.push(<number[]>category.values);
-                }
-            }
-
-            if (roles.defectGroup) {
-                if (category.source.type.text || category.source.type.numeric) {
-                    const type = category.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
-                    filterLegendData.push({
-                        name: category.source.displayName,
-                        values: category.values,
-                        metaDataColumn: category.source,
-                        type,
-                    });
-                }
-            }
-            // if (roles.defectIndices) {
-            //     defectIndices.defectIndices.set(category.source.displayName, <number[]>category.values)
-            // }
-            if (roles.rollout) {
-                rolloutRectangles = category.values;
-                rolloutName = category.source.displayName;
-            }
-        }
-    }
-    //aquire all measure values
-    if (categorical.values !== undefined) {
-        for (const value of categorical.values) {
-            const roles = value.source.roles;
-            if (roles.x_axis) {
-                if (value.source.type.dateTime) {
-                    xData = {
-                        name: value.source.displayName,
-                        values: <Date[]>value.values,
-                        isDate: true,
-                    };
-                } else if (value.source.type.numeric) {
-                    xData = {
-                        name: value.source.displayName,
-                        values: <number[]>value.values,
-                        isDate: false,
-                    };
-                }
-            }
-            if (roles.y_axis) {
-                const yId = value.source['rolesIndex']['y_axis'][0];
-                const yColumnObjects = getMetadataColumn(metadataColumns, value.source.index).objects;
-                const useHighlights = getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false);
-                const yAxis: YAxisData = {
-                    name: value.source.displayName,
-                    values: <number[]>(useHighlights && value.highlights ? value.highlights : value.values),
-                    columnId: value.source.index,
-                };
-                yData[yId] = yAxis;
-            }
-            if (roles.overlayX) {
-                overlayLength = <number[]>(value.highlights ? value.highlights : value.values);
-            }
-            if (roles.overlayY) {
-                overlayWidth = <number[]>(value.highlights ? value.highlights : value.values);
-            }
-            if (roles.tooltip) {
-                const columnId = value.source.index;
-                const tooltipId = value.source['rolesIndex']['tooltip'][0];
-                const data: TooltipColumnData = {
-                    type: value.source.type,
-                    name: value.source.displayName,
-                    values: <number[]>value.values,
-                    columnId,
-                    metaDataColumn: value.source,
-                };
-                tooltipData[tooltipId] = data;
-            }
-            if (roles.legend) {
-                legendData = {
-                    name: value.source.displayName,
-                    values: <string[]>value.values,
-                    metaDataColumn: value.source,
-                    type: FilterType.stringFilter,
-                };
-            }
-            if (roles.legendFilter) {
-                if (value.source.type.numeric) {
-                    legendFilter.push(<number[]>value.values);
-                }
-            }
-            if (roles.defectGroup) {
-                if (value.source.type.text || value.source.type.numeric) {
-                    const type = value.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
-                    filterLegendData.push({
-                        name: value.source.displayName,
-                        values: value.values,
-                        metaDataColumn: value.source,
-                        type,
-                    });
-                }
-            }
-            // if (roles.defectIndices) {
-            //     defectIndices.defectIndices.set(value.source.displayName, <number[]>value.values);
-            // }
-            if (roles.rollout) {
-                rolloutRectangles = <number[]>value.values;
-                rolloutName = value.source.displayName;
-            }
-        }
-    }
-
-    const nullValues = xData.isDate ? (<Date[]>xData.values).filter((x) => x === null || x === undefined) : (<number[]>xData.values).filter((x) => x === null || x === undefined);
+    const nullValues = dataModel.xData.isDate
+        ? (<Date[]>dataModel.xData.values).filter((x) => x === null || x === undefined)
+        : (<number[]>dataModel.xData.values).filter((x) => x === null || x === undefined);
     if (nullValues.length > 0) {
-        return err(new AxisNullValuesError(xData.name));
+        return err(new AxisNullValuesError(dataModel.xData.name));
     }
-    const axisBreak = xData.isDate ? false : <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false);
-    const uniqueXValues = Array.from(new Set<Date | number>(xData.values));
+    const axisBreak = dataModel.xData.isDate ? false : <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false);
+    const uniqueXValues = Array.from(new Set<Date | number>(dataModel.xData.values));
     const indexMap = new Map(uniqueXValues.map((x, i) => [x, i]));
-    const a = xData.isDate
+    const breakIndices = dataModel.xData.isDate
         ? []
         : uniqueXValues
               .map((x: number, i, a: number[]) => {
                   return { i: i, gapSize: i < a.length ? a[i + 1] - x : 0 };
               })
-              .filter((x) => x.gapSize > 1);
-    const breakIndices = a.map((x) => x.i + 0.5);
-    // if (axisBreak) {
-    //     debugger;
-    //     //xData.values.filter((x,i)=>xData.values.findIndex(y=>y===x)!==i)
-    // }
+              .filter((x) => x.gapSize > 1)
+              .map((x) => x.i + 0.5);
 
-    // console.log(categorical.values ? categorical.values.filter((x) => x.source.displayName === 'Average of SEGMENT_LENGTH') : 'no values');
-
-    const legendColors = ArrayConstants.legendColors;
-    if (legendData != null) {
-        // const categories = categorical.categories ? categorical.categories.filter((x) => x.source.roles.legend) : [];
-        // const category = categories.length > 0 ? categories[0] : null;
-        // const values = categorical.values ? categorical.values.filter((x) => x.source.roles.legend) : [];
-        // const value = values.length > 0 ? values[0] : null;
-        const legendSet = new Set(legendData.values);
-        // const defaultLegendName = category ? category.source.displayName : 'Error Legend';
-
-        if (legendSet.has(null)) {
-            legendSet.delete(null);
-        }
-        const legendValues = Array.from(legendSet);
-        const defectLegend = <Legend>{
-            legendDataPoints: legendData.values
-                .map(
-                    (val, i) =>
-                        <LegendDataPoint>{
-                            yValue: val,
-                            i,
-                        }
-                )
-                .filter((x) => x.yValue !== null),
-            legendValues: [],
-            legendTitle: <string>getValue(legendData.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, legendData.metaDataColumn.displayName),
-            legendXEndPosition: 0,
-            legendXPosition: MarginSettings.margins.left,
-            type: FilterType.defectFilter,
-            selectedValues: new Set(legendValues.concat(Object.keys(ArrayConstants.legendColors))),
-            metaDataColumn: legendData.metaDataColumn,
-        };
-        for (let i = 0; i < legendValues.length; i++) {
-            const val = legendValues[i] + '';
-            const defaultColor = legendColors[val] ? legendColors[val] : 'FFFFFF';
-            // const selectionId = category ? host.createSelectionIdBuilder().withCategory(category, i).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
-            // const column = category ? category : value;
-            defectLegend.legendValues.push({
-                color: defaultColor, //getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, defaultColor),
-                // selectionId: selectionId,
-                value: val,
-            });
-        }
-        legends.legends.push(defectLegend);
-
-        // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
-        //     legend.legendDataPoints.push({
-        //         xValue: xData.values[i],
-        //         yValue: legendData.values[i]
-        //     });
-
-        // }
+    if (dataModel.defectLegendData != null) {
+        createDefectLegend(dataModel);
     }
-    if (filterLegendData.length > 0) {
-        for (let i = 0; i < filterLegendData.length; i++) {
-            const data = filterLegendData[i];
-
-            // const columns = categorical.categories.filter((x) => x.source.roles.defectGroup).concat(categorical.categories.filter((x) => x.source.roles.defectGroup));
-            // const column = columns.length > 0 ? columns[0] : null;
-            const legendSet = new Set(data.values.map((x) => (x !== null && x !== undefined ? x.toString() : x)));
-            const defaultLegendName = data.metaDataColumn.displayName;
-
-            if (legendSet.has(null)) {
-                legendSet.delete(null);
-            }
-            if ((legendSet.size === 1 && legendSet.has('0')) || legendSet.has('1') || (legendSet.size === 2 && legendSet.has('0') && legendSet.has('1'))) {
-                data.type = FilterType.booleanFilter;
-            }
-            const legendValues = Array.from(legendSet);
-
-            legends.legends.push(<Legend>{
-                legendDataPoints: data.values
-                    .map(
-                        (val, i) =>
-                            <LegendDataPoint>{
-                                yValue: val,
-                                i: i,
-                            }
-                    )
-                    .filter((x) => x.yValue !== null),
-                legendValues: legendValues.map((val) => {
-                    return <LegendValue>{
-                        color: 'white',
-                        // selectionId: selectionId,
-                        value: val,
-                    };
-                }),
-                legendTitle: <string>getValue(data.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
-                legendXEndPosition: 0,
-                legendXPosition: MarginSettings.margins.left,
-                type: data.type,
-                selectedValues: legendSet,
-                metaDataColumn: data.metaDataColumn,
-            });
-            // for (let j = 0; j < legendValues.length; j++) {
-            //     const val = legendValues[j];
-            //     //const selectionId = column ? host.createSelectionIdBuilder().withCategory(column, j).createSelectionId() : host.createSelectionIdBuilder().createSelectionId();
-
-            //     defectGroupLegend.legendValues.push({
-            //         color: 'white',
-            //         // selectionId: selectionId,
-            //         value: val,
-            //     });
-            // }
-
-            // for (let i = 0; i < Math.min(legendData.values.length, xData.values.length); i++) {
-            //     legend.legendDataPoints.push({
-            //         xValue: xData.values[i],
-            //         yValue: legendData.values[i]
-            //     });
-
-            // }
-        }
+    if (dataModel.filterLegendData.length > 0) {
+        createFilterLegends(dataModel);
     }
 
     const formatSettings: FormatSettings[] = [];
@@ -463,8 +197,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const plotSettingsArray: PlotSettings[] = [];
 
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
-        const yAxis: YAxisData = yData[plotNr];
-        const yColumnId = yData[plotNr].columnId;
+        const yAxis: YAxisData = dataModel.yData[plotNr];
+        const yColumnId = dataModel.yData[plotNr].columnId;
         const yColumnObjects = getMetadataColumn(metadataColumns, yColumnId).objects;
         plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name));
 
@@ -497,29 +231,18 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     const plotTitlesCount = plotTitles.filter((x) => x.length > 0).length;
     const xLabelsCount = formatSettings.filter((x) => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
     const heatmapCount = plotSettingsArray.filter((x) => x.showHeatmap).length;
-    let viewModel: ViewModel;
-    const viewModelResult = createViewModel(
-        options,
-        yCount,
-        objects,
-        colorPalette,
-        plotTitlesCount,
-        xLabelsCount,
-        heatmapCount,
-        legends,
-        xData,
-        indexMap,
-        axisBreak,
-        breakIndices
-    ).map((vm) => (viewModel = vm));
+
+    const viewModelResult = createViewModel(options, dataModel, objects, colorPalette, plotTitlesCount, xLabelsCount, heatmapCount, indexMap, axisBreak, breakIndices).map(
+        (vm) => (viewModel = vm)
+    );
     if (viewModelResult.isErr()) {
         return viewModelResult.mapErr((err) => {
             return err;
         });
     }
 
-    createTooltipModels(sharedXAxis, xData, tooltipData, viewModel, metadataColumns);
-    createOverlayInformation(overlayLength, overlayWidth, xData.values, viewModel).mapErr((err) => (parseAndTransformError = err));
+    createTooltipModels(dataModel, viewModel, metadataColumns);
+    createOverlayInformation(dataModel, viewModel).mapErr((err) => (parseAndTransformError = err));
     if (parseAndTransformError) {
         return err(parseAndTransformError);
     }
@@ -528,12 +251,12 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     //create Plotmodels
     for (let plotNr = 0; plotNr < yCount; plotNr++) {
         //get x- and y-data for plotnumber
-        const yAxis: YAxisData = yData[plotNr];
-        xDataPoints = xData.values;
+        const yAxis: YAxisData = dataModel.yData[plotNr];
+        xDataPoints = dataModel.xData.values;
         yDataPoints = yAxis.values;
         const maxLengthAttributes = Math.max(xDataPoints.length, yDataPoints.length);
         dataPoints = [];
-        const yColumnId = yData[plotNr].columnId;
+        const yColumnId = dataModel.yData[plotNr].columnId;
         const metaDataColumn = getMetadataColumn(metadataColumns, yColumnId);
         const yColumnObjects = metaDataColumn.objects;
         const plotSettings = plotSettingsArray[plotNr];
@@ -542,14 +265,12 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
             const selectionId: ISelectionId = host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
             let color = plotSettings.fill;
             const xVal = xDataPoints[pointNr];
-            let filterValues = [];
             if (plotSettings.useLegendColor) {
-                const filtered = legends.legends.filter((x) => x.type === FilterType.defectFilter);
+                const filtered = dataModel.legends.legends.filter((x) => x.type === FilterType.defectFilter);
                 if (filtered.length === 1) {
                     const defectLegend = filtered[0];
                     const legendVal = defectLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
                     color = legendVal === undefined ? color : defectLegend.legendValues.find((x) => x.value === legendVal).color;
-                    filterValues = legendFilter.map((a) => a[pointNr]);
                 } else {
                     viewModel.errors.push(new PlotLegendError(yAxis.name));
                 }
@@ -563,7 +284,6 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
                 selected: false,
                 color: color,
                 pointNr: pointNr,
-                filterValues: filterValues,
                 selectionId: host.createSelectionIdBuilder().withCategory(categorical.categories[0], pointNr).createSelectionId(),
             };
 
@@ -583,7 +303,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
             yName: yAxis.name,
             labelNames: {
-                xLabel: getValue<string>(yColumnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.xLabel, xData.name),
+                xLabel: getValue<string>(yColumnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.xLabel, dataModel.xData.name),
                 yLabel: getValue<string>(yColumnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.yLabel, yAxis.name),
             },
             plotTop: plotTop,
@@ -614,19 +334,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         plotTop += viewModel.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
         plotTop += plotModel.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
     }
-    if (rolloutRectangles) {
-        const category = categorical.categories.filter((x) => x.source.roles.rollout)[0];
+    if (dataModel.rolloutRectangles) {
         const rolloutY = viewModel.plotModels[0].plotTop;
         const rolloutHeight = viewModel.plotModels[viewModel.plotModels.length - 1].plotTop + viewModel.generalPlotSettings.plotHeight - rolloutY;
         viewModel.rolloutRectangles = new RolloutRectangles(
-            axisBreak ? xData.values.map((x) => indexMap.get(x)) : xData.values,
-            rolloutRectangles,
+            axisBreak ? dataModel.xData.values.map((x) => indexMap.get(x)) : dataModel.xData.values,
+            dataModel.rolloutRectangles,
             rolloutY,
             rolloutHeight,
-            host,
-            category,
-            dataViews[0],
-            rolloutName
+            dataModel.rolloutName
         );
     }
 
@@ -634,85 +350,328 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     return ok(viewModel);
 }
 
-function getMetadataColumn(metadataColumns: powerbi.DataViewMetadataColumn[], yColumnId: number) {
-    return metadataColumns.filter((x) => x.index === yColumnId)[0];
+function createFilterLegends(dataModel: DataModel) {
+    for (let i = 0; i < dataModel.filterLegendData.length; i++) {
+        const data = dataModel.filterLegendData[i];
+        const legendSet = new Set(data.values.map((x) => (x !== null && x !== undefined ? x.toString() : x)));
+        const defaultLegendName = data.metaDataColumn.displayName;
+
+        if (legendSet.has(null)) {
+            legendSet.delete(null);
+        }
+        if ((legendSet.size === 1 && legendSet.has('0')) || legendSet.has('1') || (legendSet.size === 2 && legendSet.has('0') && legendSet.has('1'))) {
+            data.type = FilterType.booleanFilter;
+        }
+        const legendValues = Array.from(legendSet);
+
+        dataModel.legends.legends.push(<Legend>{
+            legendDataPoints: data.values
+                .map(
+                    (val, i) =>
+                        <LegendDataPoint>{
+                            yValue: val,
+                            i: i,
+                        }
+                )
+                .filter((x) => x.yValue !== null),
+            legendValues: legendValues.map((val) => {
+                return <LegendValue>{
+                    color: 'white',
+                    value: val,
+                };
+            }),
+            legendTitle: <string>getValue(data.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
+            legendXEndPosition: 0,
+            legendXPosition: MarginSettings.margins.left,
+            type: data.type,
+            selectedValues: legendSet,
+            metaDataColumn: data.metaDataColumn,
+        });
+    }
 }
 
-function createTooltipModels(
-    sharedXAxis: boolean,
-    xData: XAxisData,
-    tooltipData: TooltipColumnData[],
-    viewModel: ViewModel,
-    metadataColumns: powerbi.DataViewMetadataColumn[]
-): void {
-    if (sharedXAxis) {
-        for (const tooltip of tooltipData) {
-            const column: powerbi.DataViewMetadataColumn = getMetadataColumn(metadataColumns, tooltip.columnId);
-            const maxLengthAttributes: number = Math.min(xData.values.length, tooltip.values.length);
-
-            const tooltipPoints: TooltipDataPoint[] = <TooltipDataPoint[]>[];
-            const type = tooltip.type;
-            if (type.dateTime) {
-                tooltip.values = tooltip.values.map((val) => {
-                    const d = new Date(<string>val);
-                    const formatedDate =
-                        padTo2Digits(d.getDate()) +
-                        '.' +
-                        padTo2Digits(d.getMonth() + 1) +
-                        '.' +
-                        padTo2Digits(d.getFullYear()) +
-                        ' ' +
-                        padTo2Digits(d.getHours()) +
-                        ':' +
-                        padTo2Digits(d.getMinutes());
-                    return formatedDate;
-                });
-            } else if (type.numeric && !type.integer) {
-                tooltip.values = tooltip.values.map((val) => {
-                    if (typeof val === 'number') {
-                        return Number(val).toFixed(2);
+function createDefectLegend(dataModel: DataModel) {
+    const legendSet = new Set(dataModel.defectLegendData.values);
+    if (legendSet.has(null)) {
+        legendSet.delete(null);
+    }
+    const legendColors = ArrayConstants.legendColors;
+    const legendValues = Array.from(legendSet);
+    const defectLegend = <Legend>{
+        legendDataPoints: dataModel.defectLegendData.values
+            .map(
+                (val, i) =>
+                    <LegendDataPoint>{
+                        yValue: val,
+                        i,
                     }
-                    return val;
-                });
+            )
+            .filter((x) => x.yValue !== null),
+        legendValues: [],
+        legendTitle: <string>(
+            getValue(
+                dataModel.defectLegendData.metaDataColumn.objects,
+                Settings.legendSettings,
+                LegendSettingsNames.legendTitle,
+                dataModel.defectLegendData.metaDataColumn.displayName
+            )
+        ),
+        legendXEndPosition: 0,
+        legendXPosition: MarginSettings.margins.left,
+        type: FilterType.defectFilter,
+        selectedValues: new Set(legendValues.concat(Object.keys(ArrayConstants.legendColors))),
+        metaDataColumn: dataModel.defectLegendData.metaDataColumn,
+    };
+    for (let i = 0; i < legendValues.length; i++) {
+        const val = legendValues[i] + '';
+        const defaultColor = legendColors[val] ? legendColors[val] : 'FFFFFF';
+        defectLegend.legendValues.push({
+            color: defaultColor,
+            value: val,
+        });
+    }
+    dataModel.legends.legends.push(defectLegend);
+}
+
+function getCategoricalData(categorical: powerbi.DataViewCategorical, dataModel: DataModel) {
+    if (categorical.categories !== undefined) {
+        for (const category of categorical.categories) {
+            const roles = category.source.roles;
+            if (roles.x_axis) {
+                if (category.source.type.dateTime) {
+                    dataModel.xData = {
+                        name: category.source.displayName,
+                        values: <Date[]>category.values,
+                        isDate: true,
+                    };
+                } else if (category.source.type.numeric) {
+                    dataModel.xData = {
+                        name: category.source.displayName,
+                        values: <number[]>category.values,
+                        isDate: false,
+                    };
+                }
+            }
+            if (roles.y_axis) {
+                const yId = category.source['rolesIndex']['y_axis'][0];
+                const yAxis: YAxisData = {
+                    name: category.source.displayName,
+                    values: <number[]>category.values,
+                    columnId: category.source.index,
+                };
+                dataModel.yData[yId] = yAxis;
+            }
+            if (roles.overlayX) {
+                dataModel.overlayLength = <number[]>category.values;
+            }
+            if (roles.overlayY) {
+                dataModel.overlayWidth = <number[]>category.values;
+            }
+            if (roles.tooltip) {
+                const columnId = category.source.index;
+                const tooltipId = category.source['rolesIndex']['tooltip'][0];
+                const data: TooltipColumnData = {
+                    type: category.source.type,
+                    name: category.source.displayName,
+                    values: <number[]>category.values,
+                    columnId,
+                    metaDataColumn: category.source,
+                };
+                dataModel.tooltipData[tooltipId] = data;
+            }
+            if (roles.legend) {
+                dataModel.defectLegendData = {
+                    name: category.source.displayName,
+                    values: category.values,
+                    metaDataColumn: category.source,
+                    type: FilterType.stringFilter,
+                };
             }
 
-            //create datapoints
-            for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
-                const dataPoint: TooltipDataPoint = {
-                    pointNr: pointNr,
-                    yValue: tooltip.values[pointNr],
-                };
-                tooltipPoints.push(dataPoint);
+            if (roles.filterLegend) {
+                if (category.source.type.text || category.source.type.numeric) {
+                    const type = category.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
+                    dataModel.filterLegendData.push({
+                        name: category.source.displayName,
+                        values: category.values,
+                        metaDataColumn: category.source,
+                        type,
+                    });
+                }
             }
-            const tooltipModel: TooltipModel = {
-                tooltipName: getValue<string>(column.objects, Settings.tooltipTitleSettings, TooltipTitleSettingsNames.title, column.displayName),
-                tooltipId: tooltip.columnId,
-                tooltipData: tooltipPoints,
-                metaDataColumn: tooltip.metaDataColumn,
-            };
-            viewModel.tooltipModels.push(tooltipModel);
+            if (roles.rollout) {
+                dataModel.rolloutRectangles = category.values;
+                dataModel.rolloutName = category.source.displayName;
+            }
         }
     }
 }
 
-function createOverlayInformation(overlayLength: number[], overlayWidth: number[], xValues: number[] | Date[], viewModel: ViewModel): Result<void, OverlayDataError> {
-    if (overlayLength.length == overlayWidth.length && overlayWidth.length > 0) {
-        let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(overlayLength.length);
+function getMeasureData(categorical: powerbi.DataViewCategorical, dataModel: DataModel, metadataColumns: powerbi.DataViewMetadataColumn[]) {
+    if (categorical.values !== undefined) {
+        for (const value of categorical.values) {
+            const roles = value.source.roles;
+            if (roles.x_axis) {
+                if (value.source.type.dateTime) {
+                    dataModel.xData = {
+                        name: value.source.displayName,
+                        values: <Date[]>value.values,
+                        isDate: true,
+                    };
+                } else if (value.source.type.numeric) {
+                    dataModel.xData = {
+                        name: value.source.displayName,
+                        values: <number[]>value.values,
+                        isDate: false,
+                    };
+                }
+            }
+            if (roles.y_axis) {
+                const yId = value.source['rolesIndex']['y_axis'][0];
+                const yColumnObjects = getMetadataColumn(metadataColumns, value.source.index).objects;
+                const useHighlights = getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false);
+                const yAxis: YAxisData = {
+                    name: value.source.displayName,
+                    values: <number[]>(useHighlights && value.highlights ? value.highlights : value.values),
+                    columnId: value.source.index,
+                };
+                dataModel.yData[yId] = yAxis;
+            }
+            if (roles.overlayX) {
+                dataModel.overlayLength = <number[]>(value.highlights ? value.highlights : value.values);
+            }
+            if (roles.overlayY) {
+                dataModel.overlayWidth = <number[]>(value.highlights ? value.highlights : value.values);
+            }
+            if (roles.tooltip) {
+                const columnId = value.source.index;
+                const tooltipId = value.source['rolesIndex']['tooltip'][0];
+                const data: TooltipColumnData = {
+                    type: value.source.type,
+                    name: value.source.displayName,
+                    values: <number[]>value.values,
+                    columnId,
+                    metaDataColumn: value.source,
+                };
+                dataModel.tooltipData[tooltipId] = data;
+            }
+            if (roles.legend) {
+                dataModel.defectLegendData = {
+                    name: value.source.displayName,
+                    values: <string[]>value.values,
+                    metaDataColumn: value.source,
+                    type: FilterType.stringFilter,
+                };
+            }
+            if (roles.filterLegend) {
+                if (value.source.type.text || value.source.type.numeric) {
+                    const type = value.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
+                    dataModel.filterLegendData.push({
+                        name: value.source.displayName,
+                        values: value.values,
+                        metaDataColumn: value.source,
+                        type,
+                    });
+                }
+            }
+
+            if (roles.rollout) {
+                dataModel.rolloutRectangles = <number[]>value.values;
+                dataModel.rolloutName = value.source.displayName;
+            }
+        }
+    }
+}
+
+function getTooltipCount(categorical: powerbi.DataViewCategorical) {
+    const tooltipCategoriesCount =
+        categorical.categories === undefined
+            ? 0
+            : categorical.categories.filter((cat) => {
+                  return cat.source.roles.tooltip;
+              }).length;
+    const tooltipValuesCount =
+        categorical.values === undefined
+            ? 0
+            : categorical.values.filter((val) => {
+                  return val.source.roles.tooltip;
+              }).length;
+    const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
+    return tooltipCount;
+}
+
+function getMetadataColumn(metadataColumns: powerbi.DataViewMetadataColumn[], yColumnId: number) {
+    return metadataColumns.filter((x) => x.index === yColumnId)[0];
+}
+
+function createTooltipModels(dataModel: DataModel, viewModel: ViewModel, metadataColumns: powerbi.DataViewMetadataColumn[]): void {
+    for (const tooltip of dataModel.tooltipData) {
+        const column: powerbi.DataViewMetadataColumn = getMetadataColumn(metadataColumns, tooltip.columnId);
+        const maxLengthAttributes: number = Math.min(dataModel.xData.values.length, tooltip.values.length);
+
+        const tooltipPoints: TooltipDataPoint[] = <TooltipDataPoint[]>[];
+        const type = tooltip.type;
+        if (type.dateTime) {
+            tooltip.values = tooltip.values.map((val) => {
+                const d = new Date(<string>val);
+                const formatedDate =
+                    padTo2Digits(d.getDate()) +
+                    '.' +
+                    padTo2Digits(d.getMonth() + 1) +
+                    '.' +
+                    padTo2Digits(d.getFullYear()) +
+                    ' ' +
+                    padTo2Digits(d.getHours()) +
+                    ':' +
+                    padTo2Digits(d.getMinutes());
+                return formatedDate;
+            });
+        } else if (type.numeric && !type.integer) {
+            tooltip.values = tooltip.values.map((val) => {
+                if (typeof val === 'number') {
+                    return Number(val).toFixed(2);
+                }
+                return val;
+            });
+        }
+
+        //create datapoints
+        for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
+            const dataPoint: TooltipDataPoint = {
+                pointNr: pointNr,
+                yValue: tooltip.values[pointNr],
+            };
+            tooltipPoints.push(dataPoint);
+        }
+        const tooltipModel: TooltipModel = {
+            tooltipName: getValue<string>(column.objects, Settings.tooltipTitleSettings, TooltipTitleSettingsNames.title, column.displayName),
+            tooltipId: tooltip.columnId,
+            tooltipData: tooltipPoints,
+            metaDataColumn: tooltip.metaDataColumn,
+        };
+        viewModel.tooltipModels.push(tooltipModel);
+    }
+}
+
+function createOverlayInformation(dataModel: DataModel, viewModel: ViewModel): Result<void, OverlayDataError> {
+    if (dataModel.overlayLength.length == dataModel.overlayWidth.length && dataModel.overlayWidth.length > 0) {
+        const xValues = dataModel.xData.values;
+        let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(dataModel.overlayLength.length);
         const xAxisSettings = viewModel.generalPlotSettings.xAxisSettings;
         let endX = null;
-        for (let i = 0; i < overlayLength.length; i++) {
-            if (overlayLength[i]) {
+        for (let i = 0; i < dataModel.overlayLength.length; i++) {
+            if (dataModel.overlayLength[i]) {
                 if (viewModel.generalPlotSettings.xAxisSettings.isDate) {
-                    const index = i + overlayLength[i] < xValues.length ? i + overlayLength[i] : xValues.length - 1;
+                    const index = i + dataModel.overlayLength[i] < xValues.length ? i + dataModel.overlayLength[i] : xValues.length - 1;
                     endX = xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[index]) : xValues[index];
                 } else {
-                    endX = xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) + overlayLength[i] : <number>xValues[i] + overlayLength[i];
+                    endX = xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) + dataModel.overlayLength[i] : <number>xValues[i] + dataModel.overlayLength[i];
                 }
             } else {
                 endX = null;
             }
             overlayRectangles[i] = {
-                width: overlayWidth[i],
+                width: dataModel.overlayWidth[i],
                 endX: endX,
                 y: 0,
                 x: xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) : xValues[i],
@@ -730,14 +689,12 @@ function createOverlayInformation(overlayLength: number[], overlayWidth: number[
 // eslint-disable-next-line max-lines-per-function
 function createViewModel(
     options: VisualUpdateOptions,
-    yCount: number,
+    dataModel: DataModel,
     objects: powerbi.DataViewObjects,
     colorPalette: ISandboxExtendedColorPalette,
     plotTitlesCount: number,
     xLabelsCount: number,
     heatmapCount: number,
-    legends: Legends,
-    xData: XAxisData,
     indexMap: Map<number | Date, number>,
     axisBreak: boolean,
     breakIndices: number[]
@@ -745,7 +702,7 @@ function createViewModel(
     const margins = MarginSettings;
     let svgHeight: number = options.viewport.height - margins.scrollbarSpace;
     let svgWidth: number = options.viewport.width - margins.scrollbarSpace;
-    const legendHeight = legends.legends.length > 0 ? margins.legendHeight : 0;
+    const legendHeight = dataModel.legends.legends.length > 0 ? margins.legendHeight : 0;
     if (svgHeight === undefined || svgWidth === undefined || !svgHeight || !svgWidth) {
         return err(new SVGSizeError());
     }
@@ -757,11 +714,11 @@ function createViewModel(
             margins.plotTitleHeight * plotTitlesCount -
             margins.xLabelSpace * xLabelsCount -
             Heatmapmargins.heatmapSpace * heatmapCount) /
-        yCount;
+        dataModel.yData.length;
     if (plotHeightSpace < margins.miniumumPlotHeight) {
         const plotSpaceDif = margins.miniumumPlotHeight - plotHeightSpace;
         plotHeightSpace = margins.miniumumPlotHeight;
-        svgHeight = svgHeight + yCount * plotSpaceDif;
+        svgHeight = svgHeight + dataModel.yData.length * plotSpaceDif;
     }
     let plotWidth: number = svgWidth - margins.margins.left - margins.margins.right;
     if (plotWidth < margins.miniumumPlotWidth) {
@@ -770,27 +727,29 @@ function createViewModel(
         svgWidth = svgWidth + widthDif;
         // return err(new PlotSizeError('horizontal'));
     }
-    const xRange = xData.isDate
+    const xRange = dataModel.xData.isDate
         ? {
-              min: Math.min(...(<number[]>xData.values)),
-              max: Math.max(...(<number[]>xData.values)),
+              min: Math.min(...(<number[]>dataModel.xData.values)),
+              max: Math.max(...(<number[]>dataModel.xData.values)),
           }
         : {
-              min: (<Date[]>xData.values).reduce((a: Date, b: Date) => (a < b ? a : b)),
-              max: (<Date[]>xData.values).reduce((a: Date, b: Date) => (a > b ? a : b)),
+              min: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a < b ? a : b)),
+              max: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a > b ? a : b)),
           };
 
     if (axisBreak) {
         xRange.min = indexMap.get(xRange.min);
         xRange.max = indexMap.get(xRange.max);
     }
-    const xScale = xData.isDate ? scaleTime().domain([xRange.min, xRange.max]).range([0, plotWidth]) : scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
+    const xScale = dataModel.xData.isDate
+        ? scaleTime().domain([xRange.min, xRange.max]).range([0, plotWidth])
+        : scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
     const xAxisSettings = <XAxisSettings>{
         axisBreak,
         breakIndices,
         indexMap,
         showBreakLines: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, true),
-        xName: xData.name,
+        xName: dataModel.xData.name,
         xRange: xRange,
         xScale,
         xScaleZoomed: xScale,
@@ -813,7 +772,7 @@ function createViewModel(
     const zoomingSettings: ZoomingSettings = SettingsGetter.getZoomingSettings(objects);
 
     const viewModel: ViewModel = <ViewModel>{
-        plotModels: new Array<PlotModel>(yCount),
+        plotModels: new Array<PlotModel>(dataModel.yData.length),
         colorSettings: {
             colorSettings: {
                 verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
@@ -830,7 +789,7 @@ function createViewModel(
         svgTopPadding: margins.svgTopPadding,
         svgWidth: svgWidth,
         zoomingSettings: zoomingSettings,
-        legends: legends,
+        legends: dataModel.legends,
         errors: [],
     };
     return ok(viewModel);

@@ -41,8 +41,6 @@ export enum XAxisBreakSettingsNames {
 }
 export enum LegendSettingsNames {
     legendTitle = 'legendTitle',
-    // defectGroupLegendTitle = 'controlLegendTitle',
-    // legendColor = 'legendColor',
 }
 
 export enum PlotSettingsNames {

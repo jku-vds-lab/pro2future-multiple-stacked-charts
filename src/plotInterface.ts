@@ -9,7 +9,7 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 
-export interface ViewModel {
+export class ViewModel {
     plotModels: PlotModel[];
     colorSettings: ColorSettings;
     overlayRectangles?: OverlayRectangle[];
@@ -19,13 +19,14 @@ export interface ViewModel {
     generalPlotSettings: GeneralPlotSettings;
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
-    // defectLegend?: Legend;
-    // defectGroupLegend?: Legend;
     legends: Legends;
     heatmapSettings: HeatmapSettings;
-    // defectIndices: DefectIndices;
     rolloutRectangles: RolloutRectangles;
     errors: ParseAndTransformError[];
+
+    constructor() {
+        this.errors = [];
+    }
 }
 // export class DefectIndices {
 
@@ -76,17 +77,7 @@ export class RolloutRectangles {
     legendValues: LegendValue[];
     // colors: string[];
 
-    constructor(
-        xValues: number[] | Date[],
-        rollout: Primitive[],
-        y,
-        width,
-        host: IVisualHost,
-        category: powerbi.DataViewCategoryColumn,
-        dataView: powerbi.DataView,
-        rolloutName = 'Rollout',
-        rolloutOpacity = 0.2
-    ) {
+    constructor(xValues: number[] | Date[], rollout: Primitive[], y, width, rolloutName = 'Rollout', rolloutOpacity = 0.2) {
         this.name = rolloutName;
         this.rolloutRectangles = [];
         this.legendValues = [];
@@ -306,7 +297,6 @@ export interface DataPoint extends SelectableDataPoint {
     highlight?: boolean;
     opacity?: number;
     pointNr: number;
-    filterValues: number[];
     selectionId: ISelectionId;
 }
 
