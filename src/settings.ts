@@ -29,7 +29,6 @@ export function createFormattingModel(viewModel: ViewModel): powerbi.visuals.For
     const xAxisBreakCard: powerbi.visuals.FormattingCard = createXAxisBreakCard(viewModel);
     const yAxisRangeCard: powerbi.visuals.FormattingCard = createYAxisRangeCard();
     const zoomingCard: powerbi.visuals.FormattingCard = createZoomingCard(viewModel);
-
     const formattingModel: powerbi.visuals.FormattingModel = {
         cards: [axisCard, axisLabelsCard, colorCard, heatmapCard, legendCard, overlayCard, plotCard, plotTitleCard, tooltipTitleCard, xAxisBreakCard, yAxisRangeCard, zoomingCard],
     };
