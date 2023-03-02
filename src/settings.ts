@@ -14,7 +14,8 @@ import {
     YRangeSettingsNames,
     ZoomingSettingsNames,
 } from './constants';
-import { AxisInformation, AxisInformationInterface, Legend, PlotModel, TooltipModel, ViewModel } from './plotInterface';
+import { AxisInformation, AxisInformationInterface, Legend, PlotModel, TooltipModel } from './plotInterface';
+import { ViewModel } from './viewModel';
 
 export function createFormattingModel(viewModel: ViewModel): powerbi.visuals.FormattingModel {
     const axisCard: powerbi.visuals.FormattingCard = createAxisCard();

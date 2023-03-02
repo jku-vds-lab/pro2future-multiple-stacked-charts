@@ -3,10 +3,11 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getPlotFillColor } from './objectEnumerationUtility';
-import { ViewModel, FormatSettings, PlotSettings, XAxisData, YAxisData, PlotType, AxisInformation, AxisInformationInterface, LegendData, TooltipColumnData } from './plotInterface';
+import { FormatSettings, PlotSettings, XAxisData, YAxisData, PlotType, AxisInformation, AxisInformationInterface, LegendData, TooltipColumnData } from './plotInterface';
 import { Primitive } from 'd3';
 import { AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, ArrayConstants, FilterType } from './constants';
 import { ok, err, Result } from 'neverthrow';
+import { ViewModel } from './viewModel';
 import {
     AxisError,
     AxisNullValuesError,

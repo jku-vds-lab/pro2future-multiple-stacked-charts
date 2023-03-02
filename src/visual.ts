@@ -43,7 +43,6 @@ import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
 import {
     TooltipInterface,
-    ViewModel,
     DataPoint,
     PlotModel,
     PlotType,
@@ -81,6 +80,7 @@ import {
 } from './errors';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { Primitive } from 'd3';
+import { ViewModel } from './viewModel';
 
 export class Visual implements IVisual {
     private host: IVisualHost;
