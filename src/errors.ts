@@ -4,7 +4,7 @@ export class ParseAndTransformError implements Error {
     stack?: string;
 
     constructor(message: string, name?: string) {
-        this.message = message; //+ "<br><br> If you are not sure why this error occurs, please contact the authors.";
+        this.message = message;
         if (name !== undefined && name) {
             this.name = name;
         } else {
@@ -19,7 +19,7 @@ export class AxisError extends ParseAndTransformError {
      */
     constructor() {
         const name = 'Axis error';
-        const message = 'Axis count must be either one or match the Values count.';
+        const message = 'There must be exactly one axis column';
         super(message, name);
     }
 }
@@ -89,6 +89,17 @@ export class AxisNullValuesError extends ParseAndTransformError {
     }
 }
 
+export class CreateViewModelError extends ParseAndTransformError {
+    /**
+     *
+     */
+    constructor() {
+        const name = 'Create View Model Error. ';
+        const message = `This should not have happened.`;
+        super(message, name);
+    }
+}
+
 export class SVGSizeError extends ParseAndTransformError {
     /**
      *
@@ -132,13 +143,24 @@ export class GetAxisInformationError extends ParseAndTransformError {
     }
 }
 
+export class DataParsingError extends ParseAndTransformError {
+    /**
+     *
+     */
+    constructor() {
+        const name = 'Data Parsing Error';
+        const message = 'Error in parsing data from input columns.';
+        super(message, name);
+    }
+}
+
 export class PlotError implements Error {
     name: string;
     message: string;
     stack?: string;
 
     constructor(message: string, name?: string) {
-        this.message = message + '<br><br> If you are not sure why this error occurs, please contact the authors.';
+        this.message = message + '\r\n If you are not sure why this error occurs, please contact the authors.';
         if (name !== undefined && name) {
             this.name = name;
         } else {

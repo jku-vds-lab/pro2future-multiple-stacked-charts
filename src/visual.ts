@@ -33,23 +33,16 @@ import powerbi from 'powerbi-visuals-api';
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
-import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
-import VisualObjectInstance = powerbi.VisualObjectInstance;
-import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
-import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
-import { FormattingSettingsService } from 'powerbi-visuals-utils-formattingmodel';
-import { VisualSettings } from './settings';
+import { createFormattingModel } from './settings';
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
-import { getPlotFillColor, getValue, getColorSettings } from './objectEnumerationUtility';
 import {
     TooltipInterface,
-    ViewModel,
     DataPoint,
     PlotModel,
     PlotType,
@@ -58,7 +51,6 @@ import {
     D3PlotXAxis,
     D3PlotYAxis,
     OverlayRectangle as OverlayRectangle,
-    AxisInformation,
     TooltipModel,
     TooltipData,
     ZoomingSettings,
@@ -69,26 +61,8 @@ import {
     Legend,
     D3Selection,
 } from './plotInterface';
-import { SettingsGetter, visualTransform } from './parseAndTransform';
-import {
-    OverlayPlotSettingsNames,
-    ColorSettingsNames,
-    Constants,
-    AxisSettingsNames,
-    PlotSettingsNames,
-    Settings,
-    PlotTitleSettingsNames,
-    TooltipTitleSettingsNames,
-    YRangeSettingsNames,
-    ZoomingSettingsNames,
-    LegendSettingsNames,
-    AxisLabelSettingsNames,
-    ArrayConstants,
-    HeatmapSettingsNames,
-    XAxisBreakSettingsNames,
-    FilterType,
-    NumberConstants,
-} from './constants';
+import { visualTransform } from './parseAndTransform';
+import { Constants, FilterType, NumberConstants } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import {
     AddClipPathError,
@@ -106,6 +80,7 @@ import {
 } from './errors';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { Primitive } from 'd3';
+import { ViewModel } from './viewModel';
 
 export class Visual implements IVisual {
     private host: IVisualHost;
@@ -117,11 +92,8 @@ export class Visual implements IVisual {
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
-    private formattingSettingsService: FormattingSettingsService;
-    private visualSettings: VisualSettings;
 
     constructor(options: VisualConstructorOptions) {
-        this.formattingSettingsService = new FormattingSettingsService();
         this.host = options.host;
         options.element.style.overflow = 'auto';
         options.element.style.scrollbarGutter = 'stable';
@@ -151,17 +123,10 @@ export class Visual implements IVisual {
             .mapErr((err) => this.displayError(err));
 
         this.restoreZoomState();
-        // this.setupSettings(options);
-    }
-
-    private setupSettings(options: VisualUpdateOptions) {
-        this.visualSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualSettings, options.dataViews);
-        this.visualSettings.circle.circleThickness.value = Math.max(0, this.visualSettings.circle.circleThickness.value);
-        this.visualSettings.circle.circleThickness.value = Math.min(10, this.visualSettings.circle.circleThickness.value);
     }
 
     public getFormattingModel(): powerbi.visuals.FormattingModel {
-        return this.formattingSettingsService.buildFormattingModel(this.visualSettings);
+        return createFormattingModel(this.viewModel);
     }
 
     private removeDuplicateColumns() {
@@ -269,8 +234,8 @@ export class Visual implements IVisual {
                 selection.style('opacity', 1);
             }
             for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
-                if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                    this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                if (plotModel.plotSettings.useLegendColor) {
+                    this.svg.selectAll('.' + plotModel.plotSettings.plotType + plotModel.plotId).remove();
                     this.drawPlot(plotModel);
                 }
             }
@@ -343,8 +308,8 @@ export class Visual implements IVisual {
                 this.legendDeselected.delete(def);
             }
             for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
-                if (plotModel.plotSettings.plotSettings.useLegendColor) {
-                    this.svg.selectAll('.' + plotModel.plotSettings.plotSettings.plotType + plotModel.plotId).remove();
+                if (plotModel.plotSettings.useLegendColor) {
+                    this.svg.selectAll('.' + plotModel.plotSettings.plotType + plotModel.plotId).remove();
                     this.drawPlot(plotModel);
                 }
             }
@@ -477,7 +442,7 @@ export class Visual implements IVisual {
     }
 
     private constructBasicPlot(plotModel: PlotModel): Result<void, PlotError> {
-        const plotType = plotModel.plotSettings.plotSettings.plotType;
+        const plotType = plotModel.plotSettings.plotType;
         let root;
         let x: D3PlotXAxis;
         let y: D3PlotYAxis;
@@ -564,7 +529,7 @@ export class Visual implements IVisual {
 
     private appendPlotG(plotModel: PlotModel): Result<D3Selection, PlotError> {
         try {
-            const plotType = plotModel.plotSettings.plotSettings.plotType;
+            const plotType = plotModel.plotSettings.plotType;
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plot = this.svg
                 .append('g')
@@ -740,60 +705,13 @@ export class Visual implements IVisual {
         }
     }
 
-    // private drawScatterPlot(plotModel: PlotModel): Result<D3Plot, PlotError> {
-    //     try {
-    //         let basicPlot: D3Plot;
-    //         let plotError: PlotError;
-    //         let x: D3PlotXAxis;
-    //         let y: D3PlotYAxis;
-    //         let type: PlotType;
-    //         let plot: any;
-    //         this.constructBasicPlot(plotModel)
-    //             .map(plt => {
-    //                 basicPlot = plt;
-    //                 x = basicPlot.x;
-    //                 y = basicPlot.y;
-    //                 type = plotModel.plotSettings.plotSettings.plotType;
-    //                 plot = basicPlot.root;
-    //             }).mapErr(err => plotError = err);
-    //         if (plotError) return err(plotError);
-    //         const dataPoints = filterNullValues(plotModel.dataPoints);
-    //         const points = plot
-    //             .selectAll(Constants.dotClass)
-    //             .data(dataPoints)
-    //             .enter()
-    //             .append('circle')
-    //             .attr('fill', (d: DataPoint) => d.color)
-    //             .attr('stroke', 'none')
-    //             .attr('cx', (d) => x.xScale(<number>d.xValue))
-    //             .attr('cy', (d) => y.yScale(<number>d.yValue))
-    //             .attr('r', 2)
-    //             .attr('clip-path', 'url(#clip)')
-    //             .attr("transform", d3.zoomIdentity.translate(0, 0).scale(1));
-
-    //         let mouseEvents: TooltipInterface;
-    //         this.addTooltips().map(events => mouseEvents = events).mapErr(err => plotError = err);
-    //         if (plotError) return err(plotError);
-    //         points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-    //         let heatmap = null;
-    //         if (plotModel.plotSettings.plotSettings.showHeatmap) {
-    //             this.drawHeatmap(dataPoints, plotModel).map(x => heatmap = x).mapErr(err => plotError = err);
-    //             if (plotError) return err(plotError);
-    //         }
-
-    //         return ok(<D3Plot>{ yName: plotModel.yName, type, plotLine, plot, root: plot, points, x, y, heatmap });
-
-    //     } catch (error) {
-    //         return err(new DrawScatterPlotError(error.stack));
-    //     }
-    // }
-
     private drawPlot(plotModel: PlotModel): Result<void, PlotError> {
         try {
             let dotSize = 2;
             let plotError: PlotError;
             const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
             const xScale = xAxisSettings.xScaleZoomed;
+
             this.constructBasicPlot(plotModel).mapErr((err) => (plotError = err));
             if (plotError) return err(plotError);
             const d3Plot = plotModel.d3Plot;
@@ -801,7 +719,7 @@ export class Visual implements IVisual {
             let dataPoints = plotModel.dataPoints;
             dataPoints = filterNullValues(dataPoints);
 
-            if (plotModel.plotSettings.plotSettings.useLegendColor) {
+            if (plotModel.plotSettings.useLegendColor) {
                 dataPoints = dataPoints.filter((x) => this.viewModel.legends.drawDataPoint(x.pointNr));
                 dotSize = 3;
             }
@@ -817,7 +735,7 @@ export class Visual implements IVisual {
                 .attr('stroke', this.viewModel.colorSettings.colorSettings.yZeroLineColor)
                 .attr('class', Constants.yZeroLine);
 
-            const plotType = plotModel.plotSettings.plotSettings.plotType;
+            const plotType = plotModel.plotSettings.plotType;
 
             if (plotType == PlotType.LinePlot) {
                 const line = d3
@@ -830,7 +748,7 @@ export class Visual implements IVisual {
                     .attr('class', 'path')
                     .attr('d', line)
                     .attr('fill', 'none')
-                    .attr('stroke', plotModel.plotSettings.plotSettings.fill)
+                    .attr('stroke', plotModel.plotSettings.fill)
                     .attr('stroke-width', 1.5)
                     .attr('clip-path', 'url(#clip)');
             }
@@ -857,7 +775,7 @@ export class Visual implements IVisual {
                 .mapErr((err) => (plotError = err));
             if (plotError) return err(plotError);
             d3Plot.points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
-            if (plotModel.plotSettings.plotSettings.showHeatmap) {
+            if (plotModel.plotSettings.showHeatmap) {
                 this.drawHeatmap(dataPoints, plotModel)
                     .map((x) => (plotModel.d3Plot.heatmap = x))
                     .mapErr((err) => (plotError = err));
@@ -1019,7 +937,7 @@ export class Visual implements IVisual {
             const zoomed = (event) => {
                 try {
                     const transform: d3.ZoomTransform = event.transform;
-                    if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
+                    if ((transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) || !this.viewModel.zoomingSettings.enableZoom) {
                         this.svg.call(this.zoom.transform, d3.zoomIdentity);
                         return;
                     }
@@ -1211,326 +1129,7 @@ export class Visual implements IVisual {
             return err(new CustomTooltipError(error.stack));
         }
     }
-
-    // eslint-disable-next-line max-lines-per-function
-    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        const objectName = options.objectName;
-        const colorPalette = this.host.colorPalette;
-        const objects = this.dataview.metadata.objects;
-        let objectEnumeration: VisualObjectInstance[] = [];
-        const zoomingSettings = this.viewModel ? this.viewModel.zoomingSettings : SettingsGetter.getZoomingSettings(objects);
-        const plotmodles: PlotModel[] = this.viewModel ? this.viewModel.plotModels : [];
-        try {
-            const yCount: number = this.dataview.metadata.columns.filter((x) => {
-                return x.roles.y_axis;
-            }).length;
-            const metadataColumns: DataViewMetadataColumn[] = this.dataview.metadata.columns;
-            switch (objectName) {
-                case Settings.plotSettings:
-                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 4);
-                    break;
-                case Settings.axisLabelSettings:
-                case Settings.axisSettings:
-                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 2);
-                    break;
-                case Settings.yRangeSettings:
-                    setObjectEnumerationColumnSettings(yCount, metadataColumns, 4);
-                    break;
-                case Settings.overlayPlotSettings:
-                case Settings.plotTitleSettings:
-                    setObjectEnumerationColumnSettings(yCount, metadataColumns);
-                    break;
-                case Settings.colorSelector:
-                    break;
-                case Settings.tooltipTitleSettings:
-                    objectEnumeration = new Array<VisualObjectInstance>(this.viewModel.tooltipModels.length);
-                    for (const column of metadataColumns) {
-                        if (column.roles.tooltip) {
-                            const yIndex: number = column['rolesIndex']['tooltip'][0];
-                            objectEnumeration[yIndex] = {
-                                objectName: objectName,
-                                displayName: column.displayName,
-                                properties: { title: getValue<string>(column.objects, Settings.tooltipTitleSettings, TooltipTitleSettingsNames.title, column.displayName) },
-                                selector: { metadata: column.queryName },
-                            };
-                        }
-                    }
-                    break;
-                case Settings.colorSettings:
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            verticalRulerColor: getColorSettings(objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
-                            overlayColor: getColorSettings(objects, ColorSettingsNames.overlayColor, colorPalette, '#0000FF'),
-                            yZeroLineColor: getColorSettings(objects, ColorSettingsNames.yZeroLineColor, colorPalette, '#CCCCCC'),
-                            heatmapColorScheme: <string>getValue(objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme, 'interpolateBlues'),
-                        },
-                        selector: null,
-                    });
-                    break;
-
-                case Settings.heatmapSettings:
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            heatmapBins: <number>getValue(objects, Settings.heatmapSettings, HeatmapSettingsNames.heatmapBins, 100),
-                        },
-                        selector: null,
-                    });
-                    break;
-                case Settings.xAxisBreakSettings:
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            enable: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false),
-                            showLines: <boolean>getValue(objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, true),
-                        },
-                        selector: null,
-                    });
-                    break;
-                case Settings.legendSettings:
-                    if (this.viewModel.legends.legends.filter((x) => x.type === FilterType.defectFilter).length === 0) break;
-                    for (const legend of this.viewModel.legends.legends) {
-                        objectEnumeration.push({
-                            objectName: objectName,
-                            displayName: 'Legend Title ' + legend.metaDataColumn.displayName,
-                            properties: {
-                                legendTitle: <string>getValue(legend.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, legend.legendTitle),
-                            },
-                            selector: { metadata: legend.metaDataColumn.queryName },
-                        });
-                    }
-
-                    // objectEnumeration.push({
-                    //     objectName: objectName,
-                    //     properties: {
-                    //         legendTitle: <string>(
-                    //             getValue(
-                    //                 objects,
-                    //                 Settings.legendSettings,
-                    //                 LegendSettingsNames.legendTitle,
-                    //                 this.viewModel.legends.legends.filter((x) => x.type === FilterType.defectFilter)[0].legendTitle
-                    //             )
-                    //         ),
-                    //         controlLegendTitle: <string>getValue(
-                    //             objects,
-                    //             Settings.legendSettings,
-                    //             LegendSettingsNames.defectGroupLegendTitle,
-                    //             //TODO: adapt for multiple columns
-                    //             this.viewModel.legends.legends.length > 0 ? this.viewModel.legends.legends[0].legendTitle : 'Control Legend'
-                    //         ),
-                    //     },
-                    //     selector: null,
-                    // });
-                    //TODO: add settings for filter legend like this
-                    // for (let i = 0; i < this.viewModel.defectLegend.legendValues.length; i++) {
-                    //     const value = this.viewModel.defectLegend.legendValues[i];
-                    //     const column = this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
-                    //         ? this.dataview.categorical.categories.filter((x) => x.source.roles.legend)[0]
-                    //         : this.dataview.categorical.values.filter((x) => x.source.roles.legend)[0];
-                    //     objectEnumeration.push({
-                    //         objectName: objectName,
-                    //         displayName: String(value.value),
-                    //         properties: {
-                    //             legendColor: getCategoricalObjectColor(column, i, Settings.legendSettings, LegendSettingsNames.legendColor, value.color),
-                    //         },
-                    //         altConstantValueSelector: value.selectionId.getSelector(),
-                    //         selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
-                    //     });
-                    // }
-                    break;
-                //TODO: fix settings or remove
-                case Settings.rolloutSettings:
-                    // if (!this.viewModel.rolloutRectangles) break;
-                    // objectEnumeration.push({
-                    //     objectName: objectName,
-                    //     properties: {
-                    //         legendTitle: <string>(
-                    //             getValue(
-                    //                 objects,
-                    //                 Settings.rolloutSettings,
-                    //                 RolloutSettingsNames.legendTitle,
-                    //                 this.viewModel.rolloutRectangles ? this.viewModel.rolloutRectangles.name : 'Rollout Legend'
-                    //             )
-                    //         ),
-                    //     },
-                    //     selector: null,
-                    // });
-
-                    // for (let i = 0; i < this.viewModel.rolloutRectangles.legendValues.length; i++) {
-                    //     const value = this.viewModel.rolloutRectangles.legendValues[i];
-                    //     // const column = this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
-                    //     //     ? this.dataview.categorical.categories.filter((x) => x.source.roles.rollout)[0]
-                    //     //     : this.dataview.categorical.values.filter((x) => x.source.roles.rollout)[0];
-
-                    //     objectEnumeration.push({
-                    //         objectName: objectName,
-                    //         displayName: String(value.value),
-                    //         properties: {
-                    //             legendColor: value.color, //getCategoricalObjectColor(column, i, Settings.rolloutSettings, RolloutSettingsNames.legendColor, ArrayConstants.rolloutColors[i]),
-                    //         },
-                    //         propertyInstanceKind: {
-                    //             fill: VisualEnumerationInstanceKinds.ConstantOrRule,
-                    //         },
-                    //         altConstantValueSelector: value.selectionId.getSelector(),
-                    //         selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals),
-                    //     });
-                    // }
-
-                    break;
-
-                case Settings.zoomingSettings:
-                    objectEnumeration.push({
-                        objectName: objectName,
-                        properties: {
-                            show: <boolean>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.show, zoomingSettings.enableZoom),
-                            maximum: <number>getValue(objects, Settings.zoomingSettings, ZoomingSettingsNames.maximum, zoomingSettings.maximumZoom),
-                        },
-                        selector: null,
-                    });
-                    break;
-            }
-        } catch (error) {
-            error.message = 'error in enumerate objects: ' + error.message;
-            this.displayError(error);
-        }
-        return objectEnumeration;
-
-        // eslint-disable-next-line max-lines-per-function
-        function setObjectEnumerationColumnSettings(yCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], settingsCount = 1) {
-            objectEnumeration = new Array<VisualObjectInstance>(yCount * settingsCount);
-
-            for (const column of metadataColumns) {
-                if (column.roles.y_axis) {
-                    const columnObjects = column.objects;
-                    let displayNames = {};
-                    let properties = {};
-                    //index that the column has in the plot (differs from index in metadata) and is used to have the same order in settings
-                    const yIndex: number = column['rolesIndex']['y_axis'][0];
-                    switch (objectName) {
-                        case Settings.plotSettings:
-                            displayNames = {
-                                plotType: column.displayName + ' Plot Type',
-                                fill: column.displayName + ' Plot Color',
-                                useLegendColor: column.displayName + ' Use Legend Color',
-                                showHeatmap: column.displayName + ' Show Heatmap',
-                            };
-                            properties = {
-                                plotType: PlotType[getValue<string>(columnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
-                                fill: getPlotFillColor(columnObjects, colorPalette, ArrayConstants.colorArray[yIndex]),
-                                useLegendColor: getValue<boolean>(columnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
-                                showHeatmap: <boolean>getValue(columnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
-                            };
-
-                            break;
-
-                        case Settings.axisSettings:
-                            displayNames = {
-                                xInformation: column.displayName + ' X-Axis',
-                                yInformation: column.displayName + ' Y-Axis',
-                            };
-                            properties = {
-                                xAxis: AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)],
-                                yAxis: AxisInformation[getValue<string>(columnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)],
-                            };
-                            break;
-                        case Settings.axisLabelSettings:
-                            displayNames = {
-                                xLabel: column.displayName + ' x-Label',
-                                yLabel: column.displayName + ' y-Label',
-                            };
-                            properties[AxisLabelSettingsNames.xLabel] = getValue<string>(
-                                columnObjects,
-                                Settings.axisLabelSettings,
-                                AxisLabelSettingsNames.xLabel,
-                                plotmodles.filter((x) => {
-                                    return x.plotId == yIndex;
-                                })[0].labelNames.xLabel
-                            );
-                            properties[AxisLabelSettingsNames.yLabel] = getValue<string>(
-                                columnObjects,
-                                Settings.axisLabelSettings,
-                                AxisLabelSettingsNames.yLabel,
-                                plotmodles.filter((x) => {
-                                    return x.plotId == yIndex;
-                                })[0].labelNames.yLabel
-                            );
-
-                            break;
-                        case Settings.yRangeSettings:
-                            displayNames = {
-                                min: column.displayName + ' Minimum Value',
-                                max: column.displayName + ' Maximum Value',
-                                minFixed: column.displayName + ' Fixed Minimum',
-                                maxFixed: column.displayName + ' Fixed Maximum',
-                            };
-                            properties = {
-                                min: getValue<number>(
-                                    columnObjects,
-                                    Settings.yRangeSettings,
-                                    YRangeSettingsNames.min,
-                                    plotmodles.filter((x) => {
-                                        return x.plotId == yIndex;
-                                    })[0].yRange.min
-                                ),
-                                max: getValue<number>(
-                                    columnObjects,
-                                    Settings.yRangeSettings,
-                                    YRangeSettingsNames.max,
-                                    plotmodles.filter((x) => {
-                                        return x.plotId == yIndex;
-                                    })[0].yRange.max
-                                ),
-                                minFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.minFixed, true),
-                                maxFixed: <boolean>getValue(columnObjects, Settings.yRangeSettings, YRangeSettingsNames.maxFixed, false),
-                            };
-                            break;
-                        case Settings.overlayPlotSettings:
-                            displayNames = {
-                                overlayType: column.displayName + ' Overlay Type',
-                            };
-                            properties = {
-                                overlayType: OverlayType[getValue<string>(columnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.overlayType, OverlayType.None)],
-                            };
-                            break;
-                        case Settings.plotTitleSettings:
-                            displayNames = {
-                                overlayType: column.displayName + ' Plot Title',
-                            };
-                            properties = {
-                                title: getValue<string>(columnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, column.displayName),
-                            };
-                            break;
-                    }
-
-                    const propertyEntries = Object.entries(properties);
-                    const displayNamesEntries = Object.entries(displayNames);
-
-                    for (let i = 0; i < propertyEntries.length; i++) {
-                        const [key, value] = propertyEntries[i];
-                        const props = {};
-                        props[key] = value;
-                        objectEnumeration[yIndex * settingsCount + i] = {
-                            objectName: objectName,
-                            displayName: <string>displayNamesEntries[i][1],
-                            properties: props,
-                            selector: { metadata: column.queryName },
-                        };
-                    }
-                }
-            }
-        }
-    }
 }
-
-// //function to print color schemes for adding them to capabilities
-// function printColorSchemes() {
-//     let str = '';
-//     for (const scheme of ArrayConstants.colorSchemes.sequential) {
-//         str = str + '{"displayName": "' + scheme + '",   "value": "interpolate' + scheme + '"},';
-//     }
-//     console.log(str);
-// }
 
 function filterNullValues(dataPoints: DataPoint[]) {
     dataPoints = dataPoints.filter((d) => {

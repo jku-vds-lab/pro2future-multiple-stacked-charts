@@ -72,8 +72,8 @@
             "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Defect Group",
-            "name": "defectGroup",
+            "displayName": "Filter Legend",
+            "name": "filterLegend",
             "kind": "GroupingOrMeasure"
         },
         {
@@ -124,7 +124,7 @@
                     "legend": {
                         "max": 1
                     },
-                    "defectGroup": {
+                    "filterLegend": {
                         "max": 5
                     },
                     "rollout": {
@@ -135,9 +135,6 @@
                     },
                     "measure": {
                         "max": 100
-                    },
-                    "filterLegend": {
-                        "max": 1
                     },
                     "grouping": {
                         "max": 2
@@ -180,7 +177,7 @@
 
                         {
                             "for": {
-                                "in": "defectGroup"
+                                "in": "filterLegend"
                             }
                         },
                         {
@@ -235,7 +232,7 @@
 
                         {
                             "for": {
-                                "in": "defectGroup"
+                                "in": "filterLegend"
                             }
                         },
                         {
@@ -255,24 +252,6 @@
     ],
     "supportsHighlight": true,
     "objects": {
-        "circle": {
-            "properties": {
-                "circleColor": {
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                },
-                "circleThickness": {
-                    "type": {
-                        "numeric": true
-                    }
-                }
-            }
-        },
         "axisSettings": {
             "displayName": "Axis Settings",
             "properties": {
@@ -498,6 +477,12 @@
         "plotSettings": {
             "displayName": "Plot Settings",
             "properties": {
+                "plotName": {
+                    "displayName": "Plot name",
+                    "type": {
+                        "text": true
+                    }
+                },
                 "plotType": {
                     "displayName": "Choose Type",
                     "type": {

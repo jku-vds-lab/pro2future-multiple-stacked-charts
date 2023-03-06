@@ -14,6 +14,7 @@ export enum Settings {
     xAxisBreakSettings = 'xAxisBreakSettings',
     rolloutSettings = 'rolloutSettings',
 }
+
 export enum AxisLabelSettingsNames {
     xLabel = 'xLabel',
     yLabel = 'yLabel',
@@ -40,8 +41,6 @@ export enum XAxisBreakSettingsNames {
 }
 export enum LegendSettingsNames {
     legendTitle = 'legendTitle',
-    // defectGroupLegendTitle = 'controlLegendTitle',
-    // legendColor = 'legendColor',
 }
 
 export enum PlotSettingsNames {
@@ -49,6 +48,7 @@ export enum PlotSettingsNames {
     fill = 'fill',
     useLegendColor = 'useLegendColor',
     showHeatmap = 'showHeatmap',
+    plotName = 'plotName',
 }
 export enum TooltipTitleSettingsNames {
     title = 'title',
@@ -91,6 +91,7 @@ export enum Constants {
     axisBreakClass = 'axisBreakLines',
     legendTitleSelection = 'legendTitle',
     rolloutLegendTitleSelection = 'rolloutLegendTitle',
+    uid = '_uid',
 }
 
 export enum FilterType {
@@ -106,8 +107,7 @@ export class ArrayConstants {
         singlehue: ['Blues', 'Greens', 'Greys', 'Oranges', 'Purples', 'Reds'],
         diverging: ['BrBG', 'PiYG', 'PRGn', 'PuOr', 'RdBu', 'RdGy', 'RdYlBu', 'RdYlGn', 'Spectral'],
     };
-    // static readonly rolloutColors = ['#ffffff', '#a8a8a8', '#222222', '#4daf4a', '#ff0000'];
-    // static readonly rolloutColors = ['#ffffff', '#2ca25f', '#de2d26'];
+
     static readonly legendColors = {
         OZE: '#e41a1c',
         GZE: '#377eb8',
@@ -143,8 +143,6 @@ export class ArrayConstants {
         '#e5c494',
         '#b3b3b3',
     ];
-
-    //static readonly rolloutNames = ['nicht gewalzt', 'BBS gewalzt', 'Beize gewalzt', 'KB gewalzt ohne Fehler', 'KB gewalzt mit Fehler'];
 }
 
 export class NumberConstants {
