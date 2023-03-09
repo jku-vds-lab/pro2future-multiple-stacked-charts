@@ -92,6 +92,7 @@ export enum Constants {
     legendTitleSelection = 'legendTitle',
     rolloutLegendTitleSelection = 'rolloutLegendTitle',
     uid = '_uid',
+    tooltipClass = 'tooltipDiv',
 }
 
 export enum FilterType {

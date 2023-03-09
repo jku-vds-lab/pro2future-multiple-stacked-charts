@@ -1039,27 +1039,28 @@ export class Visual implements IVisual {
             const tooltipModels = this.viewModel.tooltipModels;
             const errorFunction = this.displayError;
             let lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
-            const tooltip = d3
-                .select(this.element)
-                .append('div')
-                .style('position', 'absolute')
-                .style('visibility', 'hidden')
-                .style('background-color', '#484848')
-                .style('border', 'solid')
-                .style('border-width', '1px')
-                .style('border-radius', '5px')
-                .style('padding', '10px');
-            tooltip.append('text').text('No tooltip info available');
+            const tooltipElement = d3.select('.' + Constants.tooltipClass);
+            const tooltip =
+                tooltipElement.nodes().length > 0
+                    ? <d3.Selection<HTMLDivElement, unknown, null, undefined>>tooltipElement
+                    : d3
+                          .select(this.element)
+                          .append('div')
+                          .attr('class', Constants.tooltipClass)
+                          .style('position', 'absolute')
+                          .style('visibility', 'hidden')
+                          .style('background-color', '#484848')
+                          .style('border', 'solid')
+                          .style('border-width', '1px')
+                          .style('border-radius', '5px')
+                          .style('padding', '10px');
 
             const mouseover = (event) => {
                 try {
                     lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
                     tooltip.style('visibility', 'visible');
                     const element = d3.select(event.target);
-                    element
-                        .attr('r', Number(element.attr('r')) * 2)
-                        .style('stroke', 'black')
-                        .style('opacity', 1);
+                    element.attr('r', Number(element.attr('r')) * 2).style('stroke', 'black');
                     lines.style('opacity', 1);
                 } catch (error) {
                     error.message = 'error in tooltip mouseover: ' + error.message;
@@ -1114,10 +1115,7 @@ export class Visual implements IVisual {
                 try {
                     tooltip.style('visibility', 'hidden');
                     const element = d3.select(e.target);
-                    element
-                        .attr('r', Number(element.attr('r')) / 2)
-                        .style('stroke', 'none')
-                        .style('opacity', 0.8);
+                    element.attr('r', Number(element.attr('r')) / 2).style('stroke', 'none');
                     lines.style('opacity', 0);
                 } catch (error) {
                     error.message = 'error in tooltip mouseout: ' + error.message;
