@@ -312,7 +312,12 @@ export class ViewModel {
             plotTop += this.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
             plotTop += plotModel.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
         }
-        if (dataModel.rolloutRectangles) {
+
+        this.generalPlotSettings.legendYPostion = plotTop + MarginSettings.legendTopMargin;
+    }
+
+    createRolloutRectangles(dataModel: DataModel) {
+        if (dataModel.rolloutRectangles.length > 0) {
             const rolloutY = this.plotModels[0].plotTop;
             const rolloutHeight = this.plotModels[this.plotModels.length - 1].plotTop + this.generalPlotSettings.plotHeight - rolloutY;
             this.rolloutRectangles = new RolloutRectangles(
@@ -325,7 +330,6 @@ export class ViewModel {
                 dataModel.rolloutName
             );
         }
-        this.generalPlotSettings.legendYPostion = plotTop + MarginSettings.legendTopMargin;
     }
 
     createOverlayInformation(dataModel: DataModel): Result<void, OverlayDataError> {

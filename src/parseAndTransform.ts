@@ -68,6 +68,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         viewModel.setSettings(dataModel, options);
         viewModel.createPlotModels(dataModel);
         viewModel.createOverlayInformation(dataModel).mapErr((err) => (parseAndTransformError = err));
+        viewModel.createRolloutRectangles(dataModel);
         return ok(viewModel);
     } catch (e) {
         return err(new CreateViewModelError());
