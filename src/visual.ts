@@ -37,6 +37,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import { axis as axisHelper } from 'powerbi-visuals-utils-chartutils';
 import { createFormattingModel } from './settings';
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
@@ -548,7 +549,7 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxis = plot.append('g').classed('xAxis', true);
 
-            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed);
+            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed).ticks(axisHelper.getRecommendedNumberOfTicksForXAxis(generalPlotSettings.plotWidth));
             if (generalPlotSettings.xAxisSettings.axisBreak) {
                 xAxisValue.tickFormat((d) => {
                     const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
@@ -577,7 +578,6 @@ export class Visual implements IVisual {
             }
 
             xAxis.attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')').call(xAxisValue);
-
             return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xLabel });
         } catch (error) {
             return err(new BuildXAxisError(error.stack));
