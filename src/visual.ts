@@ -453,7 +453,7 @@ export class Visual implements IVisual {
             .map((plt) => {
                 root = plt;
                 root.append('g').attr('class', Constants.overlayClass).attr('clip-path', 'url(#overlayClip)');
-                yZeroLine = root.append('g').attr('class', Constants.yZeroLine);
+                yZeroLine = root.append('g').attr('class', Constants.yZeroLine).attr('clip-path', 'url(#clip)');
             })
             .mapErr((error) => this.displayError(error));
         if (PlotResult.isErr()) {
