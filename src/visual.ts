@@ -759,6 +759,7 @@ export class Visual implements IVisual {
                 .data(dataPoints)
                 .enter()
                 .append('circle')
+                .classed(Constants.dotClass, true)
                 .attr('fill', (d: DataPoint) => d.color)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
@@ -768,6 +769,9 @@ export class Visual implements IVisual {
                 .on('click', (event, d: DataPoint) => {
                     const multiSelect = (event as MouseEvent).ctrlKey;
                     this.selectionManager.select(d.selectionId, multiSelect);
+                    // d3.selectAll('.' + Constants.dotClass).attr('opacity', (dp: DataPoint) => {
+                    //     return dp.xValue === d.xValue ? 1 : 0.1;
+                    // });
                 });
 
             let mouseEvents: TooltipInterface;
