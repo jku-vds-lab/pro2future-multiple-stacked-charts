@@ -6,7 +6,7 @@ import {
     AxisLabelSettingsNames,
     ColorSettingsNames,
     FilterType,
-    HeatmapSettingsNames,
+    GeneralSettingsNames,
     LegendSettingsNames,
     OverlayPlotSettingsNames,
     Settings,
@@ -26,7 +26,6 @@ import {
     ColorSettings,
     DataPoint,
     GeneralPlotSettings,
-    HeatmapSettings,
     Legend,
     LegendDataPoint,
     Legends,
@@ -52,7 +51,6 @@ export class ViewModel {
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
     legends: Legends;
-    heatmapSettings: HeatmapSettings;
     rolloutRectangles: RolloutRectangles;
     errors: ParseAndTransformError[];
     objects: powerbi.DataViewObjects;
@@ -169,7 +167,6 @@ export class ViewModel {
                 heatmapColorScheme: <string>getValue(this.objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme, 'interpolateBuGn'),
             },
         };
-        this.heatmapSettings = { heatmapBins: getValue<number>(this.objects, Settings.heatmapSettings, HeatmapSettingsNames.heatmapBins, 100) };
         this.setGeneralPlotSettings(dataModel, options);
     }
 
@@ -220,6 +217,8 @@ export class ViewModel {
             legendYPostion: 0,
             fontSize: '10px',
             xAxisSettings: xAxisSettings,
+            heatmapBins: getValue<number>(this.objects, Settings.generalSettings, GeneralSettingsNames.heatmapBins, 100),
+            showYZeroLine: getValue<boolean>(this.objects, Settings.generalSettings, GeneralSettingsNames.showYZeroLine, true),
         };
     }
 

@@ -78,6 +78,8 @@ export interface GeneralPlotSettings {
     transparentOpacity: number;
     margins: Margins;
     xAxisSettings: XAxisSettings;
+    heatmapBins: number;
+    showYZeroLine: boolean;
 }
 
 export interface XAxisSettings {
@@ -228,9 +230,6 @@ export interface ColorSettings {
         heatmapColorScheme: string;
         yZeroLineColor: string;
     };
-}
-export interface HeatmapSettings {
-    heatmapBins: number;
 }
 
 export interface PlotSettings {

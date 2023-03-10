@@ -723,18 +723,19 @@ export class Visual implements IVisual {
                 dataPoints = dataPoints.filter((x) => this.viewModel.legends.drawDataPoint(x.pointNr));
                 dotSize = 3;
             }
-            d3Plot.yZeroLine
-                .selectAll('*')
-                .data([0])
-                .enter()
-                .append('line')
-                .attr('x1', xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.min))
-                .attr('x2', xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.max))
-                .attr('y1', yScale(0))
-                .attr('y2', yScale(0))
-                .attr('stroke', this.viewModel.colorSettings.colorSettings.yZeroLineColor)
-                .attr('class', Constants.yZeroLine);
-
+            if (this.viewModel.generalPlotSettings.showYZeroLine) {
+                d3Plot.yZeroLine
+                    .selectAll('*')
+                    .data([0])
+                    .enter()
+                    .append('line')
+                    .attr('x1', xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.min))
+                    .attr('x2', xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.max))
+                    .attr('y1', yScale(0))
+                    .attr('y2', yScale(0))
+                    .attr('stroke', this.viewModel.colorSettings.colorSettings.yZeroLineColor)
+                    .attr('class', Constants.yZeroLine);
+            }
             const plotType = plotModel.plotSettings.plotType;
 
             if (plotType == PlotType.LinePlot) {
@@ -791,14 +792,13 @@ export class Visual implements IVisual {
     private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel): Result<D3Heatmap, HeatmapError> {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
-            const heatmapSettings = this.viewModel.heatmapSettings;
             const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
             const bins = d3
                 .bin<DataPoint, number>()
                 .value((d: DataPoint) => {
                     return <number>d.xValue;
                 })
-                .thresholds(heatmapSettings.heatmapBins);
+                .thresholds(generalPlotSettings.heatmapBins);
             const binnedData = bins(dataPoints);
 
             const heatmapValues = binnedData.map((bin) => {
@@ -1030,7 +1030,9 @@ export class Visual implements IVisual {
             plot.plotLine.attr('d', line);
         }
         const yZero = plot.y.yScaleZoomed(0);
-        plot.yZeroLine.selectAll('line').attr('y1', yZero).attr('y2', yZero);
+        if (this.viewModel.generalPlotSettings.showYZeroLine) {
+            plot.yZeroLine.selectAll('line').attr('y1', yZero).attr('y2', yZero);
+        }
     }
 
     private addTooltips(): Result<TooltipInterface, PlotError> {

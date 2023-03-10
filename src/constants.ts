@@ -3,7 +3,7 @@ export enum Settings {
     axisSettings = 'axisSettings',
     colorSelector = 'colorSelector',
     colorSettings = 'colorSettings',
-    heatmapSettings = 'heatmapSettings',
+    generalSettings = 'generalSettings',
     legendSettings = 'legendSettings',
     overlayPlotSettings = 'overlayPlotSettings',
     plotTitleSettings = 'plotTitleSettings',
@@ -24,8 +24,9 @@ export enum RolloutSettingsNames {
     legendColor = 'legendColor',
 }
 
-export enum HeatmapSettingsNames {
+export enum GeneralSettingsNames {
     heatmapBins = 'heatmapBins',
+    showYZeroLine = 'showYZeroLine',
 }
 
 export enum YRangeSettingsNames {

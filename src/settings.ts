@@ -3,7 +3,7 @@ import {
     AxisSettingsNames,
     ColorSettingsNames,
     Constants,
-    HeatmapSettingsNames,
+    GeneralSettingsNames,
     LegendSettingsNames,
     OverlayPlotSettingsNames,
     PlotSettingsNames,
@@ -327,26 +327,40 @@ function createLegendCard() {
 }
 
 function createHeatmapCard(viewModel: ViewModel) {
-    const heatmapCard: powerbi.visuals.FormattingCard = {
-        description: 'Heatmap Settings',
-        displayName: 'Heatmap Settings',
-        uid: Settings.heatmapSettings + Constants.uid,
+    const generalSettingsCard: powerbi.visuals.FormattingCard = {
+        description: 'General Settings',
+        displayName: 'General Settings',
+        uid: Settings.generalSettings + Constants.uid,
         groups: [
             {
                 displayName: '',
-                uid: Settings.heatmapSettings + 'group' + Constants.uid,
+                uid: Settings.generalSettings + 'group' + Constants.uid,
                 slices: [
                     {
                         displayName: 'Number of Bins',
-                        uid: Settings.heatmapSettings + HeatmapSettingsNames.heatmapBins + Constants.uid,
+                        uid: Settings.generalSettings + GeneralSettingsNames.heatmapBins + Constants.uid,
                         control: {
                             type: powerbi.visuals.FormattingComponent.NumUpDown,
                             properties: {
                                 descriptor: {
-                                    objectName: Settings.heatmapSettings,
-                                    propertyName: HeatmapSettingsNames.heatmapBins,
+                                    objectName: Settings.generalSettings,
+                                    propertyName: GeneralSettingsNames.heatmapBins,
                                 },
-                                value: viewModel.heatmapSettings.heatmapBins,
+                                value: viewModel.generalPlotSettings.heatmapBins,
+                            },
+                        },
+                    },
+                    {
+                        displayName: 'Show 0-Line for Y-Axis',
+                        uid: Settings.generalSettings + GeneralSettingsNames.showYZeroLine + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.ToggleSwitch,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.generalSettings,
+                                    propertyName: GeneralSettingsNames.showYZeroLine,
+                                },
+                                value: viewModel.generalPlotSettings.showYZeroLine,
                             },
                         },
                     },
@@ -354,13 +368,17 @@ function createHeatmapCard(viewModel: ViewModel) {
             },
         ],
     };
-    heatmapCard.revertToDefaultDescriptors = [
+    generalSettingsCard.revertToDefaultDescriptors = [
         {
-            objectName: Settings.heatmapSettings,
-            propertyName: HeatmapSettingsNames.heatmapBins,
+            objectName: Settings.generalSettings,
+            propertyName: GeneralSettingsNames.heatmapBins,
+        },
+        {
+            objectName: Settings.generalSettings,
+            propertyName: GeneralSettingsNames.showYZeroLine,
         },
     ];
-    return heatmapCard;
+    return generalSettingsCard;
 }
 
 function createAxisLabelCard() {
