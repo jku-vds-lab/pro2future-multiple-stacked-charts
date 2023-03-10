@@ -111,15 +111,16 @@ function getCategoricalData(categorical: powerbi.DataViewCategorical, dataModel:
             }
             if (roles.tooltip) {
                 const columnId = category.source.index;
-                const tooltipId = category.source['rolesIndex']['tooltip'][0];
-                const data: TooltipColumnData = {
-                    type: category.source.type,
-                    name: category.source.displayName,
-                    values: <number[]>category.values,
-                    columnId,
-                    metaDataColumn: category.source,
-                };
-                dataModel.tooltipData[tooltipId] = data;
+                for (const tooltipId of category.source['rolesIndex']['tooltip']) {
+                    const data: TooltipColumnData = {
+                        type: category.source.type,
+                        name: category.source.displayName,
+                        values: <number[]>category.values,
+                        columnId,
+                        metaDataColumn: category.source,
+                    };
+                    dataModel.tooltipData[tooltipId] = data;
+                }
             }
             if (roles.legend) {
                 dataModel.defectLegendData = {
@@ -187,15 +188,16 @@ function getMeasureData(categorical: powerbi.DataViewCategorical, dataModel: Dat
             }
             if (roles.tooltip) {
                 const columnId = value.source.index;
-                const tooltipId = value.source['rolesIndex']['tooltip'][0];
-                const data: TooltipColumnData = {
-                    type: value.source.type,
-                    name: value.source.displayName,
-                    values: <number[]>value.values,
-                    columnId,
-                    metaDataColumn: value.source,
-                };
-                dataModel.tooltipData[tooltipId] = data;
+                for (const tooltipId of value.source['rolesIndex']['tooltip']) {
+                    const data: TooltipColumnData = {
+                        type: value.source.type,
+                        name: value.source.displayName,
+                        values: <number[]>value.values,
+                        columnId,
+                        metaDataColumn: value.source,
+                    };
+                    dataModel.tooltipData[tooltipId] = data;
+                }
             }
             if (roles.legend) {
                 dataModel.defectLegendData = {
@@ -229,15 +231,21 @@ function getTooltipCount(categorical: powerbi.DataViewCategorical) {
     const tooltipCategoriesCount =
         categorical.categories === undefined
             ? 0
-            : categorical.categories.filter((cat) => {
-                  return cat.source.roles.tooltip;
-              }).length;
+            : categorical.categories
+                  .filter((cat) => {
+                      return cat.source.roles.tooltip;
+                  })
+                  .map((x) => x.source['rolesIndex'].tooltip.length)
+                  .reduce((a, b) => a + b, 0);
     const tooltipValuesCount =
         categorical.values === undefined
             ? 0
-            : categorical.values.filter((val) => {
-                  return val.source.roles.tooltip;
-              }).length;
+            : categorical.values
+                  .filter((val) => {
+                      return val.source.roles.tooltip;
+                  })
+                  .map((x) => x.source['rolesIndex'].tooltip.length)
+                  .reduce((a, b) => a + b, 0);
     const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
     return tooltipCount;
 }
