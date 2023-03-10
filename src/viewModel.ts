@@ -355,6 +355,7 @@ export class ViewModel {
             if (overlayRectangles.length == 0) {
                 return err(new OverlayDataError());
             }
+            overlayRectangles = overlayRectangles.filter((rect, i) => overlayRectangles.findIndex((r) => r.x === rect.x && r.endX === rect.endX) === i);
             this.overlayRectangles = overlayRectangles;
         }
         return ok(null);

@@ -22,7 +22,6 @@ export class RolloutRectangles {
         for (let i = 0; i < uniqueValues.length; i++) {
             const val = uniqueValues[i];
             const color = ArrayConstants.rolloutColors[<string>val] ? ArrayConstants.rolloutColors[<string>val] : ArrayConstants.colorArray[i];
-
             this.legendValues.push({ value: val, color: color });
         }
 
