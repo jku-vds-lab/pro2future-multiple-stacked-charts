@@ -467,7 +467,7 @@ export class Visual implements IVisual {
             .map((axis) => (y = axis))
             .mapErr((err) => (plotError = err));
         plotModel.d3Plot = <D3Plot>{ yName: plotModel.yName, type: plotType, root, points: null, x, y, yZeroLine };
-        this.addPlotTitles(plotModel, root).mapErr((err) => (plotError = err));
+        this.addPlotTitle(plotModel, root).mapErr((err) => (plotError = err));
         this.addVerticalRuler(root).mapErr((err) => (plotError = err));
         this.drawOverlay(plotModel).mapErr((err) => (plotError = err));
         if (plotError) {
@@ -509,14 +509,14 @@ export class Visual implements IVisual {
         }
     }
 
-    private addPlotTitles(plotModel: PlotModel, plot: D3Selection) {
+    private addPlotTitle(plotModel: PlotModel, plot: D3Selection) {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             if (plotModel.plotTitleSettings.title.length > 0) {
                 plot.append('text')
                     .attr('class', 'plotTitle')
                     .attr('text-anchor', 'left')
-                    .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top)
+                    .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top / 2)
                     .attr('x', 0)
                     .attr('dy', '1em')
                     .style('font-size', generalPlotSettings.fontSize)
@@ -572,7 +572,7 @@ export class Visual implements IVisual {
                     .attr('class', 'xLabel')
                     .attr('text-anchor', 'end')
                     .attr('x', generalPlotSettings.plotWidth / 2)
-                    .attr('y', generalPlotSettings.plotHeight + (plotModel.formatSettings.axisSettings.xAxis.ticks ? 28 : 15))
+                    .attr('y', generalPlotSettings.plotHeight + (plotModel.formatSettings.axisSettings.xAxis.ticks ? 25 : 15))
                     .style('font-size', generalPlotSettings.fontSize)
                     .text(plotModel.labelNames.xLabel);
             }
