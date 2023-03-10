@@ -933,11 +933,13 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plots = this.viewModel.plotModels;
-            const errorFunction = this.displayError;
             const zoomed = (event) => {
                 try {
+                    if (!this.viewModel.zoomingSettings.enableZoom) {
+                        return;
+                    }
                     const transform: d3.ZoomTransform = event.transform;
-                    if ((transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) || !this.viewModel.zoomingSettings.enableZoom) {
+                    if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
                         this.svg.call(this.zoom.transform, d3.zoomIdentity);
                         return;
                     }
@@ -950,8 +952,9 @@ export class Visual implements IVisual {
                         this.zoomPlot(plot, transform);
                     }
                 } catch (error) {
+                    console.log(error);
                     error.message = 'error in zoom function: ' + error.message;
-                    errorFunction(error);
+                    this.displayError(error);
                 }
             };
             this.zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed);
