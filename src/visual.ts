@@ -224,7 +224,7 @@ export class Visual implements IVisual {
             e.preventDefault();
             e.stopImmediatePropagation();
             const def = d.value.toString();
-            const selection = this.svg.selectAll('.' + className + '.val' + def);
+            const selection = this.svg.selectAll('.' + className + '.val' + def.replace(' ', '_'));
             if (legend.selectedValues.has(def)) {
                 legend.selectedValues.delete(def);
                 this.legendDeselected.add(def);
@@ -258,7 +258,7 @@ export class Visual implements IVisual {
                 return d.color;
             })
             .style('stroke', 'grey')
-            .attr('class', (d) => className + ' val' + d.value);
+            .attr('class', (d) => className + ' val' + d.value.toString().replace(' ', '_'));
         if (selection) {
             s.style('opacity', (d) => (selection.has(d.value.toString()) ? 1 : NumberConstants.legendDeselectionOpacity));
         } else if (opacity) {
@@ -276,7 +276,7 @@ export class Visual implements IVisual {
                 return String(d.value);
             })
             .attr('text-anchor', 'left')
-            .attr('class', (d) => className + ' val' + d.value)
+            .attr('class', (d) => className + ' val' + d.value.toString().replace(' ', '_'))
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
             .attr('x', function () {
