@@ -112,10 +112,10 @@ export class ViewModel {
 
     createDefectLegend(dataModel: DataModel) {
         const legendSet = new Set(dataModel.defectLegendData.values);
-        if (legendSet.has(null)) {
-            legendSet.delete(null);
-        }
+        legendSet.delete(null);
+        legendSet.delete('');
         const legendColors = ArrayConstants.legendColors;
+        const randomColors = ArrayConstants.colorArray;
         const legendValues = Array.from(legendSet);
         const defectLegend = <Legend>{
             legendDataPoints: dataModel.defectLegendData.values
@@ -144,7 +144,7 @@ export class ViewModel {
         };
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i] + '';
-            const defaultColor = legendColors[val] ? legendColors[val] : 'FFFFFF';
+            const defaultColor = legendColors[val] ? legendColors[val] : randomColors[i];
             defectLegend.legendValues.push({
                 color: defaultColor,
                 value: val,
@@ -246,6 +246,7 @@ export class ViewModel {
             //create datapoints
             for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
                 const selectionId: ISelectionId = dataModel.host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
+                if (!yDataPoints[pointNr]) continue;
                 let color = plotSettings.fill;
                 const xVal = xDataPoints[pointNr];
                 if (plotSettings.useLegendColor) {
