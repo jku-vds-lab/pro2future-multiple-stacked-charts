@@ -793,14 +793,22 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
+            const extent = generalPlotSettings.xAxisSettings.isDate
+                ? generalPlotSettings.xAxisSettings.xScaleZoomed.domain().map((x) => (<Date>x).getTime())
+                : <number[]>generalPlotSettings.xAxisSettings.xScaleZoomed.domain();
+            window.d3 = d3;
+            const nrThresholds = generalPlotSettings.heatmapBins - 1;
+            const thresholds = d3.range(nrThresholds).map((x) => ((x + 1) * extent[1] - extent[0]) / (nrThresholds + 1) + extent[0]);
             const bins = d3
                 .bin<DataPoint, number>()
                 .value((d: DataPoint) => {
+                    if (generalPlotSettings.xAxisSettings.isDate) {
+                        return (<Date>d.xValue).getTime();
+                    }
                     return <number>d.xValue;
                 })
-                .thresholds(generalPlotSettings.heatmapBins);
+                .thresholds(thresholds);
             const binnedData = bins(dataPoints);
-
             const heatmapValues = binnedData.map((bin) => {
                 const extent = d3.extent(bin.map((d) => <number>d.yValue));
                 if (extent[0] === undefined) return 0;
