@@ -26,6 +26,7 @@ export enum RolloutSettingsNames {
 
 export enum GeneralSettingsNames {
     heatmapBins = 'heatmapBins',
+    minPlotHeight = 'minPlotHeight',
     showYZeroLine = 'showYZeroLine',
 }
 

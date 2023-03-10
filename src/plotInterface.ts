@@ -80,6 +80,7 @@ export interface GeneralPlotSettings {
     xAxisSettings: XAxisSettings;
     heatmapBins: number;
     showYZeroLine: boolean;
+    minPlotHeight: number;
 }
 
 export interface XAxisSettings {

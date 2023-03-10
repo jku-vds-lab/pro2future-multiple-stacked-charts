@@ -174,6 +174,7 @@ export class ViewModel {
         this.svgHeight = options.viewport.height - MarginSettings.scrollbarSpace;
         this.svgWidth = options.viewport.width - MarginSettings.scrollbarSpace;
         const legendHeight = this.legends.legends.length > 0 ? MarginSettings.legendHeight : 0;
+        const minPlotHeight = getValue<number>(this.objects, Settings.generalSettings, GeneralSettingsNames.minPlotHeight, 40);
         if (this.svgHeight === undefined || this.svgWidth === undefined || !this.svgHeight || !this.svgWidth) {
             return err(new SVGSizeError());
         }
@@ -190,9 +191,9 @@ export class ViewModel {
                 MarginSettings.xLabelSpace * xLabelsCount -
                 Heatmapmargins.heatmapSpace * heatmapCount) /
             dataModel.yData.length;
-        if (plotHeightSpace < MarginSettings.miniumumPlotHeight) {
-            const plotSpaceDif = MarginSettings.miniumumPlotHeight - plotHeightSpace;
-            plotHeightSpace = MarginSettings.miniumumPlotHeight;
+        if (plotHeightSpace < minPlotHeight) {
+            const plotSpaceDif = minPlotHeight - plotHeightSpace;
+            plotHeightSpace = minPlotHeight;
             this.svgHeight = this.svgHeight + dataModel.yData.length * plotSpaceDif;
         }
         let plotWidth: number = this.svgWidth - MarginSettings.margins.left - MarginSettings.margins.right;
@@ -218,6 +219,7 @@ export class ViewModel {
             fontSize: '10px',
             xAxisSettings: xAxisSettings,
             heatmapBins: getValue<number>(this.objects, Settings.generalSettings, GeneralSettingsNames.heatmapBins, 100),
+            minPlotHeight: minPlotHeight,
             showYZeroLine: getValue<boolean>(this.objects, Settings.generalSettings, GeneralSettingsNames.showYZeroLine, true),
         };
     }

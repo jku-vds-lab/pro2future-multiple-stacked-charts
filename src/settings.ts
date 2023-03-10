@@ -351,6 +351,21 @@ function createHeatmapCard(viewModel: ViewModel) {
                         },
                     },
                     {
+                        displayName: 'Minimum plot height',
+                        description: 'Sets the minimum height per plot in pixels. A scrollbar is added when this height cannot be fulfilled.',
+                        uid: Settings.generalSettings + GeneralSettingsNames.minPlotHeight + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.NumUpDown,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.generalSettings,
+                                    propertyName: GeneralSettingsNames.minPlotHeight,
+                                },
+                                value: viewModel.generalPlotSettings.minPlotHeight,
+                            },
+                        },
+                    },
+                    {
                         displayName: 'Show 0-Line for Y-Axis',
                         uid: Settings.generalSettings + GeneralSettingsNames.showYZeroLine + Constants.uid,
                         control: {
@@ -372,6 +387,10 @@ function createHeatmapCard(viewModel: ViewModel) {
         {
             objectName: Settings.generalSettings,
             propertyName: GeneralSettingsNames.heatmapBins,
+        },
+        {
+            objectName: Settings.generalSettings,
+            propertyName: GeneralSettingsNames.minPlotHeight,
         },
         {
             objectName: Settings.generalSettings,
