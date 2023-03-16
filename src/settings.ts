@@ -4,7 +4,7 @@ import {
     ColorSettingsNames,
     Constants,
     GeneralSettingsNames,
-    LegendSettingsNames,
+    ColorLegendSettingsNames,
     OverlayPlotSettingsNames,
     PlotSettingsNames,
     PlotTitleSettingsNames,
@@ -314,13 +314,13 @@ function createLegendCard() {
     const legendCard: powerbi.visuals.FormattingCard = {
         description: 'Legend Settings',
         displayName: 'Legend Settings',
-        uid: Settings.legendSettings + Constants.uid,
+        uid: Settings.colorLegendSettings + Constants.uid,
         groups: [],
     };
     legendCard.revertToDefaultDescriptors = [
         {
-            objectName: Settings.legendSettings,
-            propertyName: LegendSettingsNames.legendTitle,
+            objectName: Settings.colorLegendSettings,
+            propertyName: ColorLegendSettingsNames.legendTitle,
         },
     ];
     return legendCard;
@@ -428,13 +428,13 @@ function addLegendGroup(legend: Legend, legendCard: powerbi.visuals.FormattingCa
         slices: [
             {
                 displayName: 'Legend Title',
-                uid: groupName + LegendSettingsNames.legendTitle + Constants.uid,
+                uid: groupName + ColorLegendSettingsNames.legendTitle + Constants.uid,
                 control: {
                     type: powerbi.visuals.FormattingComponent.TextInput,
                     properties: {
                         descriptor: {
-                            objectName: Settings.legendSettings,
-                            propertyName: LegendSettingsNames.legendTitle,
+                            objectName: Settings.colorLegendSettings,
+                            propertyName: ColorLegendSettingsNames.legendTitle,
                             selector: { metadata: legend.metaDataColumn.queryName },
                         },
                         placeholder: legend.legendTitle,

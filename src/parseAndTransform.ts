@@ -68,7 +68,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         viewModel.setSettings(dataModel, options);
         viewModel.createPlotModels(dataModel);
         viewModel.createOverlayInformation(dataModel).mapErr((err) => (parseAndTransformError = err));
-        viewModel.createRolloutRectangles(dataModel);
+        viewModel.createVisualOverlayRectangles(dataModel);
         return ok(viewModel);
     } catch (e) {
         return err(new CreateViewModelError());
@@ -142,9 +142,9 @@ function getCategoricalData(categorical: powerbi.DataViewCategorical, dataModel:
                     });
                 }
             }
-            if (roles.rollout) {
-                dataModel.rolloutRectangles = category.values;
-                dataModel.rolloutName = category.source.displayName;
+            if (roles.visualOverlay) {
+                dataModel.visualOverlayRectangles = category.values;
+                dataModel.visualOverlayName = category.source.displayName;
             }
         }
     }
@@ -219,9 +219,9 @@ function getMeasureData(categorical: powerbi.DataViewCategorical, dataModel: Dat
                 }
             }
 
-            if (roles.rollout) {
-                dataModel.rolloutRectangles = <number[]>value.values;
-                dataModel.rolloutName = value.source.displayName;
+            if (roles.visualOverlay) {
+                dataModel.visualOverlayRectangles = <number[]>value.values;
+                dataModel.visualOverlayName = value.source.displayName;
             }
         }
     }
@@ -307,8 +307,8 @@ export class DataModel {
     filterLegendData: LegendData[];
     overlayWidth: number[];
     overlayLength: number[];
-    rolloutRectangles: Primitive[];
-    rolloutName: string;
+    visualOverlayRectangles: Primitive[];
+    visualOverlayName: string;
     categorical: powerbi.DataViewCategorical;
 
     metadataColumns: powerbi.DataViewMetadataColumn[];
@@ -327,7 +327,7 @@ export class DataModel {
         this.filterLegendData = [];
         this.overlayLength = [];
         this.overlayWidth = [];
-        this.rolloutRectangles = [];
+        this.visualOverlayRectangles = [];
         this.formatSettings = [];
         this.plotTitles = [];
         this.plotSettingsArray = [];

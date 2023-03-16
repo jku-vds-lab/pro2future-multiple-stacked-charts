@@ -4,7 +4,7 @@ export enum Settings {
     colorSelector = 'colorSelector',
     colorSettings = 'colorSettings',
     generalSettings = 'generalSettings',
-    legendSettings = 'legendSettings',
+    colorLegendSettings = 'legendSettings',
     overlayPlotSettings = 'overlayPlotSettings',
     plotTitleSettings = 'plotTitleSettings',
     tooltipTitleSettings = 'tooltipTitleSettings',
@@ -12,16 +12,11 @@ export enum Settings {
     zoomingSettings = 'zoomingSettings',
     axisLabelSettings = 'axisLabelSettings',
     xAxisBreakSettings = 'xAxisBreakSettings',
-    rolloutSettings = 'rolloutSettings',
 }
 
 export enum AxisLabelSettingsNames {
     xLabel = 'xLabel',
     yLabel = 'yLabel',
-}
-export enum RolloutSettingsNames {
-    legendTitle = 'legendTitle',
-    legendColor = 'legendColor',
 }
 
 export enum GeneralSettingsNames {
@@ -41,7 +36,7 @@ export enum XAxisBreakSettingsNames {
     enable = 'enable',
     showLines = 'showLines',
 }
-export enum LegendSettingsNames {
+export enum ColorLegendSettingsNames {
     legendTitle = 'legendTitle',
 }
 
@@ -87,12 +82,12 @@ export enum Constants {
     overlayClass = 'overlayBars',
     barClass = 'bar',
     dotClass = 'dot',
-    rolloutClass = 'rollout',
+    visualOverlayClass = 'visualOverlay',
     defectLegendClass = 'defectLegend',
     zoomState = 'zoomState',
     axisBreakClass = 'axisBreakLines',
     legendTitleSelection = 'legendTitle',
-    rolloutLegendTitleSelection = 'rolloutLegendTitle',
+    VisualOverlayLegendTitleSelection = 'visualOverlayLegendTitle',
     uid = '_uid',
     tooltipClass = 'tooltipDiv',
 }
@@ -101,7 +96,7 @@ export enum FilterType {
     booleanFilter = 'booleanFilter',
     stringFilter = 'stringFilter',
     numberFilter = 'numberFilter',
-    defectFilter = 'defectFilter',
+    colorFilter = 'colorFilter',
 }
 
 export class ArrayConstants {
@@ -121,7 +116,7 @@ export class ArrayConstants {
         Kontrolleur: 'Kontrolleur',
         OIG: 'OIG',
     };
-    static readonly rolloutColors = {
+    static readonly visualOverlayColors = {
         'nicht gewalzt': '#ffffff',
         'gewalzt ohne Fehler': '#2ca25f',
         'gewalzt mit Fehler': '#de2d26',

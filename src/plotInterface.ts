@@ -7,57 +7,57 @@ import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
 
-export class RolloutRectangles {
-    rolloutRectangles: RolloutRectangle[];
+export class VisualOverlayRectangles {
+    visualOverlayRectangles: VisualOverlayRectangle[];
     name: string;
     opacity: number;
     legendValues: LegendValue[];
 
-    constructor(xValues: number[] | Date[], rollout: Primitive[], y, width, rolloutName = 'Rollout', rolloutOpacity = 0.2) {
-        this.name = rolloutName;
-        this.rolloutRectangles = [];
+    constructor(xValues: number[] | Date[], visualOverlay: Primitive[], y, width, visualOverlayName = 'visualOverlay', visualOverlayOpacity = 0.2) {
+        this.name = visualOverlayName;
+        this.visualOverlayRectangles = [];
         this.legendValues = [];
-        this.opacity = rolloutOpacity;
-        const uniqueValues = Array.from(new Set(rollout)).sort().reverse();
+        this.opacity = visualOverlayOpacity;
+        const uniqueValues = Array.from(new Set(visualOverlay)).sort().reverse();
         for (let i = 0; i < uniqueValues.length; i++) {
             const val = uniqueValues[i];
-            const color = ArrayConstants.rolloutColors[<string>val] ? ArrayConstants.rolloutColors[<string>val] : ArrayConstants.colorArray[i];
+            const color = ArrayConstants.visualOverlayColors[<string>val] ? ArrayConstants.visualOverlayColors[<string>val] : ArrayConstants.colorArray[i];
             this.legendValues.push({ value: val, color: color });
         }
 
-        let rect = <RolloutRectangle>{
+        let rect = <VisualOverlayRectangle>{
             y,
             width,
             x: xValues[0],
-            color: this.getColor(rollout[0]),
+            color: this.getColor(visualOverlay[0]),
         };
 
-        let lastRollout = rollout[0];
+        let lastVisualOverlay = visualOverlay[0];
         for (let i = 0; i < xValues.length; i++) {
             const x = xValues[i];
-            const r = rollout[i];
-            if (r != lastRollout) {
-                lastRollout = r;
+            const r = visualOverlay[i];
+            if (r != lastVisualOverlay) {
+                lastVisualOverlay = r;
                 rect.endX = x;
-                this.rolloutRectangles.push(rect);
-                rect = <RolloutRectangle>{
+                this.visualOverlayRectangles.push(rect);
+                rect = <VisualOverlayRectangle>{
                     y,
                     width,
                     x: xValues[i],
-                    color: this.getColor(rollout[i]),
+                    color: this.getColor(visualOverlay[i]),
                 };
             }
         }
         rect.endX = xValues[xValues.length - 1];
-        this.rolloutRectangles.push(rect);
+        this.visualOverlayRectangles.push(rect);
     }
 
-    private getColor(rollout: Primitive): string {
-        return this.legendValues.filter((x) => x.value === rollout)[0].color;
+    private getColor(visualOverlay: Primitive): string {
+        return this.legendValues.filter((x) => x.value === visualOverlay)[0].color;
     }
 }
 
-export interface RolloutRectangle {
+export interface VisualOverlayRectangle {
     width: number;
     endX: number | Date;
     x: number;

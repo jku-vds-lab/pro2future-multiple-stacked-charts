@@ -57,7 +57,7 @@ import {
     ZoomingSettings,
     GeneralPlotSettings,
     D3Heatmap,
-    RolloutRectangle,
+    VisualOverlayRectangle,
     LegendValue,
     Legend,
     D3Selection,
@@ -179,7 +179,7 @@ export class Visual implements IVisual {
                 .attr('y1', plotModels[0].plotTop)
                 .attr('y2', plotModels[plotModels.length - 1].plotTop + generalPlotSettings.plotHeight)
                 .attr('stroke-dasharray', '5,5')
-                .attr('clip-path', 'url(#rolloutClip)')
+                .attr('clip-path', 'url(#visualOverlayClip)')
                 .attr('pointer-events', 'none');
             lines.raise();
         }
@@ -195,9 +195,9 @@ export class Visual implements IVisual {
                 if (i < legends.legends.length - 1) legends.legends[i + 1].legendXPosition = l.legendXEndPosition + MarginSettings.legendSeparationMargin;
             }
         }
-        if (this.viewModel.rolloutRectangles) {
-            this.drawRolloutRectangles();
-            this.drawRolloutLegend();
+        if (this.viewModel.visualOverlayRectangles) {
+            this.drawVisualOverlayRectangles();
+            this.drawVisualOverlayLegend();
         }
     }
 
@@ -407,39 +407,39 @@ export class Visual implements IVisual {
         }
     }
 
-    private drawRolloutLegend() {
+    private drawVisualOverlayLegend() {
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion;
-        const rolloutRectangles = this.viewModel.rolloutRectangles;
+        const visualOverlayRectangles = this.viewModel.visualOverlayRectangles;
         const legendCount = this.viewModel.legends.legends.length;
         let xPos = legendCount > 0 ? this.viewModel.legends.legends[legendCount - 1].legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
         if (this.viewModel.legends.legends.length > 0) {
             xPos = this.viewModel.legends.legends[this.viewModel.legends.legends.length - 1].legendXEndPosition + MarginSettings.legendSeparationMargin;
         }
         const dotsXPosition = [];
-        xPos = this.drawLegendTitle(rolloutRectangles.name, Constants.rolloutLegendTitleSelection, xPos, yPosition, Constants.rolloutLegendTitleSelection);
-        xPos = this.drawLegendTexts(rolloutRectangles.legendValues, '', xPos, dotsXPosition, yPosition, new Set(rolloutRectangles.legendValues.map((x) => x.value)));
-        this.drawLegendDots(rolloutRectangles.legendValues, dotsXPosition, yPosition, '', null, rolloutRectangles.opacity * 2);
+        xPos = this.drawLegendTitle(visualOverlayRectangles.name, Constants.VisualOverlayLegendTitleSelection, xPos, yPosition, Constants.VisualOverlayLegendTitleSelection);
+        xPos = this.drawLegendTexts(visualOverlayRectangles.legendValues, '', xPos, dotsXPosition, yPosition, new Set(visualOverlayRectangles.legendValues.map((x) => x.value)));
+        this.drawLegendDots(visualOverlayRectangles.legendValues, dotsXPosition, yPosition, '', null, visualOverlayRectangles.opacity * 2);
         this.checkOutOfSvg(xPos);
     }
 
-    private drawRolloutRectangles() {
+    private drawVisualOverlayRectangles() {
         const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
-        const rolloutG = this.svg.append('g').attr('transform', 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')');
-        rolloutG
-            .selectAll('.' + Constants.rolloutClass)
-            .data(this.viewModel.rolloutRectangles.rolloutRectangles)
+        const visualOverlayG = this.svg.append('g').attr('transform', 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')');
+        visualOverlayG
+            .selectAll('.' + Constants.visualOverlayClass)
+            .data(this.viewModel.visualOverlayRectangles.visualOverlayRectangles)
             .enter()
             .append('rect')
-            .attr('class', Constants.rolloutClass)
+            .attr('class', Constants.visualOverlayClass)
             .attr('width', (d) => xScale(d.endX) - xScale(d.x))
             .attr('height', (d) => d.width)
             .attr('x', (d) => xScale(d.x))
             .attr('y', (d) => d.y)
             .attr('fill', (d) => d.color)
-            .attr('clip-path', 'url(#rolloutClip)')
-            .style('opacity', this.viewModel.rolloutRectangles.opacity);
-        rolloutG.lower();
+            .attr('clip-path', 'url(#visualOverlayClip)')
+            .style('opacity', this.viewModel.visualOverlayRectangles.opacity);
+        visualOverlayG.lower();
     }
 
     private constructBasicPlot(plotModel: PlotModel): Result<void, PlotError> {
@@ -492,16 +492,16 @@ export class Visual implements IVisual {
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
             defs.append('clipPath').attr('id', 'overlayClip').append('rect').attr('y', 0).attr('x', 0).attr('width', plotWidth).attr('height', plotHeight);
             defs.append('clipPath').attr('id', 'hclip').append('rect').attr('y', 0).attr('x', 0).attr('width', plotWidth).attr('height', Heatmapmargins.heatmapHeight);
-            if (this.viewModel.rolloutRectangles) {
-                const rolloutRectangle = this.viewModel.rolloutRectangles.rolloutRectangles[0];
+            if (this.viewModel.visualOverlayRectangles) {
+                const visualOverlayRectangle = this.viewModel.visualOverlayRectangles.visualOverlayRectangles[0];
                 const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
                 defs.append('clipPath')
-                    .attr('id', 'rolloutClip')
+                    .attr('id', 'visualOverlayClip')
                     .append('rect')
-                    .attr('y', rolloutRectangle.y)
-                    .attr('x', xScale(rolloutRectangle.x))
+                    .attr('y', visualOverlayRectangle.y)
+                    .attr('x', xScale(visualOverlayRectangle.x))
                     .attr('width', plotWidth)
-                    .attr('height', rolloutRectangle.width);
+                    .attr('height', visualOverlayRectangle.width);
             }
             return ok(null);
         } catch (error) {
@@ -902,14 +902,14 @@ export class Visual implements IVisual {
         }
     }
 
-    private zoomRollout() {
+    private zoomVisualOverlay() {
         const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
         this.svg
-            .selectAll('.' + Constants.rolloutClass)
-            .attr('x', function (d: RolloutRectangle) {
+            .selectAll('.' + Constants.visualOverlayClass)
+            .attr('x', function (d: VisualOverlayRectangle) {
                 return xScale(d.x);
             })
-            .attr('width', function (d: RolloutRectangle) {
+            .attr('width', function (d: VisualOverlayRectangle) {
                 return xScale(d.endX) - xScale(d.x);
             });
     }
@@ -958,7 +958,7 @@ export class Visual implements IVisual {
                     this.storage.set(Constants.zoomState, transform.x + ';' + transform.y + ';' + transform.k).catch((reason) => console.log('set error: ' + reason));
                     const xScaleZoomed = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
                     this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed = xScaleZoomed;
-                    this.zoomRollout();
+                    this.zoomVisualOverlay();
                     this.zoomAxisBreak();
                     for (const plot of plots.map((x) => x.d3Plot)) {
                         this.zoomPlot(plot, transform);

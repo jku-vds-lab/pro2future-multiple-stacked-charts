@@ -7,7 +7,7 @@ import {
     ColorSettingsNames,
     FilterType,
     GeneralSettingsNames,
-    LegendSettingsNames,
+    ColorLegendSettingsNames,
     OverlayPlotSettingsNames,
     Settings,
     TooltipTitleSettingsNames,
@@ -33,7 +33,7 @@ import {
     OverlayRectangle,
     OverlayType,
     PlotModel,
-    RolloutRectangles,
+    VisualOverlayRectangles,
     TooltipDataPoint,
     TooltipModel,
     XAxisSettings,
@@ -51,7 +51,7 @@ export class ViewModel {
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
     legends: Legends;
-    rolloutRectangles: RolloutRectangles;
+    visualOverlayRectangles: VisualOverlayRectangles;
     errors: ParseAndTransformError[];
     objects: powerbi.DataViewObjects;
     constructor(objects: powerbi.DataViewObjects) {
@@ -100,7 +100,7 @@ export class ViewModel {
                         value: val,
                     };
                 }),
-                legendTitle: <string>getValue(data.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
+                legendTitle: <string>getValue(data.metaDataColumn.objects, Settings.colorLegendSettings, ColorLegendSettingsNames.legendTitle, defaultLegendName),
                 legendXEndPosition: 0,
                 legendXPosition: MarginSettings.margins.left,
                 type: data.type,
@@ -131,14 +131,14 @@ export class ViewModel {
             legendTitle: <string>(
                 getValue(
                     dataModel.defectLegendData.metaDataColumn.objects,
-                    Settings.legendSettings,
-                    LegendSettingsNames.legendTitle,
+                    Settings.colorLegendSettings,
+                    ColorLegendSettingsNames.legendTitle,
                     dataModel.defectLegendData.metaDataColumn.displayName
                 )
             ),
             legendXEndPosition: 0,
             legendXPosition: MarginSettings.margins.left,
-            type: FilterType.defectFilter,
+            type: FilterType.colorFilter,
             selectedValues: new Set(legendValues.concat(Object.keys(ArrayConstants.legendColors))),
             metaDataColumn: dataModel.defectLegendData.metaDataColumn,
         };
@@ -250,7 +250,7 @@ export class ViewModel {
                 let color = plotSettings.fill;
                 const xVal = xDataPoints[pointNr];
                 if (plotSettings.useLegendColor) {
-                    const filtered = this.legends.legends.filter((x) => x.type === FilterType.defectFilter);
+                    const filtered = this.legends.legends.filter((x) => x.type === FilterType.colorFilter);
                     if (filtered.length === 1) {
                         const defectLegend = filtered[0];
                         const legendVal = defectLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
@@ -317,18 +317,18 @@ export class ViewModel {
         this.generalPlotSettings.legendYPostion = plotTop + MarginSettings.legendTopMargin;
     }
 
-    createRolloutRectangles(dataModel: DataModel) {
-        if (dataModel.rolloutRectangles.length > 0) {
-            const rolloutY = this.plotModels[0].plotTop;
-            const rolloutHeight = this.plotModels[this.plotModels.length - 1].plotTop + this.generalPlotSettings.plotHeight - rolloutY;
-            this.rolloutRectangles = new RolloutRectangles(
+    createVisualOverlayRectangles(dataModel: DataModel) {
+        if (dataModel.visualOverlayRectangles.length > 0) {
+            const visualOverlayY = this.plotModels[0].plotTop;
+            const visualOverlayHeight = this.plotModels[this.plotModels.length - 1].plotTop + this.generalPlotSettings.plotHeight - visualOverlayY;
+            this.visualOverlayRectangles = new VisualOverlayRectangles(
                 this.generalPlotSettings.xAxisSettings.axisBreak
                     ? dataModel.xData.values.map((x) => this.generalPlotSettings.xAxisSettings.indexMap.get(x))
                     : dataModel.xData.values,
-                dataModel.rolloutRectangles,
-                rolloutY,
-                rolloutHeight,
-                dataModel.rolloutName
+                dataModel.visualOverlayRectangles,
+                visualOverlayY,
+                visualOverlayHeight,
+                dataModel.visualOverlayName
             );
         }
     }

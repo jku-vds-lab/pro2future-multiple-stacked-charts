@@ -15,7 +15,7 @@
             ]
         },
         {
-            "displayName": "Values",
+            "displayName": "Plot Values",
             "name": "y_axis",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -28,7 +28,7 @@
             ]
         },
         {
-            "displayName": "Overlay Length",
+            "displayName": "Plot Overlay Length",
             "name": "overlayX",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -41,7 +41,7 @@
             ]
         },
         {
-            "displayName": "Overlay Width",
+            "displayName": "Plot Overlay Width",
             "name": "overlayY",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -67,7 +67,7 @@
             ]
         },
         {
-            "displayName": "Legend",
+            "displayName": "Color Legend",
             "name": "legend",
             "kind": "GroupingOrMeasure"
         },
@@ -77,8 +77,8 @@
             "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Rollout",
-            "name": "rollout",
+            "displayName": "Visual Overlay",
+            "name": "visualOverlay",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
@@ -127,7 +127,7 @@
                     "filterLegend": {
                         "max": 5
                     },
-                    "rollout": {
+                    "visualOverlay": {
                         "max": 1
                     },
                     "category": {
@@ -182,7 +182,7 @@
                         },
                         {
                             "for": {
-                                "in": "rollout"
+                                "in": "visualOverlay"
                             }
                         },
                         {
@@ -237,7 +237,7 @@
                         },
                         {
                             "for": {
-                                "in": "rollout"
+                                "in": "visualOverlay"
                             }
                         },
                         {
@@ -441,34 +441,6 @@
             "properties": {
                 "legendTitle": {
                     "displayName": "Legend Title",
-                    "type": {
-                        "text": true
-                    }
-                },
-                "controlLegendTitle": {
-                    "displayName": "Defect Group Legend Title",
-                    "type": {
-                        "text": true
-                    }
-                },
-                "legendColor": {
-                    "displayName": "Legend Color",
-                    "description": "The color of this legend type.",
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "rolloutSettings": {
-            "displayName": "Rollout Settings",
-            "properties": {
-                "legendTitle": {
-                    "displayName": "Rollout Legend Title",
                     "type": {
                         "text": true
                     }
