@@ -37,6 +37,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import { axis as axisHelper } from 'powerbi-visuals-utils-chartutils';
 import { createFormattingModel } from './settings';
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
@@ -223,7 +224,7 @@ export class Visual implements IVisual {
             e.preventDefault();
             e.stopImmediatePropagation();
             const def = d.value.toString();
-            const selection = this.svg.selectAll('.' + className + '.val' + def);
+            const selection = this.svg.selectAll('.' + className + '.val' + def.replace(' ', '_'));
             if (legend.selectedValues.has(def)) {
                 legend.selectedValues.delete(def);
                 this.legendDeselected.add(def);
@@ -257,7 +258,7 @@ export class Visual implements IVisual {
                 return d.color;
             })
             .style('stroke', 'grey')
-            .attr('class', (d) => className + ' val' + d.value);
+            .attr('class', (d) => className + ' val' + d.value.toString().replace(' ', '_'));
         if (selection) {
             s.style('opacity', (d) => (selection.has(d.value.toString()) ? 1 : NumberConstants.legendDeselectionOpacity));
         } else if (opacity) {
@@ -275,7 +276,7 @@ export class Visual implements IVisual {
                 return String(d.value);
             })
             .attr('text-anchor', 'left')
-            .attr('class', (d) => className + ' val' + d.value)
+            .attr('class', (d) => className + ' val' + d.value.toString().replace(' ', '_'))
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
             .attr('x', function () {
@@ -452,7 +453,7 @@ export class Visual implements IVisual {
             .map((plt) => {
                 root = plt;
                 root.append('g').attr('class', Constants.overlayClass).attr('clip-path', 'url(#overlayClip)');
-                yZeroLine = root.append('g').attr('class', Constants.yZeroLine);
+                yZeroLine = root.append('g').attr('class', Constants.yZeroLine).attr('clip-path', 'url(#clip)');
             })
             .mapErr((error) => this.displayError(error));
         if (PlotResult.isErr()) {
@@ -466,7 +467,7 @@ export class Visual implements IVisual {
             .map((axis) => (y = axis))
             .mapErr((err) => (plotError = err));
         plotModel.d3Plot = <D3Plot>{ yName: plotModel.yName, type: plotType, root, points: null, x, y, yZeroLine };
-        this.addPlotTitles(plotModel, root).mapErr((err) => (plotError = err));
+        this.addPlotTitle(plotModel, root).mapErr((err) => (plotError = err));
         this.addVerticalRuler(root).mapErr((err) => (plotError = err));
         this.drawOverlay(plotModel).mapErr((err) => (plotError = err));
         if (plotError) {
@@ -508,14 +509,14 @@ export class Visual implements IVisual {
         }
     }
 
-    private addPlotTitles(plotModel: PlotModel, plot: D3Selection) {
+    private addPlotTitle(plotModel: PlotModel, plot: D3Selection) {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             if (plotModel.plotTitleSettings.title.length > 0) {
                 plot.append('text')
                     .attr('class', 'plotTitle')
                     .attr('text-anchor', 'left')
-                    .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top)
+                    .attr('y', 0 - generalPlotSettings.plotTitleHeight - generalPlotSettings.margins.top / 2)
                     .attr('x', 0)
                     .attr('dy', '1em')
                     .style('font-size', generalPlotSettings.fontSize)
@@ -548,7 +549,7 @@ export class Visual implements IVisual {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxis = plot.append('g').classed('xAxis', true);
 
-            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed);
+            const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed).ticks(axisHelper.getRecommendedNumberOfTicksForXAxis(generalPlotSettings.plotWidth));
             if (generalPlotSettings.xAxisSettings.axisBreak) {
                 xAxisValue.tickFormat((d) => {
                     const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
@@ -571,13 +572,12 @@ export class Visual implements IVisual {
                     .attr('class', 'xLabel')
                     .attr('text-anchor', 'end')
                     .attr('x', generalPlotSettings.plotWidth / 2)
-                    .attr('y', generalPlotSettings.plotHeight + (plotModel.formatSettings.axisSettings.xAxis.ticks ? 28 : 15))
+                    .attr('y', generalPlotSettings.plotHeight + (plotModel.formatSettings.axisSettings.xAxis.ticks ? 25 : 15))
                     .style('font-size', generalPlotSettings.fontSize)
                     .text(plotModel.labelNames.xLabel);
             }
 
             xAxis.attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')').call(xAxisValue);
-
             return ok(<D3PlotXAxis>{ xAxis, xAxisValue, xLabel });
         } catch (error) {
             return err(new BuildXAxisError(error.stack));
@@ -723,18 +723,19 @@ export class Visual implements IVisual {
                 dataPoints = dataPoints.filter((x) => this.viewModel.legends.drawDataPoint(x.pointNr));
                 dotSize = 3;
             }
-            d3Plot.yZeroLine
-                .selectAll('*')
-                .data([0])
-                .enter()
-                .append('line')
-                .attr('x1', xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.min))
-                .attr('x2', xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.max))
-                .attr('y1', yScale(0))
-                .attr('y2', yScale(0))
-                .attr('stroke', this.viewModel.colorSettings.colorSettings.yZeroLineColor)
-                .attr('class', Constants.yZeroLine);
-
+            if (this.viewModel.generalPlotSettings.showYZeroLine) {
+                d3Plot.yZeroLine
+                    .selectAll('*')
+                    .data([0])
+                    .enter()
+                    .append('line')
+                    .attr('x1', xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.min))
+                    .attr('x2', xScale(this.viewModel.generalPlotSettings.xAxisSettings.xRange.max))
+                    .attr('y1', yScale(0))
+                    .attr('y2', yScale(0))
+                    .attr('stroke', this.viewModel.colorSettings.colorSettings.yZeroLineColor)
+                    .attr('class', Constants.yZeroLine);
+            }
             const plotType = plotModel.plotSettings.plotType;
 
             if (plotType == PlotType.LinePlot) {
@@ -758,6 +759,7 @@ export class Visual implements IVisual {
                 .data(dataPoints)
                 .enter()
                 .append('circle')
+                .classed(Constants.dotClass, true)
                 .attr('fill', (d: DataPoint) => d.color)
                 .attr('stroke', 'none')
                 .attr('cx', (d) => xScale(<number>d.xValue))
@@ -767,6 +769,9 @@ export class Visual implements IVisual {
                 .on('click', (event, d: DataPoint) => {
                     const multiSelect = (event as MouseEvent).ctrlKey;
                     this.selectionManager.select(d.selectionId, multiSelect);
+                    // d3.selectAll('.' + Constants.dotClass).attr('opacity', (dp: DataPoint) => {
+                    //     return dp.xValue === d.xValue ? 1 : 0.1;
+                    // });
                 });
 
             let mouseEvents: TooltipInterface;
@@ -791,16 +796,23 @@ export class Visual implements IVisual {
     private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel): Result<D3Heatmap, HeatmapError> {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
-            const heatmapSettings = this.viewModel.heatmapSettings;
             const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
+            const extent = generalPlotSettings.xAxisSettings.isDate
+                ? generalPlotSettings.xAxisSettings.xScaleZoomed.domain().map((x) => (<Date>x).getTime())
+                : <number[]>generalPlotSettings.xAxisSettings.xScaleZoomed.domain();
+            window.d3 = d3;
+            const nrThresholds = generalPlotSettings.heatmapBins - 1;
+            const thresholds = d3.range(nrThresholds).map((x) => ((x + 1) * extent[1] - extent[0]) / (nrThresholds + 1) + extent[0]);
             const bins = d3
                 .bin<DataPoint, number>()
                 .value((d: DataPoint) => {
+                    if (generalPlotSettings.xAxisSettings.isDate) {
+                        return (<Date>d.xValue).getTime();
+                    }
                     return <number>d.xValue;
                 })
-                .thresholds(heatmapSettings.heatmapBins);
+                .thresholds(thresholds);
             const binnedData = bins(dataPoints);
-
             const heatmapValues = binnedData.map((bin) => {
                 const extent = d3.extent(bin.map((d) => <number>d.yValue));
                 if (extent[0] === undefined) return 0;
@@ -933,11 +945,13 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const plots = this.viewModel.plotModels;
-            const errorFunction = this.displayError;
             const zoomed = (event) => {
                 try {
+                    if (!this.viewModel.zoomingSettings.enableZoom) {
+                        return;
+                    }
                     const transform: d3.ZoomTransform = event.transform;
-                    if ((transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) || !this.viewModel.zoomingSettings.enableZoom) {
+                    if (transform.k == 1 && (transform.x !== 0 || transform.y !== 0)) {
                         this.svg.call(this.zoom.transform, d3.zoomIdentity);
                         return;
                     }
@@ -950,8 +964,9 @@ export class Visual implements IVisual {
                         this.zoomPlot(plot, transform);
                     }
                 } catch (error) {
+                    console.log(error);
                     error.message = 'error in zoom function: ' + error.message;
-                    errorFunction(error);
+                    this.displayError(error);
                 }
             };
             this.zoom = d3.zoom().scaleExtent([1, zoomingSettings.maximumZoom]).on('zoom', zoomed);
@@ -1027,7 +1042,9 @@ export class Visual implements IVisual {
             plot.plotLine.attr('d', line);
         }
         const yZero = plot.y.yScaleZoomed(0);
-        plot.yZeroLine.selectAll('line').attr('y1', yZero).attr('y2', yZero);
+        if (this.viewModel.generalPlotSettings.showYZeroLine) {
+            plot.yZeroLine.selectAll('line').attr('y1', yZero).attr('y2', yZero);
+        }
     }
 
     private addTooltips(): Result<TooltipInterface, PlotError> {
@@ -1039,27 +1056,28 @@ export class Visual implements IVisual {
             const tooltipModels = this.viewModel.tooltipModels;
             const errorFunction = this.displayError;
             let lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
-            const tooltip = d3
-                .select(this.element)
-                .append('div')
-                .style('position', 'absolute')
-                .style('visibility', 'hidden')
-                .style('background-color', '#484848')
-                .style('border', 'solid')
-                .style('border-width', '1px')
-                .style('border-radius', '5px')
-                .style('padding', '10px');
-            tooltip.append('text').text('No tooltip info available');
+            const tooltipElement = d3.select('.' + Constants.tooltipClass);
+            const tooltip =
+                tooltipElement.nodes().length > 0
+                    ? <d3.Selection<HTMLDivElement, unknown, null, undefined>>tooltipElement
+                    : d3
+                          .select(this.element)
+                          .append('div')
+                          .attr('class', Constants.tooltipClass)
+                          .style('position', 'absolute')
+                          .style('visibility', 'hidden')
+                          .style('background-color', '#484848')
+                          .style('border', 'solid')
+                          .style('border-width', '1px')
+                          .style('border-radius', '5px')
+                          .style('padding', '10px');
 
             const mouseover = (event) => {
                 try {
                     lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
                     tooltip.style('visibility', 'visible');
                     const element = d3.select(event.target);
-                    element
-                        .attr('r', Number(element.attr('r')) * 2)
-                        .style('stroke', 'black')
-                        .style('opacity', 1);
+                    element.attr('r', Number(element.attr('r')) * 2).style('stroke', 'black');
                     lines.style('opacity', 1);
                 } catch (error) {
                     error.message = 'error in tooltip mouseover: ' + error.message;
@@ -1114,10 +1132,7 @@ export class Visual implements IVisual {
                 try {
                     tooltip.style('visibility', 'hidden');
                     const element = d3.select(e.target);
-                    element
-                        .attr('r', Number(element.attr('r')) / 2)
-                        .style('stroke', 'none')
-                        .style('opacity', 0.8);
+                    element.attr('r', Number(element.attr('r')) / 2).style('stroke', 'none');
                     lines.style('opacity', 0);
                 } catch (error) {
                     error.message = 'error in tooltip mouseout: ' + error.message;

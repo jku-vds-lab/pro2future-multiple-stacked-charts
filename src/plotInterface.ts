@@ -22,7 +22,6 @@ export class RolloutRectangles {
         for (let i = 0; i < uniqueValues.length; i++) {
             const val = uniqueValues[i];
             const color = ArrayConstants.rolloutColors[<string>val] ? ArrayConstants.rolloutColors[<string>val] : ArrayConstants.colorArray[i];
-
             this.legendValues.push({ value: val, color: color });
         }
 
@@ -79,6 +78,9 @@ export interface GeneralPlotSettings {
     transparentOpacity: number;
     margins: Margins;
     xAxisSettings: XAxisSettings;
+    heatmapBins: number;
+    showYZeroLine: boolean;
+    minPlotHeight: number;
 }
 
 export interface XAxisSettings {
@@ -229,9 +231,6 @@ export interface ColorSettings {
         heatmapColorScheme: string;
         yZeroLineColor: string;
     };
-}
-export interface HeatmapSettings {
-    heatmapBins: number;
 }
 
 export interface PlotSettings {
