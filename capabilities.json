@@ -413,13 +413,25 @@
                 }
             }
         },
-        "heatmapSettings": {
-            "displayName": "Heatmap Settings",
+        "generalSettings": {
+            "displayName": "General Settings",
             "properties": {
                 "heatmapBins": {
                     "displayName": "Number of Bins",
                     "type": {
                         "numeric": true
+                    }
+                },
+                "minPlotHeight": {
+                    "displayName": "Minimum plot height",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "showYZeroLine": {
+                    "displayName": "Show 0-Line for Y-Axis",
+                    "type": {
+                        "bool": true
                     }
                 }
             }

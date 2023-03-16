@@ -6,7 +6,7 @@ import {
     AxisLabelSettingsNames,
     ColorSettingsNames,
     FilterType,
-    HeatmapSettingsNames,
+    GeneralSettingsNames,
     LegendSettingsNames,
     OverlayPlotSettingsNames,
     Settings,
@@ -26,7 +26,6 @@ import {
     ColorSettings,
     DataPoint,
     GeneralPlotSettings,
-    HeatmapSettings,
     Legend,
     LegendDataPoint,
     Legends,
@@ -52,7 +51,6 @@ export class ViewModel {
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
     legends: Legends;
-    heatmapSettings: HeatmapSettings;
     rolloutRectangles: RolloutRectangles;
     errors: ParseAndTransformError[];
     objects: powerbi.DataViewObjects;
@@ -114,10 +112,10 @@ export class ViewModel {
 
     createDefectLegend(dataModel: DataModel) {
         const legendSet = new Set(dataModel.defectLegendData.values);
-        if (legendSet.has(null)) {
-            legendSet.delete(null);
-        }
+        legendSet.delete(null);
+        legendSet.delete('');
         const legendColors = ArrayConstants.legendColors;
+        const randomColors = ArrayConstants.colorArray;
         const legendValues = Array.from(legendSet);
         const defectLegend = <Legend>{
             legendDataPoints: dataModel.defectLegendData.values
@@ -146,7 +144,7 @@ export class ViewModel {
         };
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i] + '';
-            const defaultColor = legendColors[val] ? legendColors[val] : 'FFFFFF';
+            const defaultColor = legendColors[val] ? legendColors[val] : randomColors[i];
             defectLegend.legendValues.push({
                 color: defaultColor,
                 value: val,
@@ -169,7 +167,6 @@ export class ViewModel {
                 heatmapColorScheme: <string>getValue(this.objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme, 'interpolateBuGn'),
             },
         };
-        this.heatmapSettings = { heatmapBins: getValue<number>(this.objects, Settings.heatmapSettings, HeatmapSettingsNames.heatmapBins, 100) };
         this.setGeneralPlotSettings(dataModel, options);
     }
 
@@ -177,6 +174,7 @@ export class ViewModel {
         this.svgHeight = options.viewport.height - MarginSettings.scrollbarSpace;
         this.svgWidth = options.viewport.width - MarginSettings.scrollbarSpace;
         const legendHeight = this.legends.legends.length > 0 ? MarginSettings.legendHeight : 0;
+        const minPlotHeight = getValue<number>(this.objects, Settings.generalSettings, GeneralSettingsNames.minPlotHeight, 40);
         if (this.svgHeight === undefined || this.svgWidth === undefined || !this.svgHeight || !this.svgWidth) {
             return err(new SVGSizeError());
         }
@@ -193,9 +191,9 @@ export class ViewModel {
                 MarginSettings.xLabelSpace * xLabelsCount -
                 Heatmapmargins.heatmapSpace * heatmapCount) /
             dataModel.yData.length;
-        if (plotHeightSpace < MarginSettings.miniumumPlotHeight) {
-            const plotSpaceDif = MarginSettings.miniumumPlotHeight - plotHeightSpace;
-            plotHeightSpace = MarginSettings.miniumumPlotHeight;
+        if (plotHeightSpace < minPlotHeight) {
+            const plotSpaceDif = minPlotHeight - plotHeightSpace;
+            plotHeightSpace = minPlotHeight;
             this.svgHeight = this.svgHeight + dataModel.yData.length * plotSpaceDif;
         }
         let plotWidth: number = this.svgWidth - MarginSettings.margins.left - MarginSettings.margins.right;
@@ -220,6 +218,9 @@ export class ViewModel {
             legendYPostion: 0,
             fontSize: '10px',
             xAxisSettings: xAxisSettings,
+            heatmapBins: getValue<number>(this.objects, Settings.generalSettings, GeneralSettingsNames.heatmapBins, 100),
+            minPlotHeight: minPlotHeight,
+            showYZeroLine: getValue<boolean>(this.objects, Settings.generalSettings, GeneralSettingsNames.showYZeroLine, true),
         };
     }
 
@@ -245,6 +246,7 @@ export class ViewModel {
             //create datapoints
             for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
                 const selectionId: ISelectionId = dataModel.host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
+                if (!yDataPoints[pointNr]) continue;
                 let color = plotSettings.fill;
                 const xVal = xDataPoints[pointNr];
                 if (plotSettings.useLegendColor) {
@@ -311,7 +313,12 @@ export class ViewModel {
             plotTop += this.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
             plotTop += plotModel.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
         }
-        if (dataModel.rolloutRectangles) {
+
+        this.generalPlotSettings.legendYPostion = plotTop + MarginSettings.legendTopMargin;
+    }
+
+    createRolloutRectangles(dataModel: DataModel) {
+        if (dataModel.rolloutRectangles.length > 0) {
             const rolloutY = this.plotModels[0].plotTop;
             const rolloutHeight = this.plotModels[this.plotModels.length - 1].plotTop + this.generalPlotSettings.plotHeight - rolloutY;
             this.rolloutRectangles = new RolloutRectangles(
@@ -324,7 +331,6 @@ export class ViewModel {
                 dataModel.rolloutName
             );
         }
-        this.generalPlotSettings.legendYPostion = plotTop + MarginSettings.legendTopMargin;
     }
 
     createOverlayInformation(dataModel: DataModel): Result<void, OverlayDataError> {
@@ -355,6 +361,7 @@ export class ViewModel {
             if (overlayRectangles.length == 0) {
                 return err(new OverlayDataError());
             }
+            overlayRectangles = overlayRectangles.filter((rect, i) => overlayRectangles.findIndex((r) => r.x === rect.x && r.endX === rect.endX) === i);
             this.overlayRectangles = overlayRectangles;
         }
         return ok(null);
