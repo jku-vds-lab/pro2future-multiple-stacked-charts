@@ -422,13 +422,18 @@ export class ViewModel {
         const uniqueXValues = Array.from(new Set<Date | number>(dataModel.xData.values));
         const indexMap = new Map(uniqueXValues.map((x, i) => [x, i]));
         const breakIndices = dataModel.xData.isDate
-            ? []
+            ? uniqueXValues
+                  .map((x: Date, i, a: Date[]) => {
+                      return { i: i, gapSize: i < a.length - 1 ? a[i + 1].getTime() - x.getTime() : 0, x };
+                  })
+                  .filter((x) => x.gapSize > 20 * 60 * 1000)
+                  .map((x) => (axisBreak ? x.i + 0.5 : new Date(x.x.getTime() + x.gapSize / 2)))
             : uniqueXValues
                   .map((x: number, i, a: number[]) => {
-                      return { i: i, gapSize: i < a.length ? a[i + 1] - x : 0 };
+                      return { i: i, gapSize: i < a.length - 1 ? a[i + 1] - x : 0, x };
                   })
                   .filter((x) => x.gapSize > 1)
-                  .map((x) => x.i + 0.5);
+                  .map((x) => (axisBreak ? x.i + 0.5 : x.x + x.gapSize / 2));
 
         const xRange = dataModel.xData.isDate
             ? {
