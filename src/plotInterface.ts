@@ -84,6 +84,7 @@ export interface GeneralPlotSettings {
     heatmapBins: number;
     showYZeroLine: boolean;
     minPlotHeight: number;
+    tooltipPrecision: number;
 }
 
 export interface XAxisSettings {

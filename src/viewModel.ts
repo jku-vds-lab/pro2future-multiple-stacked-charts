@@ -218,6 +218,7 @@ export class ViewModel {
             legendYPostion: 0,
             fontSize: '10px',
             xAxisSettings: xAxisSettings,
+            tooltipPrecision: getValue<number>(this.objects, Settings.generalSettings, GeneralSettingsNames.tooltipPrecision, 2),
             heatmapBins: getValue<number>(this.objects, Settings.generalSettings, GeneralSettingsNames.heatmapBins, 100),
             minPlotHeight: minPlotHeight,
             showYZeroLine: getValue<boolean>(this.objects, Settings.generalSettings, GeneralSettingsNames.showYZeroLine, true),
@@ -391,7 +392,7 @@ export class ViewModel {
             } else if (type.numeric && !type.integer) {
                 tooltip.values = tooltip.values.map((val) => {
                     if (typeof val === 'number') {
-                        return Number(val).toFixed(2);
+                        return Number(val).toFixed(this.generalPlotSettings.tooltipPrecision);
                     }
                     return val;
                 });

@@ -64,8 +64,8 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
     try {
         const viewModel = new ViewModel(objects);
         viewModel.createLegends(dataModel);
-        viewModel.createTooltipModels(dataModel);
         viewModel.setSettings(dataModel, options);
+        viewModel.createTooltipModels(dataModel);
         viewModel.createPlotModels(dataModel);
         viewModel.createPlotOverlayInformation(dataModel).mapErr((err) => (parseAndTransformError = err));
         viewModel.createVisualOverlayRectangles(dataModel);

@@ -22,6 +22,7 @@ export enum AxisLabelSettingsNames {
 export enum GeneralSettingsNames {
     heatmapBins = 'heatmapBins',
     minPlotHeight = 'minPlotHeight',
+    tooltipPrecision = 'tooltipPrecision',
     showYZeroLine = 'showYZeroLine',
 }
 

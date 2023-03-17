@@ -428,6 +428,12 @@
                         "numeric": true
                     }
                 },
+                "tooltipPrecision": {
+                    "displayName": "Tooltip Precision",
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "showYZeroLine": {
                     "displayName": "Show 0-Line for Y-Axis",
                     "type": {

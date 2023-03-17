@@ -352,7 +352,7 @@ function createHeatmapCard(viewModel: ViewModel) {
                 uid: Settings.generalSettings + 'group' + Constants.uid,
                 slices: [
                     {
-                        displayName: 'Number of Bins',
+                        displayName: 'Number of Heatmap Bins',
                         uid: Settings.generalSettings + GeneralSettingsNames.heatmapBins + Constants.uid,
                         control: {
                             type: powerbi.visuals.FormattingComponent.NumUpDown,
@@ -381,7 +381,23 @@ function createHeatmapCard(viewModel: ViewModel) {
                         },
                     },
                     {
+                        displayName: 'Tooltip Precision',
+                        description: 'Sets the precision for numeric tooltip values.',
+                        uid: Settings.generalSettings + GeneralSettingsNames.tooltipPrecision + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.NumUpDown,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.generalSettings,
+                                    propertyName: GeneralSettingsNames.tooltipPrecision,
+                                },
+                                value: viewModel.generalPlotSettings.tooltipPrecision,
+                            },
+                        },
+                    },
+                    {
                         displayName: 'Show 0-Line for Y-Axis',
+                        description: 'Displays a horizontal line at position 0 when set to true. Color can be adjusted in color settings.',
                         uid: Settings.generalSettings + GeneralSettingsNames.showYZeroLine + Constants.uid,
                         control: {
                             type: powerbi.visuals.FormattingComponent.ToggleSwitch,
