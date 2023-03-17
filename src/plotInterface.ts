@@ -262,9 +262,7 @@ export class Legends {
         let draw = true;
         for (const l of this.legends) {
             const filtered = l.legendDataPoints.filter((x) => x.i === i);
-            if (filtered.length === 0) {
-                draw = false;
-            } else {
+            if (filtered.length >= 1) {
                 draw = draw && l.selectedValues.has(filtered[0].yValue.toString());
             }
         }

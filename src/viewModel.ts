@@ -93,7 +93,7 @@ export class ViewModel {
                                 i: i,
                             }
                     )
-                    .filter((x) => x.yValue !== null),
+                    .filter((x) => x.yValue !== null && x.yValue !== ''),
                 legendValues: legendValues.map((val) => {
                     return <LegendValue>{
                         color: 'white',
@@ -126,7 +126,7 @@ export class ViewModel {
                             i,
                         }
                 )
-                .filter((x) => x.yValue !== null),
+                .filter((x) => x.yValue !== null && x.yValue !== ''),
             legendValues: [],
             legendTitle: <string>(
                 getValue(
@@ -255,8 +255,9 @@ export class ViewModel {
                     const filtered = this.legends.legends.filter((x) => x.type === FilterType.colorFilter);
                     if (filtered.length === 1) {
                         const defectLegend = filtered[0];
-                        const legendVal = defectLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
-                        color = legendVal === undefined ? color : defectLegend.legendValues.find((x) => x.value === legendVal).color;
+                        const dataPointLegendValue = defectLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
+                        const legendValue = defectLegend.legendValues.find((x) => x.value === dataPointLegendValue);
+                        if (dataPointLegendValue && legendValue) color = legendValue.color;
                     } else {
                         this.errors.push(new PlotLegendError(yAxis.name));
                     }

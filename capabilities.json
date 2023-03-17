@@ -2,7 +2,8 @@
     "privileges": [],
     "dataRoles": [
         {
-            "displayName": "Axis",
+            "displayName": "X-Axis",
+            "description": "Shared X-Axis for all plots. Datatype must be numeric or date.",
             "name": "x_axis",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -16,6 +17,7 @@
         },
         {
             "displayName": "Plot Values",
+            "description": "Data fields that contain y-Values. A separate plot is created for each data field.",
             "name": "y_axis",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
