@@ -230,6 +230,7 @@ export interface AxisInformationInterface {
 
 export interface ColorSettings {
     colorSettings: {
+        breakLineColor: string;
         verticalRulerColor: string;
         overlayColor: string;
         heatmapColorScheme: string;

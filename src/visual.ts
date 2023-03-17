@@ -167,13 +167,14 @@ export class Visual implements IVisual {
             const xScale = xAxisSettings.xScaleZoomed;
             const plotModels = this.viewModel.plotModels;
             const generalPlotSettings = this.viewModel.generalPlotSettings;
+
             const linesG = this.svg.append('g').attr('transform', 'translate(' + generalPlotSettings.margins.left + ',0)');
             const lines = linesG
                 .selectAll('.' + Constants.axisBreakClass)
                 .data(xAxisSettings.breakIndices)
                 .join('line')
                 .attr('class', Constants.axisBreakClass)
-                .attr('stroke', '#cccccc')
+                .attr('stroke', this.viewModel.colorSettings.colorSettings.breakLineColor)
                 .attr('x1', (d) => xScale(d))
                 .attr('x2', (d) => xScale(d))
                 .attr('y1', plotModels[0].plotTop)

@@ -56,6 +56,7 @@ export enum OverlayPlotSettingsNames {
 }
 export enum ColorSettingsNames {
     verticalRulerColor = 'verticalRulerColor',
+    breakLineColor = 'breakLineColor',
     overlayColor = 'overlayColor',
     heatmapColorScheme = 'heatmapColorScheme',
     yZeroLineColor = 'yZeroLineColor',

@@ -161,6 +161,7 @@ export class ViewModel {
         };
         this.colorSettings = {
             colorSettings: {
+                breakLineColor: getColorSettings(this.objects, ColorSettingsNames.breakLineColor, colorPalette, '#cccccc'),
                 verticalRulerColor: getColorSettings(this.objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
                 overlayColor: getColorSettings(this.objects, ColorSettingsNames.overlayColor, colorPalette, '#000000'),
                 yZeroLineColor: getColorSettings(this.objects, ColorSettingsNames.yZeroLineColor, colorPalette, '#CCCCCC'),

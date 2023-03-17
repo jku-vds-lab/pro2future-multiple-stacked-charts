@@ -651,6 +651,21 @@ function createColorSettingsCard(viewModel: ViewModel) {
                         },
                     },
                     {
+                        displayName: 'Axis Break Line Color',
+                        description: 'The stroke color of the X-Axis break lines.',
+                        uid: groupName + ColorSettingsNames.breakLineColor + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.ColorPicker,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.colorSettings,
+                                    propertyName: ColorSettingsNames.breakLineColor,
+                                },
+                                value: { value: viewModel.colorSettings.colorSettings.breakLineColor },
+                            },
+                        },
+                    },
+                    {
                         displayName: 'Heatmap Color Scheme',
                         uid: groupName + ColorSettingsNames.heatmapColorScheme + Constants.uid,
                         control: {
@@ -668,6 +683,11 @@ function createColorSettingsCard(viewModel: ViewModel) {
             },
         ],
     };
+    colorCardRevertDefault(colorCard);
+    return colorCard;
+}
+
+function colorCardRevertDefault(colorCard: powerbi.visuals.FormattingCard) {
     colorCard.revertToDefaultDescriptors = [
         {
             objectName: Settings.colorSettings,
@@ -683,10 +703,13 @@ function createColorSettingsCard(viewModel: ViewModel) {
         },
         {
             objectName: Settings.colorSettings,
+            propertyName: ColorSettingsNames.breakLineColor,
+        },
+        {
+            objectName: Settings.colorSettings,
             propertyName: ColorSettingsNames.heatmapColorScheme,
         },
     ];
-    return colorCard;
 }
 
 function createPlotSettingsCard() {

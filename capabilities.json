@@ -345,6 +345,16 @@
                         }
                     }
                 },
+                "breakLineColor": {
+                    "displayName": "Break Line Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
                 "yZeroLineColor": {
                     "displayName": "Horizontal Zero Line Color",
                     "description": "The stroke color of lines indicating zero on the y-axis.",
