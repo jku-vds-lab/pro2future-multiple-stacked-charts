@@ -72,7 +72,7 @@
             "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Filter Legend",
+            "displayName": "Filter Legends",
             "name": "filterLegend",
             "kind": "GroupingOrMeasure"
         },
@@ -90,7 +90,7 @@
             ]
         },
         {
-            "displayName": "Grouping",
+            "displayName": "Groupings",
             "name": "grouping",
             "kind": "GroupingOrMeasure"
         }
