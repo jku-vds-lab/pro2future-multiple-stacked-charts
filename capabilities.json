@@ -592,6 +592,12 @@
                     "type": {
                         "bool": true
                     }
+                },
+                "breakGapSize": {
+                    "displayName": "Gap Size for Break Line",
+                    "type": {
+                        "numeric": true
+                    }
                 }
             }
         },

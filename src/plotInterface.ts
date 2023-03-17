@@ -89,6 +89,7 @@ export interface GeneralPlotSettings {
 
 export interface XAxisSettings {
     axisBreak: boolean;
+    breakGapSize: number;
     breakIndices: number[];
     indexMap: Map<number | Date, number>;
     showBreakLines: boolean;

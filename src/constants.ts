@@ -36,6 +36,7 @@ export enum YRangeSettingsNames {
 export enum XAxisBreakSettingsNames {
     enable = 'enable',
     showLines = 'showLines',
+    breakGapSize = 'breakGapSize',
 }
 export enum LegendSettingsNames {
     legendTitle = 'legendTitle',

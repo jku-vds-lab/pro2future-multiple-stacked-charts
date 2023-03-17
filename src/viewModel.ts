@@ -419,7 +419,7 @@ export class ViewModel {
 
     private getXAxisSettings(dataModel: DataModel, plotWidth: number) {
         const axisBreak = <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false);
-
+        const breakGapSize = <number>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.breakGapSize, 1);
         const uniqueXValues = Array.from(new Set<Date | number>(dataModel.xData.values));
         const indexMap = new Map(uniqueXValues.map((x, i) => [x, i]));
         const breakIndices = dataModel.xData.isDate
@@ -427,13 +427,13 @@ export class ViewModel {
                   .map((x: Date, i, a: Date[]) => {
                       return { i: i, gapSize: i < a.length - 1 ? a[i + 1].getTime() - x.getTime() : 0, x };
                   })
-                  .filter((x) => x.gapSize > 20 * 60 * 1000)
+                  .filter((x) => x.gapSize > breakGapSize * 1000)
                   .map((x) => (axisBreak ? x.i + 0.5 : new Date(x.x.getTime() + x.gapSize / 2)))
             : uniqueXValues
                   .map((x: number, i, a: number[]) => {
                       return { i: i, gapSize: i < a.length - 1 ? a[i + 1] - x : 0, x };
                   })
-                  .filter((x) => x.gapSize > 1)
+                  .filter((x) => x.gapSize > breakGapSize)
                   .map((x) => (axisBreak ? x.i + 0.5 : x.x + x.gapSize / 2));
 
         const xRange = dataModel.xData.isDate
@@ -457,6 +457,7 @@ export class ViewModel {
         const xAxisSettings = <XAxisSettings>{
             axisBreak,
             breakIndices,
+            breakGapSize,
             indexMap,
             isDate: dataModel.xData.isDate,
             showBreakLines: <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, false),

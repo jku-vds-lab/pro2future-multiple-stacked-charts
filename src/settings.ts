@@ -190,6 +190,21 @@ function createXAxisBreakCard(viewModel: ViewModel) {
                             },
                         },
                     },
+                    {
+                        displayName: 'Minimum Gap Size (s)',
+                        description: 'Minimum gap size between two neighboring data points for displaying break line. Specified in seconds if X-axis is of type date.',
+                        uid: 'x_axis_break_gap_size' + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.NumUpDown,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.xAxisBreakSettings,
+                                    propertyName: XAxisBreakSettingsNames.breakGapSize,
+                                },
+                                value: viewModel.generalPlotSettings.xAxisSettings.breakGapSize,
+                            },
+                        },
+                    },
                 ],
             },
         ],
