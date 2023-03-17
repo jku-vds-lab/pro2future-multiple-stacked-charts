@@ -552,11 +552,15 @@ export class Visual implements IVisual {
             const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed).ticks(axisHelper.getRecommendedNumberOfTicksForXAxis(generalPlotSettings.plotWidth));
             if (generalPlotSettings.xAxisSettings.axisBreak) {
                 xAxisValue.tickFormat((d) => {
-                    const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
+                    const xAxisSettings = generalPlotSettings.xAxisSettings;
                     let key = '';
                     for (const [k, v] of xAxisSettings.indexMap.entries()) {
-                        if (v === d) key = '' + k;
+                        if (v === d)
+                            key =
+                                '' +
+                                (xAxisSettings.isDate ? (<Date>k).getDate() + '.' + ((<Date>k).getMonth() + 1) + '. ' + (<Date>k).getHours() + ':' + (<Date>k).getMinutes() : k);
                     }
+                    console.log(key);
                     return key;
                 });
             }
@@ -753,7 +757,6 @@ export class Visual implements IVisual {
                     .attr('stroke-width', 1.5)
                     .attr('clip-path', 'url(#clip)');
             }
-
             d3Plot.points = d3Plot.root
                 .selectAll(Constants.dotClass)
                 .data(dataPoints)
@@ -797,16 +800,16 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
-            const extent = generalPlotSettings.xAxisSettings.isDate
+            const isDateScale = generalPlotSettings.xAxisSettings.isDate && !generalPlotSettings.xAxisSettings.axisBreak;
+            const extent = isDateScale
                 ? generalPlotSettings.xAxisSettings.xScaleZoomed.domain().map((x) => (<Date>x).getTime())
                 : <number[]>generalPlotSettings.xAxisSettings.xScaleZoomed.domain();
-            window.d3 = d3;
             const nrThresholds = generalPlotSettings.heatmapBins - 1;
-            const thresholds = d3.range(nrThresholds).map((x) => ((x + 1) * extent[1] - extent[0]) / (nrThresholds + 1) + extent[0]);
+            const thresholds = d3.range(nrThresholds).map((x) => ((x + 1) * (extent[1] - extent[0])) / (nrThresholds + 1) + extent[0]);
             const bins = d3
                 .bin<DataPoint, number>()
                 .value((d: DataPoint) => {
-                    if (generalPlotSettings.xAxisSettings.isDate) {
+                    if (isDateScale) {
                         return (<Date>d.xValue).getTime();
                     }
                     return <number>d.xValue;

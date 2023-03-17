@@ -417,7 +417,8 @@ export class ViewModel {
     }
 
     private getXAxisSettings(dataModel: DataModel, plotWidth: number) {
-        const axisBreak = dataModel.xData.isDate ? false : <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false);
+        const axisBreak = <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false);
+
         const uniqueXValues = Array.from(new Set<Date | number>(dataModel.xData.values));
         const indexMap = new Map(uniqueXValues.map((x, i) => [x, i]));
         const breakIndices = dataModel.xData.isDate
@@ -431,25 +432,28 @@ export class ViewModel {
 
         const xRange = dataModel.xData.isDate
             ? {
-                  min: Math.min(...(<number[]>dataModel.xData.values)),
-                  max: Math.max(...(<number[]>dataModel.xData.values)),
-              }
-            : {
                   min: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a < b ? a : b)),
                   max: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a > b ? a : b)),
+              }
+            : {
+                  min: Math.min(...(<number[]>dataModel.xData.values)),
+                  max: Math.max(...(<number[]>dataModel.xData.values)),
               };
         if (axisBreak) {
             xRange.min = indexMap.get(xRange.min);
             xRange.max = indexMap.get(xRange.max);
         }
-        const xScale = dataModel.xData.isDate
-            ? scaleTime().domain([xRange.min, xRange.max]).range([0, plotWidth])
-            : scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
+        const xScale =
+            dataModel.xData.isDate && !axisBreak
+                ? scaleTime().domain([xRange.min, xRange.max]).range([0, plotWidth])
+                : scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
+
         const xAxisSettings = <XAxisSettings>{
             axisBreak,
             breakIndices,
             indexMap,
-            showBreakLines: <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, true),
+            isDate: dataModel.xData.isDate,
+            showBreakLines: <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, false),
             xName: dataModel.xData.name,
             xRange: xRange,
             xScale,
