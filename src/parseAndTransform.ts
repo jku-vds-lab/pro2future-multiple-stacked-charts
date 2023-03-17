@@ -67,7 +67,7 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
         viewModel.createTooltipModels(dataModel);
         viewModel.setSettings(dataModel, options);
         viewModel.createPlotModels(dataModel);
-        viewModel.createOverlayInformation(dataModel).mapErr((err) => (parseAndTransformError = err));
+        viewModel.createPlotOverlayInformation(dataModel).mapErr((err) => (parseAndTransformError = err));
         viewModel.createVisualOverlayRectangles(dataModel);
         return ok(viewModel);
     } catch (e) {
@@ -144,7 +144,7 @@ function getCategoricalData(categorical: powerbi.DataViewCategorical, dataModel:
             }
             if (roles.visualOverlay) {
                 dataModel.visualOverlayRectangles = category.values;
-                dataModel.visualOverlayName = category.source.displayName;
+                dataModel.visualOverlayMetadataColumn = category.source;
             }
         }
     }
@@ -221,7 +221,7 @@ function getMeasureData(categorical: powerbi.DataViewCategorical, dataModel: Dat
 
             if (roles.visualOverlay) {
                 dataModel.visualOverlayRectangles = <number[]>value.values;
-                dataModel.visualOverlayName = value.source.displayName;
+                dataModel.visualOverlayMetadataColumn = value.source;
             }
         }
     }
@@ -308,7 +308,7 @@ export class DataModel {
     overlayWidth: number[];
     overlayLength: number[];
     visualOverlayRectangles: Primitive[];
-    visualOverlayName: string;
+    visualOverlayMetadataColumn: powerbi.DataViewMetadataColumn;
     categorical: powerbi.DataViewCategorical;
 
     metadataColumns: powerbi.DataViewMetadataColumn[];

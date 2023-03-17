@@ -4,7 +4,7 @@ import {
     ColorSettingsNames,
     Constants,
     GeneralSettingsNames,
-    ColorLegendSettingsNames,
+    LegendSettingsNames,
     OverlayPlotSettingsNames,
     PlotSettingsNames,
     PlotTitleSettingsNames,
@@ -45,6 +45,21 @@ export function createFormattingModel(viewModel: ViewModel): powerbi.visuals.For
 
     for (const legend of viewModel.legends.legends) {
         addLegendGroup(legend, legendCard);
+    }
+    if (viewModel.visualOverlayRectangles) {
+        addLegendGroup(
+            <Legend>{
+                legendDataPoints: [],
+                legendTitle: viewModel.visualOverlayRectangles.name,
+                legendValues: [],
+                legendXEndPosition: 0,
+                legendXPosition: 0,
+                metaDataColumn: viewModel.visualOverlayRectangles.metadetaColumn,
+                selectedValues: null,
+                type: null,
+            },
+            legendCard
+        );
     }
 
     for (const tooltip of viewModel.tooltipModels) {
@@ -314,13 +329,13 @@ function createLegendCard() {
     const legendCard: powerbi.visuals.FormattingCard = {
         description: 'Legend Settings',
         displayName: 'Legend Settings',
-        uid: Settings.colorLegendSettings + Constants.uid,
+        uid: Settings.legendSettings + Constants.uid,
         groups: [],
     };
     legendCard.revertToDefaultDescriptors = [
         {
-            objectName: Settings.colorLegendSettings,
-            propertyName: ColorLegendSettingsNames.legendTitle,
+            objectName: Settings.legendSettings,
+            propertyName: LegendSettingsNames.legendTitle,
         },
     ];
     return legendCard;
@@ -428,13 +443,13 @@ function addLegendGroup(legend: Legend, legendCard: powerbi.visuals.FormattingCa
         slices: [
             {
                 displayName: 'Legend Title',
-                uid: groupName + ColorLegendSettingsNames.legendTitle + Constants.uid,
+                uid: groupName + LegendSettingsNames.legendTitle + Constants.uid,
                 control: {
                     type: powerbi.visuals.FormattingComponent.TextInput,
                     properties: {
                         descriptor: {
-                            objectName: Settings.colorLegendSettings,
-                            propertyName: ColorLegendSettingsNames.legendTitle,
+                            objectName: Settings.legendSettings,
+                            propertyName: LegendSettingsNames.legendTitle,
                             selector: { metadata: legend.metaDataColumn.queryName },
                         },
                         placeholder: legend.legendTitle,
@@ -796,7 +811,6 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                 },
             },
             {
-                //TODO: fix error when setting to true on some plots
                 displayName: 'Use Legend Color',
                 uid: groupName + PlotSettingsNames.useLegendColor + Constants.uid,
                 control: {

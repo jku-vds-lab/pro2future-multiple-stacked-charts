@@ -2,7 +2,8 @@ import { Primitive } from 'd3-array';
 import { BaseType } from 'd3-selection';
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
-import { ArrayConstants, FilterType } from './constants';
+import { ArrayConstants, FilterType, LegendSettingsNames, Settings } from './constants';
+import { getValue } from './objectEnumerationUtility';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
@@ -11,10 +12,12 @@ export class VisualOverlayRectangles {
     visualOverlayRectangles: VisualOverlayRectangle[];
     name: string;
     opacity: number;
+    metadetaColumn: powerbi.DataViewMetadataColumn;
     legendValues: LegendValue[];
 
-    constructor(xValues: number[] | Date[], visualOverlay: Primitive[], y, width, visualOverlayName = 'visualOverlay', visualOverlayOpacity = 0.2) {
-        this.name = visualOverlayName;
+    constructor(xValues: number[] | Date[], visualOverlay: Primitive[], y, width, visualOverlayMetadataColumn: powerbi.DataViewMetadataColumn, visualOverlayOpacity = 0.2) {
+        this.name = <string>getValue(visualOverlayMetadataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, visualOverlayMetadataColumn.displayName);
+        this.metadetaColumn = visualOverlayMetadataColumn;
         this.visualOverlayRectangles = [];
         this.legendValues = [];
         this.opacity = visualOverlayOpacity;

@@ -7,7 +7,7 @@ import {
     ColorSettingsNames,
     FilterType,
     GeneralSettingsNames,
-    ColorLegendSettingsNames,
+    LegendSettingsNames,
     OverlayPlotSettingsNames,
     Settings,
     TooltipTitleSettingsNames,
@@ -30,7 +30,7 @@ import {
     LegendDataPoint,
     Legends,
     LegendValue,
-    OverlayRectangle,
+    OverlayRectangle as PlotOverlayRectangle,
     OverlayType,
     PlotModel,
     VisualOverlayRectangles,
@@ -44,7 +44,7 @@ import {
 export class ViewModel {
     plotModels: PlotModel[];
     colorSettings: ColorSettings;
-    overlayRectangles?: OverlayRectangle[];
+    plotOverlayRectangles?: PlotOverlayRectangle[];
     svgHeight: number;
     svgWidth: number;
     generalPlotSettings: GeneralPlotSettings;
@@ -100,7 +100,7 @@ export class ViewModel {
                         value: val,
                     };
                 }),
-                legendTitle: <string>getValue(data.metaDataColumn.objects, Settings.colorLegendSettings, ColorLegendSettingsNames.legendTitle, defaultLegendName),
+                legendTitle: <string>getValue(data.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
                 legendXEndPosition: 0,
                 legendXPosition: MarginSettings.margins.left,
                 type: data.type,
@@ -131,8 +131,8 @@ export class ViewModel {
             legendTitle: <string>(
                 getValue(
                     dataModel.defectLegendData.metaDataColumn.objects,
-                    Settings.colorLegendSettings,
-                    ColorLegendSettingsNames.legendTitle,
+                    Settings.legendSettings,
+                    LegendSettingsNames.legendTitle,
                     dataModel.defectLegendData.metaDataColumn.displayName
                 )
             ),
@@ -328,15 +328,15 @@ export class ViewModel {
                 dataModel.visualOverlayRectangles,
                 visualOverlayY,
                 visualOverlayHeight,
-                dataModel.visualOverlayName
+                dataModel.visualOverlayMetadataColumn
             );
         }
     }
 
-    createOverlayInformation(dataModel: DataModel): Result<void, OverlayDataError> {
+    createPlotOverlayInformation(dataModel: DataModel): Result<void, OverlayDataError> {
         if (dataModel.overlayLength.length == dataModel.overlayWidth.length && dataModel.overlayWidth.length > 0) {
             const xValues = dataModel.xData.values;
-            let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(dataModel.overlayLength.length);
+            let overlayRectangles: PlotOverlayRectangle[] = new Array<PlotOverlayRectangle>(dataModel.overlayLength.length);
             const xAxisSettings = this.generalPlotSettings.xAxisSettings;
             let endX = null;
             for (let i = 0; i < dataModel.overlayLength.length; i++) {
@@ -362,7 +362,7 @@ export class ViewModel {
                 return err(new OverlayDataError());
             }
             overlayRectangles = overlayRectangles.filter((rect, i) => overlayRectangles.findIndex((r) => r.x === rect.x && r.endX === rect.endX) === i);
-            this.overlayRectangles = overlayRectangles;
+            this.plotOverlayRectangles = overlayRectangles;
         }
         return ok(null);
     }

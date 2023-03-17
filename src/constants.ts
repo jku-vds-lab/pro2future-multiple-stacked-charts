@@ -4,7 +4,7 @@ export enum Settings {
     colorSelector = 'colorSelector',
     colorSettings = 'colorSettings',
     generalSettings = 'generalSettings',
-    colorLegendSettings = 'legendSettings',
+    legendSettings = 'legendSettings',
     overlayPlotSettings = 'overlayPlotSettings',
     plotTitleSettings = 'plotTitleSettings',
     tooltipTitleSettings = 'tooltipTitleSettings',
@@ -36,7 +36,7 @@ export enum XAxisBreakSettingsNames {
     enable = 'enable',
     showLines = 'showLines',
 }
-export enum ColorLegendSettingsNames {
+export enum LegendSettingsNames {
     legendTitle = 'legendTitle',
 }
 

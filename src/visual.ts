@@ -47,11 +47,11 @@ import {
     DataPoint,
     PlotModel,
     PlotType,
-    OverlayType as OverlayType,
+    OverlayType,
     D3Plot,
     D3PlotXAxis,
     D3PlotYAxis,
-    OverlayRectangle as OverlayRectangle,
+    OverlayRectangle,
     TooltipModel,
     TooltipData,
     ZoomingSettings,
@@ -630,7 +630,7 @@ export class Visual implements IVisual {
         try {
             const colorSettings = this.viewModel.colorSettings.colorSettings;
             const overlaytype = plotModel.overlayPlotSettings.overlayPlotSettings.overlayType;
-            const overlayRectangles = this.viewModel.overlayRectangles;
+            const overlayRectangles = this.viewModel.plotOverlayRectangles;
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
             const plot = plotModel.d3Plot.root;
             const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
