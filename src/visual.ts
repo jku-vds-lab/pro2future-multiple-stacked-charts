@@ -828,6 +828,7 @@ export class Visual implements IVisual {
             let yTransition = generalPlotSettings.plotHeight + generalPlotSettings.margins.bottom;
             yTransition += xAxisSettings.lables || xAxisSettings.ticks ? Heatmapmargins.heatmapMargin : 0;
             yTransition += xAxisSettings.lables && xAxisSettings.ticks ? MarginSettings.xLabelSpace : 0;
+            this.svg.selectAll('.Heatmap' + plotModel.plotId).remove();
             const heatmap = this.svg
                 .append('g')
                 .classed('Heatmap' + plotModel.plotId, true)
