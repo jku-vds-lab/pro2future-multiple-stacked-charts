@@ -142,7 +142,6 @@ export interface PlotModel {
     overlayPlotSettings: OverlayPlotSettings;
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
-    plotTitleSettings: PlotTitleSettings;
     yRange: {
         min: number;
         max: number;
@@ -163,10 +162,6 @@ export interface TooltipModel {
     tooltipName: string;
     tooltipData: TooltipDataPoint[];
     metaDataColumn: powerbi.DataViewMetadataColumn;
-}
-
-export interface PlotTitleSettings {
-    title: string;
 }
 
 export interface OverlayRectangle {
@@ -244,6 +239,7 @@ export interface PlotSettings {
     plotType: PlotType;
     useLegendColor: boolean;
     showHeatmap: boolean;
+    plotTitle: string;
 }
 
 export interface OverlayPlotSettings {

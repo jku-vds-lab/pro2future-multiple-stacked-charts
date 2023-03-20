@@ -7,7 +7,6 @@ import {
     LegendSettingsNames,
     OverlayPlotSettingsNames,
     PlotSettingsNames,
-    PlotTitleSettingsNames,
     Settings,
     TooltipTitleSettingsNames,
     XAxisBreakSettingsNames,
@@ -25,13 +24,12 @@ export function createFormattingModel(viewModel: ViewModel): powerbi.visuals.For
     const legendCard: powerbi.visuals.FormattingCard = createLegendCard();
     const overlayCard: powerbi.visuals.FormattingCard = createOverlayCard();
     const plotCard: powerbi.visuals.FormattingCard = createPlotSettingsCard();
-    const plotTitleCard: powerbi.visuals.FormattingCard = createPlotTitleCard();
     const tooltipTitleCard: powerbi.visuals.FormattingCard = createTooltipTitleCard();
     const xAxisBreakCard: powerbi.visuals.FormattingCard = createXAxisBreakCard(viewModel);
     const yAxisRangeCard: powerbi.visuals.FormattingCard = createYAxisRangeCard();
     const zoomingCard: powerbi.visuals.FormattingCard = createZoomingCard(viewModel);
     const formattingModel: powerbi.visuals.FormattingModel = {
-        cards: [axisCard, axisLabelsCard, colorCard, heatmapCard, legendCard, overlayCard, plotCard, plotTitleCard, tooltipTitleCard, xAxisBreakCard, yAxisRangeCard, zoomingCard],
+        cards: [axisCard, axisLabelsCard, colorCard, heatmapCard, legendCard, overlayCard, plotCard, tooltipTitleCard, xAxisBreakCard, yAxisRangeCard, zoomingCard],
     };
 
     for (const plotModel of viewModel.plotModels) {
@@ -39,7 +37,6 @@ export function createFormattingModel(viewModel: ViewModel): powerbi.visuals.For
         addAxisSettingsGroup(plotModel, axisCard);
         addAxisLabelGrouup(plotModel, axisLabelsCard);
         addOverlayGroup(plotModel, overlayCard);
-        addPlotTitleGroup(plotModel, plotTitleCard);
         addYRangeGroup(plotModel, yAxisRangeCard);
     }
 
@@ -308,22 +305,6 @@ function addYRangeGroup(plotModel: PlotModel, yAxisRangeCard: powerbi.visuals.Fo
     });
 }
 
-function createPlotTitleCard() {
-    const plotTitleCard: powerbi.visuals.FormattingCard = {
-        description: 'Plot Title Settings',
-        displayName: 'Plot Title Settings',
-        uid: Settings.plotTitleSettings + Constants.uid,
-        groups: [],
-    };
-    plotTitleCard.revertToDefaultDescriptors = [
-        {
-            objectName: Settings.plotTitleSettings,
-            propertyName: PlotTitleSettingsNames.title,
-        },
-    ];
-    return plotTitleCard;
-}
-
 function createOverlayCard() {
     const overlayCard: powerbi.visuals.FormattingCard = {
         description: 'Plot Overlay Settings',
@@ -586,32 +567,6 @@ function addOverlayGroup(plotModel: PlotModel, overlayCard: powerbi.visuals.Form
     });
 }
 
-function addPlotTitleGroup(plotModel: PlotModel, plotTitleCard: powerbi.visuals.FormattingCard) {
-    const groupName = 'plotTitleSettingsGroup_' + plotModel.plotId;
-    plotTitleCard.groups.push({
-        displayName: plotModel.metaDataColumn.displayName,
-        uid: groupName + Constants.uid,
-        slices: [
-            {
-                displayName: 'Plot Title',
-                uid: groupName + PlotSettingsNames.plotName + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.TextInput,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.plotTitleSettings,
-                            propertyName: PlotSettingsNames.plotName,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        placeholder: plotModel.plotTitleSettings.title,
-                        value: plotModel.plotTitleSettings.title,
-                    },
-                },
-            },
-        ],
-    });
-}
-
 function createColorSettingsCard(viewModel: ViewModel) {
     const groupName = 'colorSettings';
     const colorCard: powerbi.visuals.FormattingCard = {
@@ -743,7 +698,10 @@ function createPlotSettingsCard() {
             objectName: Settings.plotSettings,
             propertyName: PlotSettingsNames.fill,
         },
-
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.plotTitle,
+        },
         {
             objectName: Settings.plotSettings,
             propertyName: PlotSettingsNames.useLegendColor,
@@ -861,6 +819,22 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                             selector: { metadata: plotModel.metaDataColumn.queryName },
                         },
                         value: { value: plotModel.plotSettings.fill },
+                    },
+                },
+            },
+            {
+                displayName: 'Plot Title',
+                uid: groupName + PlotSettingsNames.plotTitle + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.TextInput,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.plotTitle,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.plotTitle,
+                        placeholder: plotModel.plotSettings.plotTitle,
                     },
                 },
             },

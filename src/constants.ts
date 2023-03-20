@@ -6,7 +6,6 @@ export enum Settings {
     generalSettings = 'generalSettings',
     legendSettings = 'legendSettings',
     overlayPlotSettings = 'overlayPlotSettings',
-    plotTitleSettings = 'plotTitleSettings',
     tooltipTitleSettings = 'tooltipTitleSettings',
     yRangeSettings = 'yRangeSettings',
     zoomingSettings = 'zoomingSettings',
@@ -47,7 +46,7 @@ export enum PlotSettingsNames {
     fill = 'fill',
     useLegendColor = 'useLegendColor',
     showHeatmap = 'showHeatmap',
-    plotName = 'plotName',
+    plotTitle = 'plotTitle',
 }
 export enum TooltipTitleSettingsNames {
     title = 'title',
@@ -69,10 +68,6 @@ export enum AxisSettingsNames {
 export enum ZoomingSettingsNames {
     show = 'show',
     maximum = 'maximum',
-}
-
-export enum PlotTitleSettingsNames {
-    title = 'title',
 }
 
 export enum ColorSelectorNames {

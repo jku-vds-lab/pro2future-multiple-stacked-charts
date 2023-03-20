@@ -180,7 +180,7 @@ export class ViewModel {
             return err(new SVGSizeError());
         }
 
-        const plotTitlesCount = dataModel.plotTitles.filter((x) => x.length > 0).length;
+        const plotTitlesCount = dataModel.plotSettingsArray.filter((x) => x.plotTitle.length > 0).length;
         const xLabelsCount = dataModel.formatSettings.filter((x) => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
         const heatmapCount = dataModel.plotSettingsArray.filter((x) => x.showHeatmap).length;
         let plotHeightSpace: number =
@@ -276,8 +276,7 @@ export class ViewModel {
                 dataPoints.push(dataPoint);
             }
 
-            const plotTitle = dataModel.plotTitles[plotNr];
-            plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
+            plotTop = plotSettings.plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
 
             const plotModel: PlotModel = {
                 plotId: plotNr,
@@ -290,9 +289,6 @@ export class ViewModel {
                 },
                 plotTop: plotTop,
                 plotSettings: plotSettings,
-                plotTitleSettings: {
-                    title: plotTitle,
-                },
                 overlayPlotSettings: {
                     overlayPlotSettings: {
                         overlayType: OverlayType[getValue<string>(yColumnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.overlayType, OverlayType.None)],

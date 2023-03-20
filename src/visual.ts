@@ -513,7 +513,7 @@ export class Visual implements IVisual {
     private addPlotTitle(plotModel: PlotModel, plot: D3Selection) {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
-            if (plotModel.plotTitleSettings.title.length > 0) {
+            if (plotModel.plotSettings.plotTitle.length > 0) {
                 plot.append('text')
                     .attr('class', 'plotTitle')
                     .attr('text-anchor', 'left')
@@ -521,7 +521,7 @@ export class Visual implements IVisual {
                     .attr('x', 0)
                     .attr('dy', '1em')
                     .style('font-size', generalPlotSettings.fontSize)
-                    .text(plotModel.plotTitleSettings.title);
+                    .text(plotModel.plotSettings.plotTitle);
             }
             return ok(null);
         } catch (error) {

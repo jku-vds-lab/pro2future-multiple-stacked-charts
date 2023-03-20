@@ -510,6 +510,12 @@
                         }
                     }
                 },
+                "plotTitle": {
+                    "displayName": "Plot Title",
+                    "type": {
+                        "text": true
+                    }
+                },
                 "useLegendColor": {
                     "displayName": "Use Legend Color",
                     "type": {
@@ -554,17 +560,6 @@
                                 "color": true
                             }
                         }
-                    }
-                }
-            }
-        },
-        "plotTitleSettings": {
-            "displayName": "Plot Title Settings",
-            "properties": {
-                "title": {
-                    "displayName": "Plot Title",
-                    "type": {
-                        "text": true
                     }
                 }
             }

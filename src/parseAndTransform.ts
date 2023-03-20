@@ -5,7 +5,7 @@ import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColo
 import { getValue, getPlotFillColor } from './objectEnumerationUtility';
 import { FormatSettings, PlotSettings, XAxisData, YAxisData, PlotType, AxisInformation, AxisInformationInterface, LegendData, TooltipColumnData } from './plotInterface';
 import { Primitive } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, PlotTitleSettingsNames, ArrayConstants, FilterType } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, ArrayConstants, FilterType } from './constants';
 import { ok, err, Result } from 'neverthrow';
 import { ViewModel } from './viewModel';
 import {
@@ -315,7 +315,6 @@ export class DataModel {
     host: IVisualHost;
 
     formatSettings: FormatSettings[];
-    plotTitles: string[];
     plotSettingsArray: PlotSettings[];
 
     constructor(yCount: number, tooltipCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], host: IVisualHost, categorical: powerbi.DataViewCategorical) {
@@ -329,7 +328,6 @@ export class DataModel {
         this.overlayWidth = [];
         this.visualOverlayRectangles = [];
         this.formatSettings = [];
-        this.plotTitles = [];
         this.plotSettingsArray = [];
     }
 
@@ -338,8 +336,8 @@ export class DataModel {
             const yAxis: YAxisData = this.yData[plotNr];
             const yColumnId = this.yData[plotNr].columnId;
             const yColumnObjects = getMetadataColumn(this.metadataColumns, yColumnId).objects;
-            this.plotTitles.push(getValue<string>(yColumnObjects, Settings.plotTitleSettings, PlotTitleSettingsNames.title, yAxis.name));
-
+            const plotTitle = getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotTitle, yAxis.name);
+            console.log('title: ' + plotTitle);
             const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)];
             const yInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)];
             let xAxisInformation: AxisInformationInterface, yAxisInformation: AxisInformationInterface;
@@ -364,6 +362,7 @@ export class DataModel {
                 plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
                 useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
                 showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
+                plotTitle: plotTitle,
             });
         }
     }
