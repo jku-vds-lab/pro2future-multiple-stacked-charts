@@ -134,12 +134,12 @@ function getCategoricalData(categorical: powerbi.DataViewCategorical, dataModel:
             if (roles.filterLegend) {
                 if (category.source.type.text || category.source.type.numeric) {
                     const type = category.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
-                    dataModel.filterLegendData.push({
+                    dataModel.filterLegendData[category.source['rolesIndex']['filterLegend'][0]] = {
                         name: category.source.displayName,
                         values: category.values,
                         metaDataColumn: category.source,
                         type,
-                    });
+                    };
                 }
             }
             if (roles.visualOverlay) {
@@ -210,12 +210,12 @@ function getMeasureData(categorical: powerbi.DataViewCategorical, dataModel: Dat
             if (roles.filterLegend) {
                 if (value.source.type.text || value.source.type.numeric) {
                     const type = value.source.type.text ? FilterType.stringFilter : FilterType.numberFilter;
-                    dataModel.filterLegendData.push({
+                    dataModel.filterLegendData[value.source['rolesIndex']['filterLegend'][0]] = {
                         name: value.source.displayName,
                         values: value.values,
                         metaDataColumn: value.source,
                         type,
-                    });
+                    };
                 }
             }
 
