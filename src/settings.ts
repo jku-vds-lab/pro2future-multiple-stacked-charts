@@ -1,43 +1,31 @@
 import {
-    AxisLabelSettingsNames,
-    AxisSettingsNames,
     ColorSettingsNames,
     Constants,
     GeneralSettingsNames,
     LegendSettingsNames,
-    OverlayPlotSettingsNames,
     PlotSettingsNames,
     Settings,
     TooltipTitleSettingsNames,
     XAxisBreakSettingsNames,
-    YRangeSettingsNames,
     ZoomingSettingsNames,
 } from './constants';
 import { AxisInformation, AxisInformationInterface, Legend, PlotModel, TooltipModel } from './plotInterface';
 import { ViewModel } from './viewModel';
 
 export function createFormattingModel(viewModel: ViewModel): powerbi.visuals.FormattingModel {
-    const axisCard: powerbi.visuals.FormattingCard = createAxisCard();
-    const axisLabelsCard: powerbi.visuals.FormattingCard = createAxisLabelCard();
     const heatmapCard: powerbi.visuals.FormattingCard = createHeatmapCard(viewModel);
     const colorCard: powerbi.visuals.FormattingCard = createColorSettingsCard(viewModel);
     const legendCard: powerbi.visuals.FormattingCard = createLegendCard();
-    const overlayCard: powerbi.visuals.FormattingCard = createOverlayCard();
     const plotCard: powerbi.visuals.FormattingCard = createPlotSettingsCard();
     const tooltipTitleCard: powerbi.visuals.FormattingCard = createTooltipTitleCard();
     const xAxisBreakCard: powerbi.visuals.FormattingCard = createXAxisBreakCard(viewModel);
-    const yAxisRangeCard: powerbi.visuals.FormattingCard = createYAxisRangeCard();
     const zoomingCard: powerbi.visuals.FormattingCard = createZoomingCard(viewModel);
     const formattingModel: powerbi.visuals.FormattingModel = {
-        cards: [axisCard, axisLabelsCard, colorCard, heatmapCard, legendCard, overlayCard, plotCard, tooltipTitleCard, xAxisBreakCard, yAxisRangeCard, zoomingCard],
+        cards: [colorCard, heatmapCard, legendCard, plotCard, tooltipTitleCard, xAxisBreakCard, zoomingCard],
     };
 
     for (const plotModel of viewModel.plotModels) {
         addPlotSettingsGroup(plotModel, plotCard);
-        addAxisSettingsGroup(plotModel, axisCard);
-        addAxisLabelGrouup(plotModel, axisLabelsCard);
-        addOverlayGroup(plotModel, overlayCard);
-        addYRangeGroup(plotModel, yAxisRangeCard);
     }
 
     for (const legend of viewModel.legends.legends) {
@@ -121,35 +109,9 @@ function createZoomingCard(viewModel: ViewModel) {
     return zoomingCard;
 }
 
-function createYAxisRangeCard() {
-    const yAxisRangeCard: powerbi.visuals.FormattingCard = {
-        description: 'Y-Axis Range Settings',
-        displayName: 'Y-Axis Range Settings',
-        uid: Settings.yRangeSettings + Constants.uid,
-        groups: [],
-    };
-    yAxisRangeCard.revertToDefaultDescriptors = [
-        {
-            objectName: Settings.yRangeSettings,
-            propertyName: YRangeSettingsNames.max,
-        },
-        {
-            objectName: Settings.yRangeSettings,
-            propertyName: YRangeSettingsNames.min,
-        },
-        {
-            objectName: Settings.yRangeSettings,
-            propertyName: YRangeSettingsNames.maxFixed,
-        },
-        {
-            objectName: Settings.yRangeSettings,
-            propertyName: YRangeSettingsNames.minFixed,
-        },
-    ];
-    return yAxisRangeCard;
-}
-
 function createXAxisBreakCard(viewModel: ViewModel) {
+    let minGapName = 'Minimum X-Distance';
+    if (viewModel.generalPlotSettings.xAxisSettings.isDate) minGapName += ' (s)';
     const xAxisBreakCard: powerbi.visuals.FormattingCard = {
         description: 'X-Axis Break Settings',
         displayName: 'X-Axis Break Settings',
@@ -188,8 +150,8 @@ function createXAxisBreakCard(viewModel: ViewModel) {
                         },
                     },
                     {
-                        displayName: 'Minimum Gap Size (s)',
-                        description: 'Minimum gap size between two neighboring data points for displaying break line. Specified in seconds if X-axis is of type date.',
+                        displayName: minGapName,
+                        description: 'Minimum X-distance between two neighboring data points for displaying break line. Specified in seconds if X-axis is of type date.',
                         uid: 'x_axis_break_gap_size' + Constants.uid,
                         control: {
                             type: powerbi.visuals.FormattingComponent.NumUpDown,
@@ -215,6 +177,10 @@ function createXAxisBreakCard(viewModel: ViewModel) {
             objectName: Settings.xAxisBreakSettings,
             propertyName: XAxisBreakSettingsNames.showLines,
         },
+        {
+            objectName: Settings.xAxisBreakSettings,
+            propertyName: XAxisBreakSettingsNames.breakGapSize,
+        },
     ];
     return xAxisBreakCard;
 }
@@ -233,92 +199,6 @@ function createTooltipTitleCard() {
         },
     ];
     return tooltipTitleCard;
-}
-
-function addYRangeGroup(plotModel: PlotModel, yAxisRangeCard: powerbi.visuals.FormattingCard) {
-    const groupName = 'yRangeSettingsGroup_' + plotModel.plotId;
-    yAxisRangeCard.groups.push({
-        displayName: plotModel.metaDataColumn.displayName,
-        uid: groupName + Constants.uid,
-        slices: [
-            {
-                displayName: 'Fixed Minimum',
-                uid: groupName + YRangeSettingsNames.minFixed + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.ToggleSwitch,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.yRangeSettings,
-                            propertyName: YRangeSettingsNames.minFixed,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        value: plotModel.yRange.minFixed,
-                    },
-                },
-            },
-            {
-                displayName: 'Minimum Value',
-                uid: groupName + YRangeSettingsNames.min + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.NumUpDown,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.yRangeSettings,
-                            propertyName: YRangeSettingsNames.min,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        value: plotModel.yRange.min,
-                    },
-                },
-            },
-            {
-                displayName: 'Fixed Maximum',
-                uid: groupName + YRangeSettingsNames.maxFixed + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.ToggleSwitch,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.yRangeSettings,
-                            propertyName: YRangeSettingsNames.maxFixed,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        value: plotModel.yRange.maxFixed,
-                    },
-                },
-            },
-            {
-                displayName: 'Maximum Value',
-                uid: groupName + YRangeSettingsNames.max + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.NumUpDown,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.yRangeSettings,
-                            propertyName: YRangeSettingsNames.max,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        value: plotModel.yRange.max,
-                    },
-                },
-            },
-        ],
-    });
-}
-
-function createOverlayCard() {
-    const overlayCard: powerbi.visuals.FormattingCard = {
-        description: 'Plot Overlay Settings',
-        displayName: 'Plot Overlay Settings',
-        uid: Settings.overlayPlotSettings + Constants.uid,
-        groups: [],
-    };
-    overlayCard.revertToDefaultDescriptors = [
-        {
-            objectName: Settings.overlayPlotSettings,
-            propertyName: OverlayPlotSettingsNames.overlayType,
-        },
-    ];
-    return overlayCard;
 }
 
 function createLegendCard() {
@@ -362,7 +242,7 @@ function createHeatmapCard(viewModel: ViewModel) {
                         },
                     },
                     {
-                        displayName: 'Minimum plot height',
+                        displayName: 'Minimum plot height (px)',
                         description: 'Sets the minimum height per plot in pixels. A scrollbar is added when this height cannot be fulfilled.',
                         uid: Settings.generalSettings + GeneralSettingsNames.minPlotHeight + Constants.uid,
                         control: {
@@ -377,8 +257,8 @@ function createHeatmapCard(viewModel: ViewModel) {
                         },
                     },
                     {
-                        displayName: 'Tooltip Precision',
-                        description: 'Sets the precision for numeric tooltip values.',
+                        displayName: 'Tooltip Decimal Places',
+                        description: 'Sets the precision of numeric tooltip values.',
                         uid: Settings.generalSettings + GeneralSettingsNames.tooltipPrecision + Constants.uid,
                         control: {
                             type: powerbi.visuals.FormattingComponent.NumUpDown,
@@ -427,26 +307,6 @@ function createHeatmapCard(viewModel: ViewModel) {
     return generalSettingsCard;
 }
 
-function createAxisLabelCard() {
-    const axisLabelsCard: powerbi.visuals.FormattingCard = {
-        description: 'Axis Label Settings',
-        displayName: 'Axis Label Settings',
-        uid: Settings.axisLabelSettings + Constants.uid,
-        groups: [],
-    };
-    axisLabelsCard.revertToDefaultDescriptors = [
-        {
-            objectName: Settings.axisLabelSettings,
-            propertyName: AxisLabelSettingsNames.xLabel,
-        },
-        {
-            objectName: Settings.axisLabelSettings,
-            propertyName: AxisLabelSettingsNames.yLabel,
-        },
-    ];
-    return axisLabelsCard;
-}
-
 function addLegendGroup(legend: Legend, legendCard: powerbi.visuals.FormattingCard) {
     const groupName = 'legendSettingsGroup_' + legend.metaDataColumn.index;
     legendCard.groups.push({
@@ -492,74 +352,6 @@ function addTooltipTitleGroup(tooltip: TooltipModel, tooltipTitleCard: powerbi.v
                         },
                         placeholder: tooltip.tooltipName,
                         value: tooltip.tooltipName,
-                    },
-                },
-            },
-        ],
-    });
-}
-
-function addAxisLabelGrouup(plotModel: PlotModel, axisLabelsCard: powerbi.visuals.FormattingCard) {
-    const groupName = 'axisLabelSettingsGroup_' + plotModel.plotId;
-    axisLabelsCard.groups.push({
-        displayName: plotModel.metaDataColumn.displayName,
-        uid: groupName + Constants.uid,
-        slices: [
-            {
-                displayName: 'X-Label',
-                uid: groupName + AxisLabelSettingsNames.xLabel + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.TextInput,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.axisLabelSettings,
-                            propertyName: AxisLabelSettingsNames.xLabel,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        placeholder: plotModel.labelNames.xLabel,
-                        value: plotModel.labelNames.xLabel,
-                    },
-                },
-            },
-            {
-                displayName: 'Y-Label',
-                uid: groupName + AxisLabelSettingsNames.yLabel + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.TextInput,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.axisLabelSettings,
-                            propertyName: AxisLabelSettingsNames.yLabel,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        placeholder: plotModel.labelNames.yLabel,
-                        value: plotModel.labelNames.yLabel,
-                    },
-                },
-            },
-        ],
-    });
-}
-
-function addOverlayGroup(plotModel: PlotModel, overlayCard: powerbi.visuals.FormattingCard) {
-    const groupName = 'plotOverlaySettingsGroup_' + plotModel.plotId;
-    overlayCard.groups.push({
-        displayName: plotModel.metaDataColumn.displayName,
-        uid: groupName + Constants.uid,
-        slices: [
-            {
-                displayName: 'Overlay Type',
-                uid: groupName + OverlayPlotSettingsNames.overlayType + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.Dropdown,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.overlayPlotSettings,
-                            propertyName: OverlayPlotSettingsNames.overlayType,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-
-                        value: plotModel.overlayPlotSettings.overlayPlotSettings.overlayType,
                     },
                 },
             },
@@ -692,15 +484,15 @@ function createPlotSettingsCard() {
     plotCard.revertToDefaultDescriptors = [
         {
             objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.plotTitle,
+        },
+        {
+            objectName: Settings.plotSettings,
             propertyName: PlotSettingsNames.plotType,
         },
         {
             objectName: Settings.plotSettings,
             propertyName: PlotSettingsNames.fill,
-        },
-        {
-            objectName: Settings.plotSettings,
-            propertyName: PlotSettingsNames.plotTitle,
         },
         {
             objectName: Settings.plotSettings,
@@ -710,88 +502,81 @@ function createPlotSettingsCard() {
             objectName: Settings.plotSettings,
             propertyName: PlotSettingsNames.showHeatmap,
         },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.overlayType,
+        },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.xAxisDisplay,
+        },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.xLabel,
+        },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.yAxisDisplay,
+        },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.yLabel,
+        },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.yMinFixed,
+        },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.yMin,
+        },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.yMaxFixed,
+        },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.yMax,
+        },
     ];
     return plotCard;
 }
 
-function addAxisSettingsGroup(plotModel: PlotModel, axisCard: powerbi.visuals.FormattingCard) {
-    const groupName = 'axisSettingsGroup_' + plotModel.plotId;
-    axisCard.groups.push({
-        displayName: plotModel.metaDataColumn.displayName,
-        uid: groupName + Constants.uid,
-        slices: [
-            {
-                displayName: 'X-Axis',
-                uid: groupName + AxisSettingsNames.xAxis + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.Dropdown,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.axisSettings,
-                            propertyName: AxisSettingsNames.xAxis,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        value: getAxisInformationEnumValue(plotModel.formatSettings.axisSettings.xAxis),
-                    },
-                },
-            },
-            {
-                displayName: 'Y-Axis',
-                uid: groupName + AxisSettingsNames.yAxis + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.Dropdown,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.axisSettings,
-                            propertyName: AxisSettingsNames.yAxis,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        value: getAxisInformationEnumValue(plotModel.formatSettings.axisSettings.yAxis),
-                    },
-                },
-            },
-        ],
-    });
-}
-
-function createAxisCard() {
-    const axisCard: powerbi.visuals.FormattingCard = {
-        description: 'Axis Settings',
-        displayName: 'Axis Settings',
-        uid: Settings.axisSettings + Constants.uid,
-        groups: [],
-    };
-    axisCard.revertToDefaultDescriptors = [
-        {
-            objectName: Settings.axisSettings,
-            propertyName: AxisSettingsNames.xAxis,
-        },
-        {
-            objectName: Settings.axisSettings,
-            propertyName: AxisSettingsNames.yAxis,
-        },
-    ];
-    return axisCard;
-}
-
 function getAxisInformationEnumValue(axisInfo: AxisInformationInterface): AxisInformation {
     let axisEnumValue = AxisInformation.None;
-    if (axisInfo.lables && axisInfo.ticks) {
+    if (axisInfo.labels && axisInfo.ticks) {
         axisEnumValue = AxisInformation.TicksLabels;
-    } else if (!axisInfo.lables && axisInfo.ticks) {
+    } else if (!axisInfo.labels && axisInfo.ticks) {
         axisEnumValue = AxisInformation.Ticks;
-    } else if (axisInfo.lables && !axisInfo.ticks) {
+    } else if (axisInfo.labels && !axisInfo.ticks) {
         axisEnumValue = AxisInformation.Labels;
     }
     return axisEnumValue;
 }
 
+// eslint-disable-next-line max-lines-per-function
 function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.FormattingCard) {
     const groupName = 'plotSettingsGroup_' + plotModel.plotId;
     plotCard.groups.push({
         displayName: plotModel.metaDataColumn.displayName,
         uid: groupName + Constants.uid,
         slices: [
+            {
+                displayName: 'Plot Title',
+                uid: groupName + PlotSettingsNames.plotTitle + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.TextInput,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.plotTitle,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.plotTitle,
+                        placeholder: plotModel.plotSettings.plotTitle,
+                    },
+                },
+            },
             {
                 displayName: 'Plot Type',
                 uid: groupName + PlotSettingsNames.plotType + Constants.uid,
@@ -823,22 +608,6 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                 },
             },
             {
-                displayName: 'Plot Title',
-                uid: groupName + PlotSettingsNames.plotTitle + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.TextInput,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.plotSettings,
-                            propertyName: PlotSettingsNames.plotTitle,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        value: plotModel.plotSettings.plotTitle,
-                        placeholder: plotModel.plotSettings.plotTitle,
-                    },
-                },
-            },
-            {
                 displayName: 'Use Legend Color',
                 uid: groupName + PlotSettingsNames.useLegendColor + Constants.uid,
                 control: {
@@ -865,6 +634,144 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                             selector: { metadata: plotModel.metaDataColumn.queryName },
                         },
                         value: plotModel.plotSettings.showHeatmap,
+                    },
+                },
+            },
+            {
+                displayName: 'Overlay Type',
+                uid: groupName + PlotSettingsNames.overlayType + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.Dropdown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.overlayType,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+
+                        value: plotModel.plotSettings.overlayType,
+                    },
+                },
+            },
+            {
+                displayName: 'X-Axis',
+                uid: groupName + PlotSettingsNames.xAxisDisplay + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.Dropdown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.xAxisDisplay,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: getAxisInformationEnumValue(plotModel.plotSettings.xAxis),
+                    },
+                },
+            },
+            {
+                displayName: 'X-Label',
+                uid: groupName + PlotSettingsNames.xLabel + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.TextInput,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.xLabel,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        placeholder: plotModel.plotSettings.xLabel,
+                        value: plotModel.plotSettings.xLabel,
+                    },
+                },
+            },
+            {
+                displayName: 'Y-Axis',
+                uid: groupName + PlotSettingsNames.yAxisDisplay + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.Dropdown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.yAxisDisplay,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: getAxisInformationEnumValue(plotModel.plotSettings.yAxis),
+                    },
+                },
+            },
+            {
+                displayName: 'Y-Label',
+                uid: groupName + PlotSettingsNames.yLabel + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.TextInput,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.yLabel,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        placeholder: plotModel.plotSettings.yLabel,
+                        value: plotModel.plotSettings.yLabel,
+                    },
+                },
+            },
+            {
+                displayName: 'Fixed Y-Minimum',
+                uid: groupName + PlotSettingsNames.yMinFixed + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.ToggleSwitch,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.yMinFixed,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.yRange.minFixed,
+                    },
+                },
+            },
+            {
+                displayName: 'Minimum Y-Value',
+                uid: groupName + PlotSettingsNames.yMin + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.NumUpDown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.yMin,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.yRange.min,
+                    },
+                },
+            },
+            {
+                displayName: 'Fixed Y-Maximum',
+                uid: groupName + PlotSettingsNames.yMaxFixed + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.ToggleSwitch,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.yMaxFixed,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.yRange.maxFixed,
+                    },
+                },
+            },
+            {
+                displayName: 'Maximum Y-Value',
+                uid: groupName + PlotSettingsNames.yMax + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.NumUpDown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.yMax,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.yRange.max,
                     },
                 },
             },

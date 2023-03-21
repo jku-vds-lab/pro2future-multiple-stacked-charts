@@ -137,24 +137,12 @@ export interface PlotModel {
     plotId: number;
     plotTop: number;
     yName: string;
-    formatSettings: FormatSettings;
-    labelNames: LabelNames;
-    overlayPlotSettings: OverlayPlotSettings;
+
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
-    yRange: {
-        min: number;
-        max: number;
-        maxFixed: boolean;
-        minFixed: boolean;
-    };
+
     d3Plot: D3Plot;
     metaDataColumn: powerbi.DataViewMetadataColumn;
-}
-
-export interface LabelNames {
-    xLabel: string;
-    yLabel: string;
 }
 
 export interface TooltipModel {
@@ -220,7 +208,7 @@ export interface FormatSettings {
 }
 
 export interface AxisInformationInterface {
-    lables: boolean;
+    labels: boolean;
     ticks: boolean;
 }
 
@@ -240,11 +228,16 @@ export interface PlotSettings {
     useLegendColor: boolean;
     showHeatmap: boolean;
     plotTitle: string;
-}
-
-export interface OverlayPlotSettings {
-    overlayPlotSettings: {
-        overlayType: OverlayType;
+    overlayType: OverlayType;
+    xAxis: AxisInformationInterface;
+    yAxis: AxisInformationInterface;
+    xLabel: string;
+    yLabel: string;
+    yRange: {
+        min: number;
+        max: number;
+        maxFixed: boolean;
+        minFixed: boolean;
     };
 }
 

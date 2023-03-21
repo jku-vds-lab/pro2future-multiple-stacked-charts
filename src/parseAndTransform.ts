@@ -3,9 +3,9 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColorPalette;
 import { getValue, getPlotFillColor } from './objectEnumerationUtility';
-import { FormatSettings, PlotSettings, XAxisData, YAxisData, PlotType, AxisInformation, AxisInformationInterface, LegendData, TooltipColumnData } from './plotInterface';
+import { PlotSettings, XAxisData, YAxisData, PlotType, AxisInformation, AxisInformationInterface, LegendData, TooltipColumnData, OverlayType } from './plotInterface';
 import { Primitive } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, FilterType } from './constants';
+import { PlotSettingsNames, Settings, FilterType } from './constants';
 import { ok, err, Result } from 'neverthrow';
 import { ViewModel } from './viewModel';
 import {
@@ -314,7 +314,6 @@ export class DataModel {
     metadataColumns: powerbi.DataViewMetadataColumn[];
     host: IVisualHost;
 
-    formatSettings: FormatSettings[];
     plotSettingsArray: PlotSettings[];
 
     constructor(yCount: number, tooltipCount: number, metadataColumns: powerbi.DataViewMetadataColumn[], host: IVisualHost, categorical: powerbi.DataViewCategorical) {
@@ -327,7 +326,6 @@ export class DataModel {
         this.overlayLength = [];
         this.overlayWidth = [];
         this.visualOverlayRectangles = [];
-        this.formatSettings = [];
         this.plotSettingsArray = [];
     }
 
@@ -338,8 +336,8 @@ export class DataModel {
             const yColumnObjects = getMetadataColumn(this.metadataColumns, yColumnId).objects;
             const plotTitle = getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotTitle, yAxis.name);
             console.log('title: ' + plotTitle);
-            const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.xAxis, AxisInformation.None)];
-            const yInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.axisSettings, AxisSettingsNames.yAxis, AxisInformation.Ticks)];
+            const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.xAxisDisplay, AxisInformation.None)];
+            const yInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yAxisDisplay, AxisInformation.Ticks)];
             let xAxisInformation: AxisInformationInterface, yAxisInformation: AxisInformationInterface;
             let axisInformationError: ParseAndTransformError;
             this.getAxisInformation(xInformation)
@@ -351,18 +349,24 @@ export class DataModel {
             if (axisInformationError) {
                 return err(axisInformationError);
             }
-            this.formatSettings.push({
-                axisSettings: {
-                    xAxis: xAxisInformation,
-                    yAxis: yAxisInformation,
-                },
-            });
+
             this.plotSettingsArray.push({
                 fill: getPlotFillColor(yColumnObjects, colorPalette, '#4292c6'),
                 plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
                 useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
                 showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
                 plotTitle: plotTitle,
+                overlayType: OverlayType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.overlayType, OverlayType.None)],
+                xAxis: xAxisInformation,
+                yAxis: yAxisInformation,
+                xLabel: getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.xLabel, this.xData.name),
+                yLabel: getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yLabel, yAxis.name),
+                yRange: {
+                    min: getValue<number>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yMin, 0),
+                    max: getValue<number>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yMax, Math.max(...yAxis.values)),
+                    minFixed: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yMinFixed, true),
+                    maxFixed: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yMaxFixed, false),
+                },
             });
         }
     }
@@ -370,22 +374,22 @@ export class DataModel {
         switch (axisInformation) {
             case AxisInformation.None:
                 return ok(<AxisInformationInterface>{
-                    lables: false,
+                    labels: false,
                     ticks: false,
                 });
             case AxisInformation.Ticks:
                 return ok(<AxisInformationInterface>{
-                    lables: false,
+                    labels: false,
                     ticks: true,
                 });
             case AxisInformation.Labels:
                 return ok(<AxisInformationInterface>{
-                    lables: true,
+                    labels: true,
                     ticks: false,
                 });
             case AxisInformation.TicksLabels:
                 return ok(<AxisInformationInterface>{
-                    lables: true,
+                    labels: true,
                     ticks: true,
                 });
             default:

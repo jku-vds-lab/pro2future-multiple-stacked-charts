@@ -1,21 +1,12 @@
 export enum Settings {
     plotSettings = 'plotSettings',
-    axisSettings = 'axisSettings',
     colorSelector = 'colorSelector',
     colorSettings = 'colorSettings',
     generalSettings = 'generalSettings',
     legendSettings = 'legendSettings',
-    overlayPlotSettings = 'overlayPlotSettings',
     tooltipTitleSettings = 'tooltipTitleSettings',
-    yRangeSettings = 'yRangeSettings',
     zoomingSettings = 'zoomingSettings',
-    axisLabelSettings = 'axisLabelSettings',
     xAxisBreakSettings = 'xAxisBreakSettings',
-}
-
-export enum AxisLabelSettingsNames {
-    xLabel = 'xLabel',
-    yLabel = 'yLabel',
 }
 
 export enum GeneralSettingsNames {
@@ -23,13 +14,6 @@ export enum GeneralSettingsNames {
     minPlotHeight = 'minPlotHeight',
     tooltipPrecision = 'tooltipPrecision',
     showYZeroLine = 'showYZeroLine',
-}
-
-export enum YRangeSettingsNames {
-    min = 'min',
-    max = 'max',
-    minFixed = 'minFixed',
-    maxFixed = 'maxFixed',
 }
 
 export enum XAxisBreakSettingsNames {
@@ -47,13 +31,20 @@ export enum PlotSettingsNames {
     useLegendColor = 'useLegendColor',
     showHeatmap = 'showHeatmap',
     plotTitle = 'plotTitle',
+    overlayType = 'overlayType',
+    xAxisDisplay = 'xAxisDisplay',
+    yAxisDisplay = 'yAxisDisplay',
+    xLabel = 'xLabel',
+    yLabel = 'yLabel',
+    yMinFixed = 'yMinFixed',
+    yMin = 'yMin',
+    yMaxFixed = 'yMaxFixed',
+    yMax = 'yMax',
 }
 export enum TooltipTitleSettingsNames {
     title = 'title',
 }
-export enum OverlayPlotSettingsNames {
-    overlayType = 'overlayType',
-}
+
 export enum ColorSettingsNames {
     verticalRulerColor = 'verticalRulerColor',
     breakLineColor = 'breakLineColor',
@@ -61,10 +52,7 @@ export enum ColorSettingsNames {
     heatmapColorScheme = 'heatmapColorScheme',
     yZeroLineColor = 'yZeroLineColor',
 }
-export enum AxisSettingsNames {
-    xAxis = 'xAxis',
-    yAxis = 'yAxis',
-}
+
 export enum ZoomingSettingsNames {
     show = 'show',
     maximum = 'maximum',

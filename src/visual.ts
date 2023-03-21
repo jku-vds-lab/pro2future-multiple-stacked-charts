@@ -567,19 +567,19 @@ export class Visual implements IVisual {
             }
 
             let xLabel = null;
-            if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
+            if (!plotModel.plotSettings.xAxis.ticks) {
                 xAxisValue.tickValues([]);
             }
 
-            if (plotModel.formatSettings.axisSettings.xAxis.lables) {
+            if (plotModel.plotSettings.xAxis.labels) {
                 xLabel = plot
                     .append('text')
                     .attr('class', 'xLabel')
                     .attr('text-anchor', 'end')
                     .attr('x', generalPlotSettings.plotWidth / 2)
-                    .attr('y', generalPlotSettings.plotHeight + (plotModel.formatSettings.axisSettings.xAxis.ticks ? 25 : 15))
+                    .attr('y', generalPlotSettings.plotHeight + (plotModel.plotSettings.xAxis.ticks ? 25 : 15))
                     .style('font-size', generalPlotSettings.fontSize)
-                    .text(plotModel.labelNames.xLabel);
+                    .text(plotModel.plotSettings.xLabel);
             }
 
             xAxis.attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')').call(xAxisValue);
@@ -593,12 +593,12 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const yAxis = plot.append('g').classed('yAxis', true);
-            const yScale = scaleLinear().domain([plotModel.yRange.min, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
+            const yScale = scaleLinear().domain([plotModel.plotSettings.yRange.min, plotModel.plotSettings.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
             const yAxisValue = axisLeft(yScale)
                 .ticks(generalPlotSettings.plotHeight / 20)
                 .tickFormat(d3.format('~s'));
             let yLabel = null;
-            if (plotModel.formatSettings.axisSettings.yAxis.lables) {
+            if (plotModel.plotSettings.yAxis.labels) {
                 yLabel = plot
                     .append('text')
                     .attr('class', 'yLabel')
@@ -607,7 +607,7 @@ export class Visual implements IVisual {
                     .attr('x', 0 - generalPlotSettings.plotHeight / 2)
                     .attr('dy', '1em')
                     .attr('transform', 'rotate(-90)')
-                    .text(plotModel.labelNames.yLabel)
+                    .text(plotModel.plotSettings.yLabel)
                     .style('font-size', generalPlotSettings.fontSize)
                     .style('font-size', function () {
                         const usedSpace = this.getComputedTextLength();
@@ -619,7 +619,7 @@ export class Visual implements IVisual {
                     });
             }
 
-            if (!plotModel.formatSettings.axisSettings.yAxis.ticks) {
+            if (!plotModel.plotSettings.yAxis.ticks) {
                 yAxisValue.tickValues([]);
             }
 
@@ -634,7 +634,7 @@ export class Visual implements IVisual {
     private drawOverlay(plotModel: PlotModel): Result<void, PlotError> {
         try {
             const colorSettings = this.viewModel.colorSettings.colorSettings;
-            const overlaytype = plotModel.overlayPlotSettings.overlayPlotSettings.overlayType;
+            const overlaytype = plotModel.plotSettings.overlayType;
             const overlayRectangles = this.viewModel.plotOverlayRectangles;
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
             const plot = plotModel.d3Plot.root;
@@ -800,7 +800,7 @@ export class Visual implements IVisual {
     private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel): Result<D3Heatmap, HeatmapError> {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
-            const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
+            const xAxisSettings = plotModel.plotSettings.xAxis;
             const isDateScale = generalPlotSettings.xAxisSettings.isDate && !generalPlotSettings.xAxisSettings.axisBreak;
             const extent = isDateScale
                 ? generalPlotSettings.xAxisSettings.xScaleZoomed.domain().map((x) => (<Date>x).getTime())
@@ -826,8 +826,8 @@ export class Visual implements IVisual {
             const heatmapScale = d3.scaleLinear().domain([0, heatmapValues.length]).range([0, this.viewModel.generalPlotSettings.plotWidth]);
 
             let yTransition = generalPlotSettings.plotHeight + generalPlotSettings.margins.bottom;
-            yTransition += xAxisSettings.lables || xAxisSettings.ticks ? Heatmapmargins.heatmapMargin : 0;
-            yTransition += xAxisSettings.lables && xAxisSettings.ticks ? MarginSettings.xLabelSpace : 0;
+            yTransition += xAxisSettings.labels || xAxisSettings.ticks ? Heatmapmargins.heatmapMargin : 0;
+            yTransition += xAxisSettings.labels && xAxisSettings.ticks ? MarginSettings.xLabelSpace : 0;
             this.svg.selectAll('.Heatmap' + plotModel.plotId).remove();
             const heatmap = this.svg
                 .append('g')
@@ -1019,8 +1019,8 @@ export class Visual implements IVisual {
         const xMax = xScaleZoomed.domain()[1];
         const plotModel = this.viewModel.plotModels.filter((x) => x.yName === plot.yName)[0];
         const yDataPoints = plotModel.dataPoints.filter((x) => x.xValue >= xMin && x.xValue <= xMax).map((x) => Number(x.yValue));
-        const yMin = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
-        const yMax = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
+        const yMin = plotModel.plotSettings.yRange.minFixed ? plotModel.plotSettings.yRange.min : Math.min(...yDataPoints);
+        const yMax = plotModel.plotSettings.yRange.maxFixed ? plotModel.plotSettings.yRange.max : Math.max(...yDataPoints);
         plot.y.yScaleZoomed = plot.y.yScaleZoomed.domain([yMin, yMax]);
     }
 

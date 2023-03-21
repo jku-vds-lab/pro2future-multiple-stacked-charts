@@ -30,7 +30,7 @@
             ]
         },
         {
-            "displayName": "Plot Overlay Length",
+            "displayName": "Plot Overlay: Length",
             "name": "overlayX",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -43,7 +43,7 @@
             ]
         },
         {
-            "displayName": "Plot Overlay Width",
+            "displayName": "Plot Overlay: Width",
             "name": "overlayY",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -69,12 +69,12 @@
             ]
         },
         {
-            "displayName": "Category Legend",
+            "displayName": "Categorical Legend",
             "name": "legend",
             "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Category Filter",
+            "displayName": "Categorical Filter",
             "name": "filterLegend",
             "kind": "GroupingOrMeasure"
         },
@@ -256,71 +256,11 @@
     "objects": {
         "axisSettings": {
             "displayName": "Axis Settings",
-            "properties": {
-                "xAxis": {
-                    "displayName": "X-Axis",
-                    "type": {
-                        "enumeration": [
-                            {
-                                "displayName": "None",
-                                "value": "None"
-                            },
-                            {
-                                "displayName": "Labels",
-                                "value": "Labels"
-                            },
-                            {
-                                "displayName": "Ticks",
-                                "value": "Ticks"
-                            },
-                            {
-                                "displayName": "Ticks and Labels",
-                                "value": "TicksLabels"
-                            }
-                        ]
-                    }
-                },
-                "yAxis": {
-                    "displayName": "Y-Axis",
-                    "type": {
-                        "enumeration": [
-                            {
-                                "displayName": "None",
-                                "value": "None"
-                            },
-                            {
-                                "displayName": "Labels",
-                                "value": "Labels"
-                            },
-                            {
-                                "displayName": "Ticks",
-                                "value": "Ticks"
-                            },
-                            {
-                                "displayName": "Ticks and Labels",
-                                "value": "TicksLabels"
-                            }
-                        ]
-                    }
-                }
-            }
+            "properties": {}
         },
         "axisLabelSettings": {
             "displayName": "Axis Label Settings",
-            "properties": {
-                "xLabel": {
-                    "displayName": "x-Label",
-                    "type": {
-                        "text": true
-                    }
-                },
-                "yLabel": {
-                    "displayName": "y-Label",
-                    "type": {
-                        "text": true
-                    }
-                }
-            }
+            "properties": {}
         },
         "colorSettings": {
             "displayName": "Color Settings",
@@ -479,8 +419,8 @@
         "plotSettings": {
             "displayName": "Plot Settings",
             "properties": {
-                "plotName": {
-                    "displayName": "Plot name",
+                "plotTitle": {
+                    "displayName": "Plot Title",
                     "type": {
                         "text": true
                     }
@@ -510,12 +450,7 @@
                         }
                     }
                 },
-                "plotTitle": {
-                    "displayName": "Plot Title",
-                    "type": {
-                        "text": true
-                    }
-                },
+
                 "useLegendColor": {
                     "displayName": "Use Legend Color",
                     "type": {
@@ -527,12 +462,7 @@
                     "type": {
                         "bool": true
                     }
-                }
-            }
-        },
-        "overlayPlotSettings": {
-            "displayName": "Plot Overlay Settings",
-            "properties": {
+                },
                 "overlayType": {
                     "displayName": "Choose Type",
                     "type": {
@@ -552,14 +482,86 @@
                         ]
                     }
                 },
-                "fill": {
-                    "displayName": "Color",
+                "xAxisDisplay": {
+                    "displayName": "X-Axis",
                     "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
                             }
-                        }
+                        ]
+                    }
+                },
+                "xLabel": {
+                    "displayName": "x-Label",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "yAxisDisplay": {
+                    "displayName": "Y-Axis",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
+                            }
+                        ]
+                    }
+                },
+                "yLabel": {
+                    "displayName": "y-Label",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "yMinFixed": {
+                    "displayName": "Fixed Minimum",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "yMin": {
+                    "displayName": "Minimum Value",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "yMaxFixed": {
+                    "displayName": "Fixed Maximum",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "yMax": {
+                    "displayName": "Maximum Value",
+                    "type": {
+                        "numeric": true
                     }
                 }
             }
@@ -592,35 +594,6 @@
                 },
                 "breakGapSize": {
                     "displayName": "Gap Size for Break Line",
-                    "type": {
-                        "numeric": true
-                    }
-                }
-            }
-        },
-        "yRangeSettings": {
-            "displayName": "Y-Axis Range Settings",
-            "properties": {
-                "minFixed": {
-                    "displayName": "Fixed Minimum",
-                    "type": {
-                        "bool": true
-                    }
-                },
-                "min": {
-                    "displayName": "Minimum Value",
-                    "type": {
-                        "numeric": true
-                    }
-                },
-                "maxFixed": {
-                    "displayName": "Fixed Maximum",
-                    "type": {
-                        "bool": true
-                    }
-                },
-                "max": {
-                    "displayName": "Maximum Value",
                     "type": {
                         "numeric": true
                     }

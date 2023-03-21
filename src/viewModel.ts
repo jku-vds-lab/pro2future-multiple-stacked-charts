@@ -3,16 +3,13 @@ import { err, ok, Result } from 'neverthrow';
 import powerbi from 'powerbi-visuals-api';
 import {
     ArrayConstants,
-    AxisLabelSettingsNames,
     ColorSettingsNames,
     FilterType,
     GeneralSettingsNames,
     LegendSettingsNames,
-    OverlayPlotSettingsNames,
     Settings,
     TooltipTitleSettingsNames,
     XAxisBreakSettingsNames,
-    YRangeSettingsNames,
     ZoomingSettingsNames,
 } from './constants';
 import { OverlayDataError, ParseAndTransformError, PlotLegendError, SVGSizeError } from './errors';
@@ -31,7 +28,6 @@ import {
     Legends,
     LegendValue,
     OverlayRectangle as PlotOverlayRectangle,
-    OverlayType,
     PlotModel,
     VisualOverlayRectangles,
     TooltipDataPoint,
@@ -181,7 +177,7 @@ export class ViewModel {
         }
 
         const plotTitlesCount = dataModel.plotSettingsArray.filter((x) => x.plotTitle.length > 0).length;
-        const xLabelsCount = dataModel.formatSettings.filter((x) => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
+        const xLabelsCount = dataModel.plotSettingsArray.filter((x) => x.xAxis.labels && x.xAxis.ticks).length;
         const heatmapCount = dataModel.plotSettingsArray.filter((x) => x.showHeatmap).length;
         let plotHeightSpace: number =
             (this.svgHeight -
@@ -243,7 +239,6 @@ export class ViewModel {
             const dataPoints = [];
             const yColumnId = dataModel.yData[plotNr].columnId;
             const metaDataColumn = getMetadataColumn(dataModel.metadataColumns, yColumnId);
-            const yColumnObjects = metaDataColumn.objects;
             const plotSettings = dataModel.plotSettingsArray[plotNr];
             //create datapoints
             for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
@@ -280,35 +275,18 @@ export class ViewModel {
 
             const plotModel: PlotModel = {
                 plotId: plotNr,
-                formatSettings: dataModel.formatSettings[plotNr],
-
                 yName: yAxis.name,
-                labelNames: {
-                    xLabel: getValue<string>(yColumnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.xLabel, dataModel.xData.name),
-                    yLabel: getValue<string>(yColumnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.yLabel, yAxis.name),
-                },
                 plotTop: plotTop,
                 plotSettings: plotSettings,
-                overlayPlotSettings: {
-                    overlayPlotSettings: {
-                        overlayType: OverlayType[getValue<string>(yColumnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.overlayType, OverlayType.None)],
-                    },
-                },
-                yRange: {
-                    min: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),
-                    max: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, Math.max(...yDataPoints)),
-                    minFixed: <boolean>getValue(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.minFixed, true),
-                    maxFixed: <boolean>getValue(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.maxFixed, false),
-                },
                 dataPoints: dataPoints,
                 d3Plot: null,
                 metaDataColumn: metaDataColumn,
             };
-            plotModel.yRange.min = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
-            plotModel.yRange.max = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
+            plotModel.plotSettings.yRange.min = plotModel.plotSettings.yRange.minFixed ? plotModel.plotSettings.yRange.min : Math.min(...yDataPoints);
+            plotModel.plotSettings.yRange.max = plotModel.plotSettings.yRange.maxFixed ? plotModel.plotSettings.yRange.max : Math.max(...yDataPoints);
             this.plotModels[plotNr] = plotModel;
-            const formatXAxis = plotModel.formatSettings.axisSettings.xAxis;
-            plotTop = formatXAxis.lables && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;
+            const formatXAxis = plotModel.plotSettings.xAxis;
+            plotTop = formatXAxis.labels && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;
             plotTop += this.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
             plotTop += plotModel.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
         }
