@@ -78,7 +78,7 @@ export class ViewModel {
             if ((legendSet.size === 1 && legendSet.has('0')) || legendSet.has('1') || (legendSet.size === 2 && legendSet.has('0') && legendSet.has('1'))) {
                 data.type = FilterType.booleanFilter;
             }
-            const legendValues = Array.from(legendSet);
+            const legendValues = Array.from(legendSet).sort();
 
             this.legends.legends.push(<Legend>{
                 legendDataPoints: data.values
@@ -112,7 +112,7 @@ export class ViewModel {
         legendSet.delete('');
         const legendColors = ArrayConstants.legendColors;
         const randomColors = ArrayConstants.colorArray;
-        const legendValues = Array.from(legendSet);
+        const legendValues = Array.from(legendSet).sort();
         const defectLegend = <Legend>{
             legendDataPoints: dataModel.defectLegendData.values
                 .map(
