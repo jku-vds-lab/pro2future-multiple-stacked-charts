@@ -323,8 +323,8 @@ function createOverlayCard() {
 
 function createLegendCard() {
     const legendCard: powerbi.visuals.FormattingCard = {
-        description: 'Legend Settings',
-        displayName: 'Legend Settings',
+        description: 'Legend Title Settings',
+        displayName: 'Legend Title Settings',
         uid: Settings.legendSettings + Constants.uid,
         groups: [],
     };

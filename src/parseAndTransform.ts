@@ -5,7 +5,7 @@ import ISandboxExtendedColorPalette = powerbi.extensibility.ISandboxExtendedColo
 import { getValue, getPlotFillColor } from './objectEnumerationUtility';
 import { FormatSettings, PlotSettings, XAxisData, YAxisData, PlotType, AxisInformation, AxisInformationInterface, LegendData, TooltipColumnData } from './plotInterface';
 import { Primitive } from 'd3';
-import { AxisSettingsNames, PlotSettingsNames, Settings, ArrayConstants, FilterType } from './constants';
+import { AxisSettingsNames, PlotSettingsNames, Settings, FilterType } from './constants';
 import { ok, err, Result } from 'neverthrow';
 import { ViewModel } from './viewModel';
 import {
@@ -358,7 +358,7 @@ export class DataModel {
                 },
             });
             this.plotSettingsArray.push({
-                fill: getPlotFillColor(yColumnObjects, colorPalette, ArrayConstants.colorArray[plotNr]),
+                fill: getPlotFillColor(yColumnObjects, colorPalette, '#4292c6'),
                 plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
                 useLegendColor: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.useLegendColor, false),
                 showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),

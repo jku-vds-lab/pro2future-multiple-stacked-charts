@@ -69,17 +69,17 @@
             ]
         },
         {
-            "displayName": "Color Legend",
+            "displayName": "Category Legend",
             "name": "legend",
             "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Filter Legends",
+            "displayName": "Category Filter",
             "name": "filterLegend",
             "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Visual Overlay",
+            "displayName": "Visual Background",
             "name": "visualOverlay",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -585,7 +585,7 @@
                     }
                 },
                 "showLines": {
-                    "displayName": "Show Break Linkes",
+                    "displayName": "Show Break Lines",
                     "type": {
                         "bool": true
                     }
