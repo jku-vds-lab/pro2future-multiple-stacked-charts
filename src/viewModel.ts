@@ -75,7 +75,7 @@ export class ViewModel {
             if (legendSet.has(null)) {
                 legendSet.delete(null);
             }
-            if ((legendSet.size === 1 && legendSet.has('0')) || legendSet.has('1') || (legendSet.size === 2 && legendSet.has('0') && legendSet.has('1'))) {
+            if ((legendSet.size === 1 && (legendSet.has('0') || legendSet.has('1'))) || (legendSet.size === 2 && legendSet.has('0') && legendSet.has('1'))) {
                 data.type = FilterType.booleanFilter;
             }
             const legendValues = Array.from(legendSet).sort();

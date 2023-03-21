@@ -13,15 +13,15 @@ import { AxisInformation, AxisInformationInterface, Legend, PlotModel, TooltipMo
 import { ViewModel } from './viewModel';
 
 export function createFormattingModel(viewModel: ViewModel): powerbi.visuals.FormattingModel {
-    const heatmapCard: powerbi.visuals.FormattingCard = createHeatmapCard(viewModel);
     const colorCard: powerbi.visuals.FormattingCard = createColorSettingsCard(viewModel);
+    const generalSettingsCard: powerbi.visuals.FormattingCard = createGeneralSettingsCard(viewModel);
     const legendCard: powerbi.visuals.FormattingCard = createLegendCard();
     const plotCard: powerbi.visuals.FormattingCard = createPlotSettingsCard();
     const tooltipTitleCard: powerbi.visuals.FormattingCard = createTooltipTitleCard();
     const xAxisBreakCard: powerbi.visuals.FormattingCard = createXAxisBreakCard(viewModel);
     const zoomingCard: powerbi.visuals.FormattingCard = createZoomingCard(viewModel);
     const formattingModel: powerbi.visuals.FormattingModel = {
-        cards: [colorCard, heatmapCard, legendCard, plotCard, tooltipTitleCard, xAxisBreakCard, zoomingCard],
+        cards: [colorCard, generalSettingsCard, legendCard, plotCard, tooltipTitleCard, xAxisBreakCard, zoomingCard],
     };
 
     for (const plotModel of viewModel.plotModels) {
@@ -217,7 +217,7 @@ function createLegendCard() {
     return legendCard;
 }
 
-function createHeatmapCard(viewModel: ViewModel) {
+function createGeneralSettingsCard(viewModel: ViewModel) {
     const generalSettingsCard: powerbi.visuals.FormattingCard = {
         description: 'General Settings',
         displayName: 'General Settings',
@@ -298,6 +298,10 @@ function createHeatmapCard(viewModel: ViewModel) {
         {
             objectName: Settings.generalSettings,
             propertyName: GeneralSettingsNames.minPlotHeight,
+        },
+        {
+            objectName: Settings.generalSettings,
+            propertyName: GeneralSettingsNames.tooltipPrecision,
         },
         {
             objectName: Settings.generalSettings,

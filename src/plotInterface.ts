@@ -21,7 +21,7 @@ export class VisualOverlayRectangles {
         this.visualOverlayRectangles = [];
         this.legendValues = [];
         this.opacity = visualOverlayOpacity;
-        const uniqueValues = Array.from(new Set(visualOverlay)).sort().reverse();
+        const uniqueValues = Array.from(new Set(visualOverlay)).sort();
         for (let i = 0; i < uniqueValues.length; i++) {
             const val = uniqueValues[i];
             const color = ArrayConstants.visualOverlayColors[<string>val] ? ArrayConstants.visualOverlayColors[<string>val] : ArrayConstants.colorArray[i];
