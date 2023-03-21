@@ -601,28 +601,28 @@
         "yRangeSettings": {
             "displayName": "Y-Axis Range Settings",
             "properties": {
-                "min": {
-                    "displayName": "Minimum Value",
-                    "type": {
-                        "numeric": true
-                    }
-                },
-                "max": {
-                    "displayName": "Maximum Value",
-                    "type": {
-                        "numeric": true
-                    }
-                },
                 "minFixed": {
                     "displayName": "Fixed Minimum",
                     "type": {
                         "bool": true
                     }
                 },
+                "min": {
+                    "displayName": "Minimum Value",
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "maxFixed": {
                     "displayName": "Fixed Maximum",
                     "type": {
                         "bool": true
+                    }
+                },
+                "max": {
+                    "displayName": "Maximum Value",
+                    "type": {
+                        "numeric": true
                     }
                 }
             }

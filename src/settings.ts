@@ -242,36 +242,6 @@ function addYRangeGroup(plotModel: PlotModel, yAxisRangeCard: powerbi.visuals.Fo
         uid: groupName + Constants.uid,
         slices: [
             {
-                displayName: 'Minimum Value',
-                uid: groupName + YRangeSettingsNames.min + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.NumUpDown,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.yRangeSettings,
-                            propertyName: YRangeSettingsNames.min,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        value: plotModel.yRange.min,
-                    },
-                },
-            },
-            {
-                displayName: 'Maximum Value',
-                uid: groupName + YRangeSettingsNames.max + Constants.uid,
-                control: {
-                    type: powerbi.visuals.FormattingComponent.NumUpDown,
-                    properties: {
-                        descriptor: {
-                            objectName: Settings.yRangeSettings,
-                            propertyName: YRangeSettingsNames.max,
-                            selector: { metadata: plotModel.metaDataColumn.queryName },
-                        },
-                        value: plotModel.yRange.max,
-                    },
-                },
-            },
-            {
                 displayName: 'Fixed Minimum',
                 uid: groupName + YRangeSettingsNames.minFixed + Constants.uid,
                 control: {
@@ -287,6 +257,21 @@ function addYRangeGroup(plotModel: PlotModel, yAxisRangeCard: powerbi.visuals.Fo
                 },
             },
             {
+                displayName: 'Minimum Value',
+                uid: groupName + YRangeSettingsNames.min + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.NumUpDown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.yRangeSettings,
+                            propertyName: YRangeSettingsNames.min,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.yRange.min,
+                    },
+                },
+            },
+            {
                 displayName: 'Fixed Maximum',
                 uid: groupName + YRangeSettingsNames.maxFixed + Constants.uid,
                 control: {
@@ -298,6 +283,21 @@ function addYRangeGroup(plotModel: PlotModel, yAxisRangeCard: powerbi.visuals.Fo
                             selector: { metadata: plotModel.metaDataColumn.queryName },
                         },
                         value: plotModel.yRange.maxFixed,
+                    },
+                },
+            },
+            {
+                displayName: 'Maximum Value',
+                uid: groupName + YRangeSettingsNames.max + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.NumUpDown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.yRangeSettings,
+                            propertyName: YRangeSettingsNames.max,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.yRange.max,
                     },
                 },
             },
