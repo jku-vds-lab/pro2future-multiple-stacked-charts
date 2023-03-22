@@ -15,7 +15,7 @@
         "email": "jakob.zethofer@pro2future.at"
     },
     "assets": {
-        "icon": "assets/icon.png"
+        "icon": "assets/logo.png"
     },
     "externalJS": null,
     "style": "style/visual.less",
