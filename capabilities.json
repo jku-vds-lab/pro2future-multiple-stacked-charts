@@ -2,7 +2,8 @@
     "privileges": [],
     "dataRoles": [
         {
-            "displayName": "Axis",
+            "displayName": "X-Axis",
+            "description": "Shared X-Axis for all plots. Datatype must be numeric or date.",
             "name": "x_axis",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -15,7 +16,8 @@
             ]
         },
         {
-            "displayName": "Values",
+            "displayName": "Plot Values",
+            "description": "Data fields that contain y-Values. A separate plot is created for each data field.",
             "name": "y_axis",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -28,7 +30,7 @@
             ]
         },
         {
-            "displayName": "Overlay Length",
+            "displayName": "Plot Overlay: Length",
             "name": "overlayX",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -41,7 +43,7 @@
             ]
         },
         {
-            "displayName": "Overlay Width",
+            "displayName": "Plot Overlay: Width",
             "name": "overlayY",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -67,18 +69,18 @@
             ]
         },
         {
-            "displayName": "Legend",
+            "displayName": "Categorical Legend",
             "name": "legend",
             "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Filter Legend",
+            "displayName": "Categorical Filter",
             "name": "filterLegend",
             "kind": "GroupingOrMeasure"
         },
         {
-            "displayName": "Rollout",
-            "name": "rollout",
+            "displayName": "Visual Background",
+            "name": "visualOverlay",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
@@ -90,7 +92,7 @@
             ]
         },
         {
-            "displayName": "Grouping",
+            "displayName": "Groupings",
             "name": "grouping",
             "kind": "GroupingOrMeasure"
         }
@@ -127,7 +129,7 @@
                     "filterLegend": {
                         "max": 5
                     },
-                    "rollout": {
+                    "visualOverlay": {
                         "max": 1
                     },
                     "category": {
@@ -182,7 +184,7 @@
                         },
                         {
                             "for": {
-                                "in": "rollout"
+                                "in": "visualOverlay"
                             }
                         },
                         {
@@ -237,7 +239,7 @@
                         },
                         {
                             "for": {
-                                "in": "rollout"
+                                "in": "visualOverlay"
                             }
                         },
                         {
@@ -254,71 +256,11 @@
     "objects": {
         "axisSettings": {
             "displayName": "Axis Settings",
-            "properties": {
-                "xAxis": {
-                    "displayName": "X-Axis",
-                    "type": {
-                        "enumeration": [
-                            {
-                                "displayName": "None",
-                                "value": "None"
-                            },
-                            {
-                                "displayName": "Labels",
-                                "value": "Labels"
-                            },
-                            {
-                                "displayName": "Ticks",
-                                "value": "Ticks"
-                            },
-                            {
-                                "displayName": "Ticks and Labels",
-                                "value": "TicksLabels"
-                            }
-                        ]
-                    }
-                },
-                "yAxis": {
-                    "displayName": "Y-Axis",
-                    "type": {
-                        "enumeration": [
-                            {
-                                "displayName": "None",
-                                "value": "None"
-                            },
-                            {
-                                "displayName": "Labels",
-                                "value": "Labels"
-                            },
-                            {
-                                "displayName": "Ticks",
-                                "value": "Ticks"
-                            },
-                            {
-                                "displayName": "Ticks and Labels",
-                                "value": "TicksLabels"
-                            }
-                        ]
-                    }
-                }
-            }
+            "properties": {}
         },
         "axisLabelSettings": {
             "displayName": "Axis Label Settings",
-            "properties": {
-                "xLabel": {
-                    "displayName": "x-Label",
-                    "type": {
-                        "text": true
-                    }
-                },
-                "yLabel": {
-                    "displayName": "y-Label",
-                    "type": {
-                        "text": true
-                    }
-                }
-            }
+            "properties": {}
         },
         "colorSettings": {
             "displayName": "Color Settings",
@@ -337,6 +279,16 @@
                 "overlayColor": {
                     "displayName": "Plot Overlay Color",
                     "description": "The stroke color of the plot overlay lines.",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "breakLineColor": {
+                    "displayName": "Break Line Color",
                     "type": {
                         "fill": {
                             "solid": {
@@ -428,6 +380,12 @@
                         "numeric": true
                     }
                 },
+                "tooltipPrecision": {
+                    "displayName": "Tooltip Precision",
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "showYZeroLine": {
                     "displayName": "Show 0-Line for Y-Axis",
                     "type": {
@@ -441,34 +399,6 @@
             "properties": {
                 "legendTitle": {
                     "displayName": "Legend Title",
-                    "type": {
-                        "text": true
-                    }
-                },
-                "controlLegendTitle": {
-                    "displayName": "Defect Group Legend Title",
-                    "type": {
-                        "text": true
-                    }
-                },
-                "legendColor": {
-                    "displayName": "Legend Color",
-                    "description": "The color of this legend type.",
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "rolloutSettings": {
-            "displayName": "Rollout Settings",
-            "properties": {
-                "legendTitle": {
-                    "displayName": "Rollout Legend Title",
                     "type": {
                         "text": true
                     }
@@ -489,8 +419,8 @@
         "plotSettings": {
             "displayName": "Plot Settings",
             "properties": {
-                "plotName": {
-                    "displayName": "Plot name",
+                "plotTitle": {
+                    "displayName": "Plot Title",
                     "type": {
                         "text": true
                     }
@@ -520,6 +450,7 @@
                         }
                     }
                 },
+
                 "useLegendColor": {
                     "displayName": "Use Legend Color",
                     "type": {
@@ -531,12 +462,7 @@
                     "type": {
                         "bool": true
                     }
-                }
-            }
-        },
-        "overlayPlotSettings": {
-            "displayName": "Plot Overlay Settings",
-            "properties": {
+                },
                 "overlayType": {
                     "displayName": "Choose Type",
                     "type": {
@@ -556,25 +482,86 @@
                         ]
                     }
                 },
-                "fill": {
-                    "displayName": "Color",
+                "xAxisDisplay": {
+                    "displayName": "X-Axis",
                     "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
                             }
-                        }
+                        ]
                     }
-                }
-            }
-        },
-        "plotTitleSettings": {
-            "displayName": "Plot Title Settings",
-            "properties": {
-                "title": {
-                    "displayName": "Plot Title",
+                },
+                "xLabel": {
+                    "displayName": "x-Label",
                     "type": {
                         "text": true
+                    }
+                },
+                "yAxisDisplay": {
+                    "displayName": "Y-Axis",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "None",
+                                "value": "None"
+                            },
+                            {
+                                "displayName": "Labels",
+                                "value": "Labels"
+                            },
+                            {
+                                "displayName": "Ticks",
+                                "value": "Ticks"
+                            },
+                            {
+                                "displayName": "Ticks and Labels",
+                                "value": "TicksLabels"
+                            }
+                        ]
+                    }
+                },
+                "yLabel": {
+                    "displayName": "y-Label",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "yMinFixed": {
+                    "displayName": "Fixed Minimum",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "yMin": {
+                    "displayName": "Minimum Value",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "yMaxFixed": {
+                    "displayName": "Fixed Maximum",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "yMax": {
+                    "displayName": "Maximum Value",
+                    "type": {
+                        "numeric": true
                     }
                 }
             }
@@ -600,38 +587,15 @@
                     }
                 },
                 "showLines": {
-                    "displayName": "Show Break Linkes",
+                    "displayName": "Show Break Lines",
                     "type": {
                         "bool": true
                     }
-                }
-            }
-        },
-        "yRangeSettings": {
-            "displayName": "Y-Axis Range Settings",
-            "properties": {
-                "min": {
-                    "displayName": "Minimum Value",
+                },
+                "breakGapSize": {
+                    "displayName": "Gap Size for Break Line",
                     "type": {
                         "numeric": true
-                    }
-                },
-                "max": {
-                    "displayName": "Maximum Value",
-                    "type": {
-                        "numeric": true
-                    }
-                },
-                "minFixed": {
-                    "displayName": "Fixed Minimum",
-                    "type": {
-                        "bool": true
-                    }
-                },
-                "maxFixed": {
-                    "displayName": "Fixed Maximum",
-                    "type": {
-                        "bool": true
                     }
                 }
             }

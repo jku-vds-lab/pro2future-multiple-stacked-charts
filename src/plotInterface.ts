@@ -2,62 +2,65 @@ import { Primitive } from 'd3-array';
 import { BaseType } from 'd3-selection';
 import powerbi from 'powerbi-visuals-api';
 import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
-import { ArrayConstants, FilterType } from './constants';
+import { ArrayConstants, FilterType, LegendSettingsNames, Settings } from './constants';
+import { getValue } from './objectEnumerationUtility';
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ISelectionId = powerbi.visuals.ISelectionId;
 
-export class RolloutRectangles {
-    rolloutRectangles: RolloutRectangle[];
+export class VisualOverlayRectangles {
+    visualOverlayRectangles: VisualOverlayRectangle[];
     name: string;
     opacity: number;
+    metadetaColumn: powerbi.DataViewMetadataColumn;
     legendValues: LegendValue[];
 
-    constructor(xValues: number[] | Date[], rollout: Primitive[], y, width, rolloutName = 'Rollout', rolloutOpacity = 0.2) {
-        this.name = rolloutName;
-        this.rolloutRectangles = [];
+    constructor(xValues: number[] | Date[], visualOverlay: Primitive[], y, width, visualOverlayMetadataColumn: powerbi.DataViewMetadataColumn, visualOverlayOpacity = 0.2) {
+        this.name = <string>getValue(visualOverlayMetadataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, visualOverlayMetadataColumn.displayName);
+        this.metadetaColumn = visualOverlayMetadataColumn;
+        this.visualOverlayRectangles = [];
         this.legendValues = [];
-        this.opacity = rolloutOpacity;
-        const uniqueValues = Array.from(new Set(rollout)).sort().reverse();
+        this.opacity = visualOverlayOpacity;
+        const uniqueValues = Array.from(new Set(visualOverlay)).sort();
         for (let i = 0; i < uniqueValues.length; i++) {
             const val = uniqueValues[i];
-            const color = ArrayConstants.rolloutColors[<string>val] ? ArrayConstants.rolloutColors[<string>val] : ArrayConstants.colorArray[i];
+            const color = ArrayConstants.visualOverlayColors[<string>val] ? ArrayConstants.visualOverlayColors[<string>val] : ArrayConstants.colorArray[i];
             this.legendValues.push({ value: val, color: color });
         }
 
-        let rect = <RolloutRectangle>{
+        let rect = <VisualOverlayRectangle>{
             y,
             width,
             x: xValues[0],
-            color: this.getColor(rollout[0]),
+            color: this.getColor(visualOverlay[0]),
         };
 
-        let lastRollout = rollout[0];
+        let lastVisualOverlay = visualOverlay[0];
         for (let i = 0; i < xValues.length; i++) {
             const x = xValues[i];
-            const r = rollout[i];
-            if (r != lastRollout) {
-                lastRollout = r;
+            const r = visualOverlay[i];
+            if (r != lastVisualOverlay) {
+                lastVisualOverlay = r;
                 rect.endX = x;
-                this.rolloutRectangles.push(rect);
-                rect = <RolloutRectangle>{
+                this.visualOverlayRectangles.push(rect);
+                rect = <VisualOverlayRectangle>{
                     y,
                     width,
                     x: xValues[i],
-                    color: this.getColor(rollout[i]),
+                    color: this.getColor(visualOverlay[i]),
                 };
             }
         }
         rect.endX = xValues[xValues.length - 1];
-        this.rolloutRectangles.push(rect);
+        this.visualOverlayRectangles.push(rect);
     }
 
-    private getColor(rollout: Primitive): string {
-        return this.legendValues.filter((x) => x.value === rollout)[0].color;
+    private getColor(visualOverlay: Primitive): string {
+        return this.legendValues.filter((x) => x.value === visualOverlay)[0].color;
     }
 }
 
-export interface RolloutRectangle {
+export interface VisualOverlayRectangle {
     width: number;
     endX: number | Date;
     x: number;
@@ -81,10 +84,12 @@ export interface GeneralPlotSettings {
     heatmapBins: number;
     showYZeroLine: boolean;
     minPlotHeight: number;
+    tooltipPrecision: number;
 }
 
 export interface XAxisSettings {
     axisBreak: boolean;
+    breakGapSize: number;
     breakIndices: number[];
     indexMap: Map<number | Date, number>;
     showBreakLines: boolean;
@@ -132,25 +137,12 @@ export interface PlotModel {
     plotId: number;
     plotTop: number;
     yName: string;
-    formatSettings: FormatSettings;
-    labelNames: LabelNames;
-    overlayPlotSettings: OverlayPlotSettings;
+
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
-    plotTitleSettings: PlotTitleSettings;
-    yRange: {
-        min: number;
-        max: number;
-        maxFixed: boolean;
-        minFixed: boolean;
-    };
+
     d3Plot: D3Plot;
     metaDataColumn: powerbi.DataViewMetadataColumn;
-}
-
-export interface LabelNames {
-    xLabel: string;
-    yLabel: string;
 }
 
 export interface TooltipModel {
@@ -158,10 +150,6 @@ export interface TooltipModel {
     tooltipName: string;
     tooltipData: TooltipDataPoint[];
     metaDataColumn: powerbi.DataViewMetadataColumn;
-}
-
-export interface PlotTitleSettings {
-    title: string;
 }
 
 export interface OverlayRectangle {
@@ -220,12 +208,13 @@ export interface FormatSettings {
 }
 
 export interface AxisInformationInterface {
-    lables: boolean;
+    labels: boolean;
     ticks: boolean;
 }
 
 export interface ColorSettings {
     colorSettings: {
+        breakLineColor: string;
         verticalRulerColor: string;
         overlayColor: string;
         heatmapColorScheme: string;
@@ -238,11 +227,17 @@ export interface PlotSettings {
     plotType: PlotType;
     useLegendColor: boolean;
     showHeatmap: boolean;
-}
-
-export interface OverlayPlotSettings {
-    overlayPlotSettings: {
-        overlayType: OverlayType;
+    plotTitle: string;
+    overlayType: OverlayType;
+    xAxis: AxisInformationInterface;
+    yAxis: AxisInformationInterface;
+    xLabel: string;
+    yLabel: string;
+    yRange: {
+        min: number;
+        max: number;
+        maxFixed: boolean;
+        minFixed: boolean;
     };
 }
 
@@ -256,9 +251,7 @@ export class Legends {
         let draw = true;
         for (const l of this.legends) {
             const filtered = l.legendDataPoints.filter((x) => x.i === i);
-            if (filtered.length === 0) {
-                draw = false;
-            } else {
+            if (filtered.length >= 1) {
                 draw = draw && l.selectedValues.has(filtered[0].yValue.toString());
             }
         }

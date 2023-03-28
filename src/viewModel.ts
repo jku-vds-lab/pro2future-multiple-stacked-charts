@@ -3,16 +3,13 @@ import { err, ok, Result } from 'neverthrow';
 import powerbi from 'powerbi-visuals-api';
 import {
     ArrayConstants,
-    AxisLabelSettingsNames,
     ColorSettingsNames,
     FilterType,
     GeneralSettingsNames,
     LegendSettingsNames,
-    OverlayPlotSettingsNames,
     Settings,
     TooltipTitleSettingsNames,
     XAxisBreakSettingsNames,
-    YRangeSettingsNames,
     ZoomingSettingsNames,
 } from './constants';
 import { OverlayDataError, ParseAndTransformError, PlotLegendError, SVGSizeError } from './errors';
@@ -30,10 +27,9 @@ import {
     LegendDataPoint,
     Legends,
     LegendValue,
-    OverlayRectangle,
-    OverlayType,
+    OverlayRectangle as PlotOverlayRectangle,
     PlotModel,
-    RolloutRectangles,
+    VisualOverlayRectangles,
     TooltipDataPoint,
     TooltipModel,
     XAxisSettings,
@@ -44,14 +40,14 @@ import {
 export class ViewModel {
     plotModels: PlotModel[];
     colorSettings: ColorSettings;
-    overlayRectangles?: OverlayRectangle[];
+    plotOverlayRectangles?: PlotOverlayRectangle[];
     svgHeight: number;
     svgWidth: number;
     generalPlotSettings: GeneralPlotSettings;
     tooltipModels: TooltipModel[];
     zoomingSettings: ZoomingSettings;
     legends: Legends;
-    rolloutRectangles: RolloutRectangles;
+    visualOverlayRectangles: VisualOverlayRectangles;
     errors: ParseAndTransformError[];
     objects: powerbi.DataViewObjects;
     constructor(objects: powerbi.DataViewObjects) {
@@ -79,10 +75,10 @@ export class ViewModel {
             if (legendSet.has(null)) {
                 legendSet.delete(null);
             }
-            if ((legendSet.size === 1 && legendSet.has('0')) || legendSet.has('1') || (legendSet.size === 2 && legendSet.has('0') && legendSet.has('1'))) {
+            if ((legendSet.size === 1 && (legendSet.has('0') || legendSet.has('1'))) || (legendSet.size === 2 && legendSet.has('0') && legendSet.has('1'))) {
                 data.type = FilterType.booleanFilter;
             }
-            const legendValues = Array.from(legendSet);
+            const legendValues = Array.from(legendSet).sort();
 
             this.legends.legends.push(<Legend>{
                 legendDataPoints: data.values
@@ -93,7 +89,7 @@ export class ViewModel {
                                 i: i,
                             }
                     )
-                    .filter((x) => x.yValue !== null),
+                    .filter((x) => x.yValue !== null && x.yValue !== ''),
                 legendValues: legendValues.map((val) => {
                     return <LegendValue>{
                         color: 'white',
@@ -116,7 +112,7 @@ export class ViewModel {
         legendSet.delete('');
         const legendColors = ArrayConstants.legendColors;
         const randomColors = ArrayConstants.colorArray;
-        const legendValues = Array.from(legendSet);
+        const legendValues = Array.from(legendSet).sort();
         const defectLegend = <Legend>{
             legendDataPoints: dataModel.defectLegendData.values
                 .map(
@@ -126,7 +122,7 @@ export class ViewModel {
                             i,
                         }
                 )
-                .filter((x) => x.yValue !== null),
+                .filter((x) => x.yValue !== null && x.yValue !== ''),
             legendValues: [],
             legendTitle: <string>(
                 getValue(
@@ -138,7 +134,7 @@ export class ViewModel {
             ),
             legendXEndPosition: 0,
             legendXPosition: MarginSettings.margins.left,
-            type: FilterType.defectFilter,
+            type: FilterType.colorFilter,
             selectedValues: new Set(legendValues.concat(Object.keys(ArrayConstants.legendColors))),
             metaDataColumn: dataModel.defectLegendData.metaDataColumn,
         };
@@ -161,6 +157,7 @@ export class ViewModel {
         };
         this.colorSettings = {
             colorSettings: {
+                breakLineColor: getColorSettings(this.objects, ColorSettingsNames.breakLineColor, colorPalette, '#cccccc'),
                 verticalRulerColor: getColorSettings(this.objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
                 overlayColor: getColorSettings(this.objects, ColorSettingsNames.overlayColor, colorPalette, '#000000'),
                 yZeroLineColor: getColorSettings(this.objects, ColorSettingsNames.yZeroLineColor, colorPalette, '#CCCCCC'),
@@ -179,8 +176,8 @@ export class ViewModel {
             return err(new SVGSizeError());
         }
 
-        const plotTitlesCount = dataModel.plotTitles.filter((x) => x.length > 0).length;
-        const xLabelsCount = dataModel.formatSettings.filter((x) => x.axisSettings.xAxis.lables && x.axisSettings.xAxis.ticks).length;
+        const plotTitlesCount = dataModel.plotSettingsArray.filter((x) => x.plotTitle.length > 0).length;
+        const xLabelsCount = dataModel.plotSettingsArray.filter((x) => x.xAxis.labels && x.xAxis.ticks).length;
         const heatmapCount = dataModel.plotSettingsArray.filter((x) => x.showHeatmap).length;
         let plotHeightSpace: number =
             (this.svgHeight -
@@ -218,6 +215,7 @@ export class ViewModel {
             legendYPostion: 0,
             fontSize: '10px',
             xAxisSettings: xAxisSettings,
+            tooltipPrecision: getValue<number>(this.objects, Settings.generalSettings, GeneralSettingsNames.tooltipPrecision, 2),
             heatmapBins: getValue<number>(this.objects, Settings.generalSettings, GeneralSettingsNames.heatmapBins, 100),
             minPlotHeight: minPlotHeight,
             showYZeroLine: getValue<boolean>(this.objects, Settings.generalSettings, GeneralSettingsNames.showYZeroLine, true),
@@ -241,7 +239,6 @@ export class ViewModel {
             const dataPoints = [];
             const yColumnId = dataModel.yData[plotNr].columnId;
             const metaDataColumn = getMetadataColumn(dataModel.metadataColumns, yColumnId);
-            const yColumnObjects = metaDataColumn.objects;
             const plotSettings = dataModel.plotSettingsArray[plotNr];
             //create datapoints
             for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
@@ -250,11 +247,12 @@ export class ViewModel {
                 let color = plotSettings.fill;
                 const xVal = xDataPoints[pointNr];
                 if (plotSettings.useLegendColor) {
-                    const filtered = this.legends.legends.filter((x) => x.type === FilterType.defectFilter);
+                    const filtered = this.legends.legends.filter((x) => x.type === FilterType.colorFilter);
                     if (filtered.length === 1) {
                         const defectLegend = filtered[0];
-                        const legendVal = defectLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
-                        color = legendVal === undefined ? color : defectLegend.legendValues.find((x) => x.value === legendVal).color;
+                        const dataPointLegendValue = defectLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
+                        const legendValue = defectLegend.legendValues.find((x) => x.value === dataPointLegendValue);
+                        if (dataPointLegendValue && legendValue) color = legendValue.color;
                     } else {
                         this.errors.push(new PlotLegendError(yAxis.name));
                     }
@@ -273,43 +271,22 @@ export class ViewModel {
                 dataPoints.push(dataPoint);
             }
 
-            const plotTitle = dataModel.plotTitles[plotNr];
-            plotTop = plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
+            plotTop = plotSettings.plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
 
             const plotModel: PlotModel = {
                 plotId: plotNr,
-                formatSettings: dataModel.formatSettings[plotNr],
-
                 yName: yAxis.name,
-                labelNames: {
-                    xLabel: getValue<string>(yColumnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.xLabel, dataModel.xData.name),
-                    yLabel: getValue<string>(yColumnObjects, Settings.axisLabelSettings, AxisLabelSettingsNames.yLabel, yAxis.name),
-                },
                 plotTop: plotTop,
                 plotSettings: plotSettings,
-                plotTitleSettings: {
-                    title: plotTitle,
-                },
-                overlayPlotSettings: {
-                    overlayPlotSettings: {
-                        overlayType: OverlayType[getValue<string>(yColumnObjects, Settings.overlayPlotSettings, OverlayPlotSettingsNames.overlayType, OverlayType.None)],
-                    },
-                },
-                yRange: {
-                    min: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.min, 0),
-                    max: getValue<number>(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.max, Math.max(...yDataPoints)),
-                    minFixed: <boolean>getValue(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.minFixed, true),
-                    maxFixed: <boolean>getValue(yColumnObjects, Settings.yRangeSettings, YRangeSettingsNames.maxFixed, false),
-                },
                 dataPoints: dataPoints,
                 d3Plot: null,
                 metaDataColumn: metaDataColumn,
             };
-            plotModel.yRange.min = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
-            plotModel.yRange.max = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
+            plotModel.plotSettings.yRange.min = plotModel.plotSettings.yRange.minFixed ? plotModel.plotSettings.yRange.min : Math.min(...yDataPoints);
+            plotModel.plotSettings.yRange.max = plotModel.plotSettings.yRange.maxFixed ? plotModel.plotSettings.yRange.max : Math.max(...yDataPoints);
             this.plotModels[plotNr] = plotModel;
-            const formatXAxis = plotModel.formatSettings.axisSettings.xAxis;
-            plotTop = formatXAxis.lables && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;
+            const formatXAxis = plotModel.plotSettings.xAxis;
+            plotTop = formatXAxis.labels && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;
             plotTop += this.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
             plotTop += plotModel.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
         }
@@ -317,26 +294,26 @@ export class ViewModel {
         this.generalPlotSettings.legendYPostion = plotTop + MarginSettings.legendTopMargin;
     }
 
-    createRolloutRectangles(dataModel: DataModel) {
-        if (dataModel.rolloutRectangles.length > 0) {
-            const rolloutY = this.plotModels[0].plotTop;
-            const rolloutHeight = this.plotModels[this.plotModels.length - 1].plotTop + this.generalPlotSettings.plotHeight - rolloutY;
-            this.rolloutRectangles = new RolloutRectangles(
+    createVisualOverlayRectangles(dataModel: DataModel) {
+        if (dataModel.visualOverlayRectangles.length > 0) {
+            const visualOverlayY = this.plotModels[0].plotTop;
+            const visualOverlayHeight = this.plotModels[this.plotModels.length - 1].plotTop + this.generalPlotSettings.plotHeight - visualOverlayY;
+            this.visualOverlayRectangles = new VisualOverlayRectangles(
                 this.generalPlotSettings.xAxisSettings.axisBreak
                     ? dataModel.xData.values.map((x) => this.generalPlotSettings.xAxisSettings.indexMap.get(x))
                     : dataModel.xData.values,
-                dataModel.rolloutRectangles,
-                rolloutY,
-                rolloutHeight,
-                dataModel.rolloutName
+                dataModel.visualOverlayRectangles,
+                visualOverlayY,
+                visualOverlayHeight,
+                dataModel.visualOverlayMetadataColumn
             );
         }
     }
 
-    createOverlayInformation(dataModel: DataModel): Result<void, OverlayDataError> {
+    createPlotOverlayInformation(dataModel: DataModel): Result<void, OverlayDataError> {
         if (dataModel.overlayLength.length == dataModel.overlayWidth.length && dataModel.overlayWidth.length > 0) {
             const xValues = dataModel.xData.values;
-            let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(dataModel.overlayLength.length);
+            let overlayRectangles: PlotOverlayRectangle[] = new Array<PlotOverlayRectangle>(dataModel.overlayLength.length);
             const xAxisSettings = this.generalPlotSettings.xAxisSettings;
             let endX = null;
             for (let i = 0; i < dataModel.overlayLength.length; i++) {
@@ -362,7 +339,7 @@ export class ViewModel {
                 return err(new OverlayDataError());
             }
             overlayRectangles = overlayRectangles.filter((rect, i) => overlayRectangles.findIndex((r) => r.x === rect.x && r.endX === rect.endX) === i);
-            this.overlayRectangles = overlayRectangles;
+            this.plotOverlayRectangles = overlayRectangles;
         }
         return ok(null);
     }
@@ -391,7 +368,7 @@ export class ViewModel {
             } else if (type.numeric && !type.integer) {
                 tooltip.values = tooltip.values.map((val) => {
                     if (typeof val === 'number') {
-                        return Number(val).toFixed(2);
+                        return Number(val).toFixed(this.generalPlotSettings.tooltipPrecision);
                     }
                     return val;
                 });
@@ -416,39 +393,49 @@ export class ViewModel {
     }
 
     private getXAxisSettings(dataModel: DataModel, plotWidth: number) {
-        const axisBreak = dataModel.xData.isDate ? false : <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false);
+        const axisBreak = <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.enable, false);
+        const breakGapSize = <number>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.breakGapSize, 1);
         const uniqueXValues = Array.from(new Set<Date | number>(dataModel.xData.values));
         const indexMap = new Map(uniqueXValues.map((x, i) => [x, i]));
         const breakIndices = dataModel.xData.isDate
-            ? []
+            ? uniqueXValues
+                  .map((x: Date, i, a: Date[]) => {
+                      return { i: i, gapSize: i < a.length - 1 ? a[i + 1].getTime() - x.getTime() : 0, x };
+                  })
+                  .filter((x) => x.gapSize > breakGapSize * 1000)
+                  .map((x) => (axisBreak ? x.i + 0.5 : new Date(x.x.getTime() + x.gapSize / 2)))
             : uniqueXValues
                   .map((x: number, i, a: number[]) => {
-                      return { i: i, gapSize: i < a.length ? a[i + 1] - x : 0 };
+                      return { i: i, gapSize: i < a.length - 1 ? a[i + 1] - x : 0, x };
                   })
-                  .filter((x) => x.gapSize > 1)
-                  .map((x) => x.i + 0.5);
+                  .filter((x) => x.gapSize > breakGapSize)
+                  .map((x) => (axisBreak ? x.i + 0.5 : x.x + x.gapSize / 2));
 
         const xRange = dataModel.xData.isDate
             ? {
-                  min: Math.min(...(<number[]>dataModel.xData.values)),
-                  max: Math.max(...(<number[]>dataModel.xData.values)),
-              }
-            : {
                   min: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a < b ? a : b)),
                   max: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a > b ? a : b)),
+              }
+            : {
+                  min: Math.min(...(<number[]>dataModel.xData.values)),
+                  max: Math.max(...(<number[]>dataModel.xData.values)),
               };
         if (axisBreak) {
             xRange.min = indexMap.get(xRange.min);
             xRange.max = indexMap.get(xRange.max);
         }
-        const xScale = dataModel.xData.isDate
-            ? scaleTime().domain([xRange.min, xRange.max]).range([0, plotWidth])
-            : scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
+        const xScale =
+            dataModel.xData.isDate && !axisBreak
+                ? scaleTime().domain([xRange.min, xRange.max]).range([0, plotWidth])
+                : scaleLinear().domain([xRange.min, xRange.max]).range([0, plotWidth]);
+
         const xAxisSettings = <XAxisSettings>{
             axisBreak,
             breakIndices,
+            breakGapSize,
             indexMap,
-            showBreakLines: <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, true),
+            isDate: dataModel.xData.isDate,
+            showBreakLines: <boolean>getValue(this.objects, Settings.xAxisBreakSettings, XAxisBreakSettingsNames.showLines, false),
             xName: dataModel.xData.name,
             xRange: xRange,
             xScale,

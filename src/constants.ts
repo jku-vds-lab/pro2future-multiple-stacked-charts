@@ -1,45 +1,25 @@
 export enum Settings {
     plotSettings = 'plotSettings',
-    axisSettings = 'axisSettings',
     colorSelector = 'colorSelector',
     colorSettings = 'colorSettings',
     generalSettings = 'generalSettings',
     legendSettings = 'legendSettings',
-    overlayPlotSettings = 'overlayPlotSettings',
-    plotTitleSettings = 'plotTitleSettings',
     tooltipTitleSettings = 'tooltipTitleSettings',
-    yRangeSettings = 'yRangeSettings',
     zoomingSettings = 'zoomingSettings',
-    axisLabelSettings = 'axisLabelSettings',
     xAxisBreakSettings = 'xAxisBreakSettings',
-    rolloutSettings = 'rolloutSettings',
-}
-
-export enum AxisLabelSettingsNames {
-    xLabel = 'xLabel',
-    yLabel = 'yLabel',
-}
-export enum RolloutSettingsNames {
-    legendTitle = 'legendTitle',
-    legendColor = 'legendColor',
 }
 
 export enum GeneralSettingsNames {
     heatmapBins = 'heatmapBins',
     minPlotHeight = 'minPlotHeight',
+    tooltipPrecision = 'tooltipPrecision',
     showYZeroLine = 'showYZeroLine',
-}
-
-export enum YRangeSettingsNames {
-    min = 'min',
-    max = 'max',
-    minFixed = 'minFixed',
-    maxFixed = 'maxFixed',
 }
 
 export enum XAxisBreakSettingsNames {
     enable = 'enable',
     showLines = 'showLines',
+    breakGapSize = 'breakGapSize',
 }
 export enum LegendSettingsNames {
     legendTitle = 'legendTitle',
@@ -50,31 +30,32 @@ export enum PlotSettingsNames {
     fill = 'fill',
     useLegendColor = 'useLegendColor',
     showHeatmap = 'showHeatmap',
-    plotName = 'plotName',
+    plotTitle = 'plotTitle',
+    overlayType = 'overlayType',
+    xAxisDisplay = 'xAxisDisplay',
+    yAxisDisplay = 'yAxisDisplay',
+    xLabel = 'xLabel',
+    yLabel = 'yLabel',
+    yMinFixed = 'yMinFixed',
+    yMin = 'yMin',
+    yMaxFixed = 'yMaxFixed',
+    yMax = 'yMax',
 }
 export enum TooltipTitleSettingsNames {
     title = 'title',
 }
-export enum OverlayPlotSettingsNames {
-    overlayType = 'overlayType',
-}
+
 export enum ColorSettingsNames {
     verticalRulerColor = 'verticalRulerColor',
+    breakLineColor = 'breakLineColor',
     overlayColor = 'overlayColor',
     heatmapColorScheme = 'heatmapColorScheme',
     yZeroLineColor = 'yZeroLineColor',
 }
-export enum AxisSettingsNames {
-    xAxis = 'xAxis',
-    yAxis = 'yAxis',
-}
+
 export enum ZoomingSettingsNames {
     show = 'show',
     maximum = 'maximum',
-}
-
-export enum PlotTitleSettingsNames {
-    title = 'title',
 }
 
 export enum ColorSelectorNames {
@@ -87,12 +68,12 @@ export enum Constants {
     overlayClass = 'overlayBars',
     barClass = 'bar',
     dotClass = 'dot',
-    rolloutClass = 'rollout',
+    visualOverlayClass = 'visualOverlay',
     defectLegendClass = 'defectLegend',
     zoomState = 'zoomState',
     axisBreakClass = 'axisBreakLines',
     legendTitleSelection = 'legendTitle',
-    rolloutLegendTitleSelection = 'rolloutLegendTitle',
+    VisualOverlayLegendTitleSelection = 'visualOverlayLegendTitle',
     uid = '_uid',
     tooltipClass = 'tooltipDiv',
 }
@@ -101,7 +82,7 @@ export enum FilterType {
     booleanFilter = 'booleanFilter',
     stringFilter = 'stringFilter',
     numberFilter = 'numberFilter',
-    defectFilter = 'defectFilter',
+    colorFilter = 'colorFilter',
 }
 
 export class ArrayConstants {
@@ -121,7 +102,7 @@ export class ArrayConstants {
         Kontrolleur: 'Kontrolleur',
         OIG: 'OIG',
     };
-    static readonly rolloutColors = {
+    static readonly visualOverlayColors = {
         'nicht gewalzt': '#ffffff',
         'gewalzt ohne Fehler': '#2ca25f',
         'gewalzt mit Fehler': '#de2d26',

@@ -47,17 +47,17 @@ import {
     DataPoint,
     PlotModel,
     PlotType,
-    OverlayType as OverlayType,
+    OverlayType,
     D3Plot,
     D3PlotXAxis,
     D3PlotYAxis,
-    OverlayRectangle as OverlayRectangle,
+    OverlayRectangle,
     TooltipModel,
     TooltipData,
     ZoomingSettings,
     GeneralPlotSettings,
     D3Heatmap,
-    RolloutRectangle,
+    VisualOverlayRectangle,
     LegendValue,
     Legend,
     D3Selection,
@@ -167,19 +167,20 @@ export class Visual implements IVisual {
             const xScale = xAxisSettings.xScaleZoomed;
             const plotModels = this.viewModel.plotModels;
             const generalPlotSettings = this.viewModel.generalPlotSettings;
+
             const linesG = this.svg.append('g').attr('transform', 'translate(' + generalPlotSettings.margins.left + ',0)');
             const lines = linesG
                 .selectAll('.' + Constants.axisBreakClass)
                 .data(xAxisSettings.breakIndices)
                 .join('line')
                 .attr('class', Constants.axisBreakClass)
-                .attr('stroke', '#cccccc')
+                .attr('stroke', this.viewModel.colorSettings.colorSettings.breakLineColor)
                 .attr('x1', (d) => xScale(d))
                 .attr('x2', (d) => xScale(d))
                 .attr('y1', plotModels[0].plotTop)
                 .attr('y2', plotModels[plotModels.length - 1].plotTop + generalPlotSettings.plotHeight)
                 .attr('stroke-dasharray', '5,5')
-                .attr('clip-path', 'url(#rolloutClip)')
+                .attr('clip-path', 'url(#visualOverlayClip)')
                 .attr('pointer-events', 'none');
             lines.raise();
         }
@@ -195,9 +196,9 @@ export class Visual implements IVisual {
                 if (i < legends.legends.length - 1) legends.legends[i + 1].legendXPosition = l.legendXEndPosition + MarginSettings.legendSeparationMargin;
             }
         }
-        if (this.viewModel.rolloutRectangles) {
-            this.drawRolloutRectangles();
-            this.drawRolloutLegend();
+        if (this.viewModel.visualOverlayRectangles) {
+            this.drawVisualOverlayRectangles();
+            this.drawVisualOverlayLegend();
         }
     }
 
@@ -407,39 +408,39 @@ export class Visual implements IVisual {
         }
     }
 
-    private drawRolloutLegend() {
+    private drawVisualOverlayLegend() {
         const margins = this.viewModel.generalPlotSettings;
         const yPosition = margins.legendYPostion;
-        const rolloutRectangles = this.viewModel.rolloutRectangles;
+        const visualOverlayRectangles = this.viewModel.visualOverlayRectangles;
         const legendCount = this.viewModel.legends.legends.length;
         let xPos = legendCount > 0 ? this.viewModel.legends.legends[legendCount - 1].legendXEndPosition + MarginSettings.legendSeparationMargin : margins.margins.left;
         if (this.viewModel.legends.legends.length > 0) {
             xPos = this.viewModel.legends.legends[this.viewModel.legends.legends.length - 1].legendXEndPosition + MarginSettings.legendSeparationMargin;
         }
         const dotsXPosition = [];
-        xPos = this.drawLegendTitle(rolloutRectangles.name, Constants.rolloutLegendTitleSelection, xPos, yPosition, Constants.rolloutLegendTitleSelection);
-        xPos = this.drawLegendTexts(rolloutRectangles.legendValues, '', xPos, dotsXPosition, yPosition, new Set(rolloutRectangles.legendValues.map((x) => x.value)));
-        this.drawLegendDots(rolloutRectangles.legendValues, dotsXPosition, yPosition, '', null, rolloutRectangles.opacity * 2);
+        xPos = this.drawLegendTitle(visualOverlayRectangles.name, Constants.VisualOverlayLegendTitleSelection, xPos, yPosition, Constants.VisualOverlayLegendTitleSelection);
+        xPos = this.drawLegendTexts(visualOverlayRectangles.legendValues, '', xPos, dotsXPosition, yPosition, new Set(visualOverlayRectangles.legendValues.map((x) => x.value)));
+        this.drawLegendDots(visualOverlayRectangles.legendValues, dotsXPosition, yPosition, '', null, visualOverlayRectangles.opacity * 2);
         this.checkOutOfSvg(xPos);
     }
 
-    private drawRolloutRectangles() {
+    private drawVisualOverlayRectangles() {
         const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScale;
-        const rolloutG = this.svg.append('g').attr('transform', 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')');
-        rolloutG
-            .selectAll('.' + Constants.rolloutClass)
-            .data(this.viewModel.rolloutRectangles.rolloutRectangles)
+        const visualOverlayG = this.svg.append('g').attr('transform', 'translate(' + this.viewModel.generalPlotSettings.margins.left + ',' + 0 + ')');
+        visualOverlayG
+            .selectAll('.' + Constants.visualOverlayClass)
+            .data(this.viewModel.visualOverlayRectangles.visualOverlayRectangles)
             .enter()
             .append('rect')
-            .attr('class', Constants.rolloutClass)
+            .attr('class', Constants.visualOverlayClass)
             .attr('width', (d) => xScale(d.endX) - xScale(d.x))
             .attr('height', (d) => d.width)
             .attr('x', (d) => xScale(d.x))
             .attr('y', (d) => d.y)
             .attr('fill', (d) => d.color)
-            .attr('clip-path', 'url(#rolloutClip)')
-            .style('opacity', this.viewModel.rolloutRectangles.opacity);
-        rolloutG.lower();
+            .attr('clip-path', 'url(#visualOverlayClip)')
+            .style('opacity', this.viewModel.visualOverlayRectangles.opacity);
+        visualOverlayG.lower();
     }
 
     private constructBasicPlot(plotModel: PlotModel): Result<void, PlotError> {
@@ -492,16 +493,16 @@ export class Visual implements IVisual {
                 .attr('height', plotHeight + 2 * generalPlotSettings.dotMargin);
             defs.append('clipPath').attr('id', 'overlayClip').append('rect').attr('y', 0).attr('x', 0).attr('width', plotWidth).attr('height', plotHeight);
             defs.append('clipPath').attr('id', 'hclip').append('rect').attr('y', 0).attr('x', 0).attr('width', plotWidth).attr('height', Heatmapmargins.heatmapHeight);
-            if (this.viewModel.rolloutRectangles) {
-                const rolloutRectangle = this.viewModel.rolloutRectangles.rolloutRectangles[0];
+            if (this.viewModel.visualOverlayRectangles) {
+                const visualOverlayRectangle = this.viewModel.visualOverlayRectangles.visualOverlayRectangles[0];
                 const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
                 defs.append('clipPath')
-                    .attr('id', 'rolloutClip')
+                    .attr('id', 'visualOverlayClip')
                     .append('rect')
-                    .attr('y', rolloutRectangle.y)
-                    .attr('x', xScale(rolloutRectangle.x))
+                    .attr('y', visualOverlayRectangle.y)
+                    .attr('x', xScale(visualOverlayRectangle.x))
                     .attr('width', plotWidth)
-                    .attr('height', rolloutRectangle.width);
+                    .attr('height', visualOverlayRectangle.width);
             }
             return ok(null);
         } catch (error) {
@@ -512,7 +513,7 @@ export class Visual implements IVisual {
     private addPlotTitle(plotModel: PlotModel, plot: D3Selection) {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
-            if (plotModel.plotTitleSettings.title.length > 0) {
+            if (plotModel.plotSettings.plotTitle.length > 0) {
                 plot.append('text')
                     .attr('class', 'plotTitle')
                     .attr('text-anchor', 'left')
@@ -520,7 +521,7 @@ export class Visual implements IVisual {
                     .attr('x', 0)
                     .attr('dy', '1em')
                     .style('font-size', generalPlotSettings.fontSize)
-                    .text(plotModel.plotTitleSettings.title);
+                    .text(plotModel.plotSettings.plotTitle);
             }
             return ok(null);
         } catch (error) {
@@ -552,29 +553,33 @@ export class Visual implements IVisual {
             const xAxisValue = axisBottom(generalPlotSettings.xAxisSettings.xScaleZoomed).ticks(axisHelper.getRecommendedNumberOfTicksForXAxis(generalPlotSettings.plotWidth));
             if (generalPlotSettings.xAxisSettings.axisBreak) {
                 xAxisValue.tickFormat((d) => {
-                    const xAxisSettings = this.viewModel.generalPlotSettings.xAxisSettings;
+                    const xAxisSettings = generalPlotSettings.xAxisSettings;
                     let key = '';
                     for (const [k, v] of xAxisSettings.indexMap.entries()) {
-                        if (v === d) key = '' + k;
+                        if (v === d)
+                            key =
+                                '' +
+                                (xAxisSettings.isDate ? (<Date>k).getDate() + '.' + ((<Date>k).getMonth() + 1) + '. ' + (<Date>k).getHours() + ':' + (<Date>k).getMinutes() : k);
                     }
+                    console.log(key);
                     return key;
                 });
             }
 
             let xLabel = null;
-            if (!plotModel.formatSettings.axisSettings.xAxis.ticks) {
+            if (!plotModel.plotSettings.xAxis.ticks) {
                 xAxisValue.tickValues([]);
             }
 
-            if (plotModel.formatSettings.axisSettings.xAxis.lables) {
+            if (plotModel.plotSettings.xAxis.labels) {
                 xLabel = plot
                     .append('text')
                     .attr('class', 'xLabel')
                     .attr('text-anchor', 'end')
                     .attr('x', generalPlotSettings.plotWidth / 2)
-                    .attr('y', generalPlotSettings.plotHeight + (plotModel.formatSettings.axisSettings.xAxis.ticks ? 25 : 15))
+                    .attr('y', generalPlotSettings.plotHeight + (plotModel.plotSettings.xAxis.ticks ? 25 : 15))
                     .style('font-size', generalPlotSettings.fontSize)
-                    .text(plotModel.labelNames.xLabel);
+                    .text(plotModel.plotSettings.xLabel);
             }
 
             xAxis.attr('transform', 'translate(0, ' + generalPlotSettings.plotHeight + ')').call(xAxisValue);
@@ -588,12 +593,12 @@ export class Visual implements IVisual {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
             const yAxis = plot.append('g').classed('yAxis', true);
-            const yScale = scaleLinear().domain([plotModel.yRange.min, plotModel.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
+            const yScale = scaleLinear().domain([plotModel.plotSettings.yRange.min, plotModel.plotSettings.yRange.max]).range([generalPlotSettings.plotHeight, 0]);
             const yAxisValue = axisLeft(yScale)
                 .ticks(generalPlotSettings.plotHeight / 20)
                 .tickFormat(d3.format('~s'));
             let yLabel = null;
-            if (plotModel.formatSettings.axisSettings.yAxis.lables) {
+            if (plotModel.plotSettings.yAxis.labels) {
                 yLabel = plot
                     .append('text')
                     .attr('class', 'yLabel')
@@ -602,7 +607,7 @@ export class Visual implements IVisual {
                     .attr('x', 0 - generalPlotSettings.plotHeight / 2)
                     .attr('dy', '1em')
                     .attr('transform', 'rotate(-90)')
-                    .text(plotModel.labelNames.yLabel)
+                    .text(plotModel.plotSettings.yLabel)
                     .style('font-size', generalPlotSettings.fontSize)
                     .style('font-size', function () {
                         const usedSpace = this.getComputedTextLength();
@@ -614,7 +619,7 @@ export class Visual implements IVisual {
                     });
             }
 
-            if (!plotModel.formatSettings.axisSettings.yAxis.ticks) {
+            if (!plotModel.plotSettings.yAxis.ticks) {
                 yAxisValue.tickValues([]);
             }
 
@@ -629,8 +634,8 @@ export class Visual implements IVisual {
     private drawOverlay(plotModel: PlotModel): Result<void, PlotError> {
         try {
             const colorSettings = this.viewModel.colorSettings.colorSettings;
-            const overlaytype = plotModel.overlayPlotSettings.overlayPlotSettings.overlayType;
-            const overlayRectangles = this.viewModel.overlayRectangles;
+            const overlaytype = plotModel.plotSettings.overlayType;
+            const overlayRectangles = this.viewModel.plotOverlayRectangles;
             const plotHeight = this.viewModel.generalPlotSettings.plotHeight;
             const plot = plotModel.d3Plot.root;
             const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
@@ -753,7 +758,6 @@ export class Visual implements IVisual {
                     .attr('stroke-width', 1.5)
                     .attr('clip-path', 'url(#clip)');
             }
-
             d3Plot.points = d3Plot.root
                 .selectAll(Constants.dotClass)
                 .data(dataPoints)
@@ -796,17 +800,17 @@ export class Visual implements IVisual {
     private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel): Result<D3Heatmap, HeatmapError> {
         try {
             const generalPlotSettings = this.viewModel.generalPlotSettings;
-            const xAxisSettings = plotModel.formatSettings.axisSettings.xAxis;
-            const extent = generalPlotSettings.xAxisSettings.isDate
+            const xAxisSettings = plotModel.plotSettings.xAxis;
+            const isDateScale = generalPlotSettings.xAxisSettings.isDate && !generalPlotSettings.xAxisSettings.axisBreak;
+            const extent = isDateScale
                 ? generalPlotSettings.xAxisSettings.xScaleZoomed.domain().map((x) => (<Date>x).getTime())
                 : <number[]>generalPlotSettings.xAxisSettings.xScaleZoomed.domain();
-            window.d3 = d3;
             const nrThresholds = generalPlotSettings.heatmapBins - 1;
-            const thresholds = d3.range(nrThresholds).map((x) => ((x + 1) * extent[1] - extent[0]) / (nrThresholds + 1) + extent[0]);
+            const thresholds = d3.range(nrThresholds).map((x) => ((x + 1) * (extent[1] - extent[0])) / (nrThresholds + 1) + extent[0]);
             const bins = d3
                 .bin<DataPoint, number>()
                 .value((d: DataPoint) => {
-                    if (generalPlotSettings.xAxisSettings.isDate) {
+                    if (isDateScale) {
                         return (<Date>d.xValue).getTime();
                     }
                     return <number>d.xValue;
@@ -822,8 +826,9 @@ export class Visual implements IVisual {
             const heatmapScale = d3.scaleLinear().domain([0, heatmapValues.length]).range([0, this.viewModel.generalPlotSettings.plotWidth]);
 
             let yTransition = generalPlotSettings.plotHeight + generalPlotSettings.margins.bottom;
-            yTransition += xAxisSettings.lables || xAxisSettings.ticks ? Heatmapmargins.heatmapMargin : 0;
-            yTransition += xAxisSettings.lables && xAxisSettings.ticks ? MarginSettings.xLabelSpace : 0;
+            yTransition += xAxisSettings.labels || xAxisSettings.ticks ? Heatmapmargins.heatmapMargin : 0;
+            yTransition += xAxisSettings.labels && xAxisSettings.ticks ? MarginSettings.xLabelSpace : 0;
+            this.svg.selectAll('.Heatmap' + plotModel.plotId).remove();
             const heatmap = this.svg
                 .append('g')
                 .classed('Heatmap' + plotModel.plotId, true)
@@ -902,14 +907,14 @@ export class Visual implements IVisual {
         }
     }
 
-    private zoomRollout() {
+    private zoomVisualOverlay() {
         const xScale = this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed;
         this.svg
-            .selectAll('.' + Constants.rolloutClass)
-            .attr('x', function (d: RolloutRectangle) {
+            .selectAll('.' + Constants.visualOverlayClass)
+            .attr('x', function (d: VisualOverlayRectangle) {
                 return xScale(d.x);
             })
-            .attr('width', function (d: RolloutRectangle) {
+            .attr('width', function (d: VisualOverlayRectangle) {
                 return xScale(d.endX) - xScale(d.x);
             });
     }
@@ -958,7 +963,7 @@ export class Visual implements IVisual {
                     this.storage.set(Constants.zoomState, transform.x + ';' + transform.y + ';' + transform.k).catch((reason) => console.log('set error: ' + reason));
                     const xScaleZoomed = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
                     this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed = xScaleZoomed;
-                    this.zoomRollout();
+                    this.zoomVisualOverlay();
                     this.zoomAxisBreak();
                     for (const plot of plots.map((x) => x.d3Plot)) {
                         this.zoomPlot(plot, transform);
@@ -1014,8 +1019,8 @@ export class Visual implements IVisual {
         const xMax = xScaleZoomed.domain()[1];
         const plotModel = this.viewModel.plotModels.filter((x) => x.yName === plot.yName)[0];
         const yDataPoints = plotModel.dataPoints.filter((x) => x.xValue >= xMin && x.xValue <= xMax).map((x) => Number(x.yValue));
-        const yMin = plotModel.yRange.minFixed ? plotModel.yRange.min : Math.min(...yDataPoints);
-        const yMax = plotModel.yRange.maxFixed ? plotModel.yRange.max : Math.max(...yDataPoints);
+        const yMin = plotModel.plotSettings.yRange.minFixed ? plotModel.plotSettings.yRange.min : Math.min(...yDataPoints);
+        const yMax = plotModel.plotSettings.yRange.maxFixed ? plotModel.plotSettings.yRange.max : Math.max(...yDataPoints);
         plot.y.yScaleZoomed = plot.y.yScaleZoomed.domain([yMin, yMax]);
     }
 
