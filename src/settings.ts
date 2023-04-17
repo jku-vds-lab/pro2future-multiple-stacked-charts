@@ -612,7 +612,7 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                 },
             },
             {
-                displayName: 'Use Legend Color',
+                displayName: 'Use Categorical Legend Color',
                 uid: groupName + PlotSettingsNames.useLegendColor + Constants.uid,
                 control: {
                     type: powerbi.visuals.FormattingComponent.ToggleSwitch,

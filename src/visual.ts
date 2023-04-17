@@ -191,7 +191,6 @@ export class Visual implements IVisual {
         if (legends && legends.legends.length > 0) {
             legends.setDeselectedValues(this.legendDeselected);
             for (let i = 0; i < legends.legends.length; i++) {
-                debugger;
                 const l = legends.legends[i];
                 this.drawLegend(l);
                 if (i < legends.legends.length - 1) legends.legends[i + 1].legendXPosition = l.legendXEndPosition + MarginSettings.legendSeparationMargin;

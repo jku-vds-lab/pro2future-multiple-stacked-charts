@@ -107,7 +107,7 @@ export class ViewModel {
     }
 
     createCategoricalLegend(dataModel: DataModel) {
-        const legendSet = new Set(dataModel.categoricalLegendData.values);
+        const legendSet = new Set(dataModel.categoricalLegendData.values.map((x) => x.toString()));
         legendSet.delete(null);
         legendSet.delete('');
         const legendColors = ArrayConstants.legendColors;
@@ -251,7 +251,7 @@ export class ViewModel {
                     if (filtered.length === 1) {
                         const categoricalLegend = filtered[0];
                         const dataPointLegendValue = categoricalLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
-                        const legendValue = categoricalLegend.legendValues.find((x) => x.value === dataPointLegendValue);
+                        const legendValue = categoricalLegend.legendValues.find((x) => dataPointLegendValue && x.value === dataPointLegendValue.toString());
                         if (dataPointLegendValue && legendValue) color = legendValue.color;
                     } else {
                         this.errors.push(new PlotLegendError(yAxis.name));
@@ -334,7 +334,9 @@ export class ViewModel {
                     x: xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) : xValues[i],
                 };
             }
-            overlayRectangles = overlayRectangles.filter((x) => x.x != null && <number>x.x >= 0 && x.width != null && x.width > 0);
+            overlayRectangles = overlayRectangles.filter((x) =>
+                x.x != null && dataModel.xData.isDate ? (<Date>x.x).getMilliseconds() >= 0 : <number>x.x >= 0 && x.width != null && x.width > 0
+            );
             if (overlayRectangles.length == 0) {
                 return err(new OverlayDataError());
             }
