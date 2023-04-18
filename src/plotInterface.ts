@@ -112,6 +112,7 @@ export interface Margins {
 
 export interface ZoomingSettings {
     enableZoom: boolean;
+    saveZoomState: boolean;
     maximumZoom: number;
 }
 

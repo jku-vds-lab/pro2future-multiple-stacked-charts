@@ -55,6 +55,7 @@ export enum ColorSettingsNames {
 }
 
 export enum ZoomingSettingsNames {
+    saveZoomState = 'saveZoomState',
     show = 'show',
     maximum = 'maximum',
 }

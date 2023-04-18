@@ -122,8 +122,9 @@ export class Visual implements IVisual {
                 this.addcontextMenu();
             })
             .mapErr((err) => this.displayError(err));
-
-        this.restoreZoomState();
+        if (this.viewModel.zoomingSettings.saveZoomState) {
+            this.restoreZoomState();
+        }
     }
 
     public getFormattingModel(): powerbi.visuals.FormattingModel {

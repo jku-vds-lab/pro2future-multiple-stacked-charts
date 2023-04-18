@@ -50,7 +50,6 @@ export function createFormattingModel(viewModel: ViewModel): powerbi.visuals.For
     for (const tooltip of viewModel.tooltipModels) {
         addTooltipTitleGroup(tooltip, tooltipTitleCard);
     }
-
     return formattingModel;
 }
 
@@ -89,6 +88,20 @@ function createZoomingCard(viewModel: ViewModel) {
                                     propertyName: ZoomingSettingsNames.maximum,
                                 },
                                 value: viewModel.zoomingSettings.maximumZoom,
+                            },
+                        },
+                    },
+                    {
+                        displayName: 'Save Zoom State',
+                        uid: 'zooming_save' + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.ToggleSwitch,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.zoomingSettings,
+                                    propertyName: ZoomingSettingsNames.saveZoomState,
+                                },
+                                value: viewModel.zoomingSettings.saveZoomState,
                             },
                         },
                     },

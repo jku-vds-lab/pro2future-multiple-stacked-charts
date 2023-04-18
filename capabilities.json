@@ -614,6 +614,11 @@
                         "bool": true
                     }
                 },
+                "saveZoomState": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "maximum": {
                     "displayName": "Maximum Zoom Factor",
                     "type": {

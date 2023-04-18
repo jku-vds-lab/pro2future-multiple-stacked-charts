@@ -154,6 +154,7 @@ export class ViewModel {
         this.zoomingSettings = <ZoomingSettings>{
             enableZoom: <boolean>getValue(this.objects, Settings.zoomingSettings, ZoomingSettingsNames.show, true),
             maximumZoom: <number>getValue(this.objects, Settings.zoomingSettings, ZoomingSettingsNames.maximum, 30),
+            saveZoomState: <boolean>getValue(this.objects, Settings.zoomingSettings, ZoomingSettingsNames.saveZoomState, false),
         };
         this.colorSettings = {
             colorSettings: {
