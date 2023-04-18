@@ -242,7 +242,13 @@ export class ViewModel {
             const plotSettings = dataModel.plotSettingsArray[plotNr];
             //create datapoints
             for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
-                const selectionId: ISelectionId = dataModel.host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
+                const selectionId: ISelectionId =
+                    dataModel.categorical.categories && dataModel.categorical.categories.length > 0
+                        ? dataModel.host.createSelectionIdBuilder().withCategory(dataModel.categorical.categories[0], pointNr).createSelectionId()
+                        : dataModel.host
+                              .createSelectionIdBuilder()
+                              .withMeasure(dataModel.categorical.values.filter((x) => x.source.roles['x_axis'])[0].source.queryName)
+                              .createSelectionId();
                 if (!yDataPoints[pointNr]) continue;
                 let color = plotSettings.fill;
                 const xVal = xDataPoints[pointNr];
@@ -265,7 +271,7 @@ export class ViewModel {
                     selected: false,
                     color: color,
                     pointNr: pointNr,
-                    selectionId: dataModel.host.createSelectionIdBuilder().withCategory(dataModel.categorical.categories[0], pointNr).createSelectionId(),
+                    selectionId: selectionId,
                 };
 
                 dataPoints.push(dataPoint);

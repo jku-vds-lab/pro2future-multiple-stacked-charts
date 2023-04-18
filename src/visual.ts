@@ -105,6 +105,7 @@ export class Visual implements IVisual {
     }
 
     public update(options: VisualUpdateOptions) {
+        debugger;
         this.dataview = options.dataViews[0];
         this.removeDuplicateColumns();
         visualTransform(options, this.host)

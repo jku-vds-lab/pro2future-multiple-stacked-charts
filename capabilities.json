@@ -482,6 +482,11 @@
                         ]
                     }
                 },
+                "plotWeight": {
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "xAxisDisplay": {
                     "displayName": "X-Axis",
                     "type": {
