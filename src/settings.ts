@@ -118,6 +118,10 @@ function createZoomingCard(viewModel: ViewModel) {
             objectName: Settings.zoomingSettings,
             propertyName: ZoomingSettingsNames.show,
         },
+        {
+            objectName: Settings.zoomingSettings,
+            propertyName: ZoomingSettingsNames.saveZoomState,
+        },
     ];
     return zoomingCard;
 }

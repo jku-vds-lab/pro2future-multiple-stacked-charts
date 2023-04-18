@@ -192,7 +192,6 @@ export class ViewModel {
                 Heatmapmargins.heatmapSpace * heatmapCount -
                 (MarginSettings.margins.top + MarginSettings.margins.bottom) * plotCount) /
             plotWeightSum;
-        console.log('heightspace: ' + plotHeightSpace);
         if (plotHeightSpace < minPlotHeight) {
             const plotSpaceDif = minPlotHeight - plotHeightSpace;
             plotHeightSpace = minPlotHeight;

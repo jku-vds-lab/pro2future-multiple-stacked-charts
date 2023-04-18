@@ -58,6 +58,7 @@ export enum ZoomingSettingsNames {
     saveZoomState = 'saveZoomState',
     show = 'show',
     maximum = 'maximum',
+    zoomState = 'zoomState',
 }
 
 export enum ColorSelectorNames {

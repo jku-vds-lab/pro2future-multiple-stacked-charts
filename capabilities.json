@@ -624,6 +624,9 @@
                     "type": {
                         "numeric": true
                     }
+                },
+                "zoomState": {
+                    "type": { "text": true }
                 }
             }
         },
