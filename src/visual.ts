@@ -111,6 +111,7 @@ export class Visual implements IVisual {
         this.dataview = options.dataViews[0];
         const zoomState = getValue<string>(this.dataview.metadata.objects, Settings.zoomingSettings, ZoomingSettingsNames.zoomState, '0;0;1');
         if (options.type === 2 && zoomState !== this.storedZoomState) {
+            //don't do anything if formatting options have changed by storing zoom state
             this.storedZoomState = zoomState;
             return;
         }
