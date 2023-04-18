@@ -512,6 +512,10 @@ function createPlotSettingsCard() {
         },
         {
             objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.plotWeight,
+        },
+        {
+            objectName: Settings.plotSettings,
             propertyName: PlotSettingsNames.xAxisDisplay,
         },
         {
@@ -654,6 +658,21 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                         },
 
                         value: plotModel.plotSettings.overlayType,
+                    },
+                },
+            },
+            {
+                displayName: 'Plot Weight',
+                uid: groupName + PlotSettingsNames.plotWeight + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.NumUpDown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.plotWeight,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.plotWeight,
                     },
                 },
             },

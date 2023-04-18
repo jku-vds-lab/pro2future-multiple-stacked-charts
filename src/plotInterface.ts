@@ -137,7 +137,7 @@ export interface PlotModel {
     plotId: number;
     plotTop: number;
     yName: string;
-
+    plotHeight: number;
     plotSettings: PlotSettings;
     dataPoints: DataPoint[];
 
@@ -227,6 +227,7 @@ export interface PlotSettings {
     plotType: PlotType;
     useLegendColor: boolean;
     showHeatmap: boolean;
+    plotWeight: number;
     plotTitle: string;
     overlayType: OverlayType;
     xAxis: AxisInformationInterface;
@@ -296,6 +297,7 @@ export interface LegendData {
 export type D3Selection = d3.Selection<SVGGElement, unknown, BaseType, unknown>;
 
 export interface D3Plot {
+    plotId: number;
     yName: string;
     type: string;
     points: d3.Selection<SVGCircleElement, DataPoint, SVGGElement, unknown>;
