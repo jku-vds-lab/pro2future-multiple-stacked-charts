@@ -15,7 +15,7 @@ export class VisualOverlayRectangles {
     metadetaColumn: powerbi.DataViewMetadataColumn;
     legendValues: LegendValue[];
 
-    constructor(xValues: number[] | Date[], visualOverlay: Primitive[], y, width, visualOverlayMetadataColumn: powerbi.DataViewMetadataColumn, visualOverlayOpacity = 0.2) {
+    constructor(xValues: number[] | Date[], visualOverlay: Primitive[], yPos, width, visualOverlayMetadataColumn: powerbi.DataViewMetadataColumn, visualOverlayOpacity = 0.2) {
         this.name = <string>getValue(visualOverlayMetadataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, visualOverlayMetadataColumn.displayName);
         this.metadetaColumn = visualOverlayMetadataColumn;
         this.visualOverlayRectangles = [];
@@ -29,7 +29,7 @@ export class VisualOverlayRectangles {
         }
 
         let rect = <VisualOverlayRectangle>{
-            y,
+            y: yPos,
             width,
             x: xValues[0],
             color: this.getColor(visualOverlay[0]),
@@ -44,7 +44,7 @@ export class VisualOverlayRectangles {
                 rect.endX = x;
                 this.visualOverlayRectangles.push(rect);
                 rect = <VisualOverlayRectangle>{
-                    y,
+                    y: yPos,
                     width,
                     x: xValues[i],
                     color: this.getColor(visualOverlay[i]),

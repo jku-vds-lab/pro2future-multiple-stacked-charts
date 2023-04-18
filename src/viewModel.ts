@@ -296,14 +296,14 @@ export class ViewModel {
 
     createVisualOverlayRectangles(dataModel: DataModel) {
         if (dataModel.visualOverlayRectangles.length > 0) {
-            const visualOverlayY = this.plotModels[0].plotTop;
-            const visualOverlayHeight = this.plotModels[this.plotModels.length - 1].plotTop + this.generalPlotSettings.plotHeight - visualOverlayY;
+            const visualOverlayYPos = this.plotModels[0].plotTop;
+            const visualOverlayHeight = this.plotModels[this.plotModels.length - 1].plotTop + this.generalPlotSettings.plotHeight - visualOverlayYPos;
             this.visualOverlayRectangles = new VisualOverlayRectangles(
                 this.generalPlotSettings.xAxisSettings.axisBreak
                     ? dataModel.xData.values.map((x) => this.generalPlotSettings.xAxisSettings.indexMap.get(x))
                     : dataModel.xData.values,
                 dataModel.visualOverlayRectangles,
-                visualOverlayY,
+                visualOverlayYPos,
                 visualOverlayHeight,
                 dataModel.visualOverlayMetadataColumn
             );
