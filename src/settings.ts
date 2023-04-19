@@ -50,7 +50,6 @@ export function createFormattingModel(viewModel: ViewModel): powerbi.visuals.For
     for (const tooltip of viewModel.tooltipModels) {
         addTooltipTitleGroup(tooltip, tooltipTitleCard);
     }
-
     return formattingModel;
 }
 
@@ -92,6 +91,20 @@ function createZoomingCard(viewModel: ViewModel) {
                             },
                         },
                     },
+                    {
+                        displayName: 'Save Zoom State',
+                        uid: 'zooming_save' + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.ToggleSwitch,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.zoomingSettings,
+                                    propertyName: ZoomingSettingsNames.saveZoomState,
+                                },
+                                value: viewModel.zoomingSettings.saveZoomState,
+                            },
+                        },
+                    },
                 ],
             },
         ],
@@ -104,6 +117,10 @@ function createZoomingCard(viewModel: ViewModel) {
         {
             objectName: Settings.zoomingSettings,
             propertyName: ZoomingSettingsNames.show,
+        },
+        {
+            objectName: Settings.zoomingSettings,
+            propertyName: ZoomingSettingsNames.saveZoomState,
         },
     ];
     return zoomingCard;
@@ -512,6 +529,10 @@ function createPlotSettingsCard() {
         },
         {
             objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.plotWeight,
+        },
+        {
+            objectName: Settings.plotSettings,
             propertyName: PlotSettingsNames.xAxisDisplay,
         },
         {
@@ -612,7 +633,7 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                 },
             },
             {
-                displayName: 'Use Legend Color',
+                displayName: 'Use Categorical Legend Color',
                 uid: groupName + PlotSettingsNames.useLegendColor + Constants.uid,
                 control: {
                     type: powerbi.visuals.FormattingComponent.ToggleSwitch,
@@ -654,6 +675,21 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                         },
 
                         value: plotModel.plotSettings.overlayType,
+                    },
+                },
+            },
+            {
+                displayName: 'Plot Weight',
+                uid: groupName + PlotSettingsNames.plotWeight + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.NumUpDown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.plotWeight,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.plotWeight,
                     },
                 },
             },

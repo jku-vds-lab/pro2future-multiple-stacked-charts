@@ -479,7 +479,6 @@
                 },
 
                 "useLegendColor": {
-                    "displayName": "Use Legend Color",
                     "type": {
                         "bool": true
                     }
@@ -507,6 +506,11 @@
                                 "value": "None"
                             }
                         ]
+                    }
+                },
+                "plotWeight": {
+                    "type": {
+                        "numeric": true
                     }
                 },
                 "xAxisDisplay": {
@@ -636,11 +640,19 @@
                         "bool": true
                     }
                 },
+                "saveZoomState": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "maximum": {
                     "displayName": "Maximum Zoom Factor",
                     "type": {
                         "numeric": true
                     }
+                },
+                "zoomState": {
+                    "type": { "text": true }
                 }
             }
         },

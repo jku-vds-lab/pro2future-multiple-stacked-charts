@@ -126,7 +126,7 @@ function getCategoricalData(categorical: powerbi.DataViewCategorical, dataModel:
                 }
             }
             if (roles.legend) {
-                dataModel.defectLegendData = {
+                dataModel.categoricalLegendData = {
                     name: category.source.displayName,
                     values: category.values,
                     metaDataColumn: category.source,
@@ -206,7 +206,7 @@ function getMeasureData(categorical: powerbi.DataViewCategorical, dataModel: Dat
                 }
             }
             if (roles.legend) {
-                dataModel.defectLegendData = {
+                dataModel.categoricalLegendData = {
                     name: value.source.displayName,
                     values: <string[]>value.values,
                     metaDataColumn: value.source,
@@ -309,7 +309,7 @@ export class DataModel {
     xData: XAxisData;
     yData: YAxisData[];
     tooltipData: TooltipColumnData[];
-    defectLegendData: LegendData;
+    categoricalLegendData: LegendData;
     filterLegendData: LegendData[];
     overlayWidth: number[];
     overlayLength: number[];
@@ -343,7 +343,6 @@ export class DataModel {
             const yColumnId = this.yData[plotNr].columnId;
             const yColumnObjects = getMetadataColumn(this.metadataColumns, yColumnId).objects;
             const plotTitle = getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotTitle, yAxis.name);
-            console.log('title: ' + plotTitle);
             const xInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.xAxisDisplay, AxisInformation.None)];
             const yInformation: AxisInformation = AxisInformation[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yAxisDisplay, AxisInformation.Ticks)];
             let xAxisInformation: AxisInformationInterface, yAxisInformation: AxisInformationInterface;
@@ -365,6 +364,7 @@ export class DataModel {
                 showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
                 plotTitle: plotTitle,
                 overlayType: OverlayType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.overlayType, OverlayType.None)],
+                plotWeight: getValue<number>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotWeight, 1),
                 xAxis: xAxisInformation,
                 yAxis: yAxisInformation,
                 xLabel: getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.xLabel, this.xData.name),
