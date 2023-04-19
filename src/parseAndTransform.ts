@@ -332,6 +332,7 @@ export class DataModel {
         this.filterLegendData = [];
         this.overlayLength = [];
         this.overlayWidth = [];
+        this.overlayY = [];
         this.visualOverlayRectangles = [];
         this.plotSettingsArray = [];
     }

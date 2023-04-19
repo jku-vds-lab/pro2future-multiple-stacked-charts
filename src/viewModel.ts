@@ -27,7 +27,7 @@ import {
     LegendDataPoint,
     Legends,
     LegendValue,
-    OverlayRectangle as PlotOverlayRectangle,
+    OverlayRectangle,
     PlotModel,
     VisualOverlayRectangles,
     TooltipDataPoint,
@@ -40,7 +40,7 @@ import {
 export class ViewModel {
     plotModels: PlotModel[];
     colorSettings: ColorSettings;
-    plotOverlayRectangles?: PlotOverlayRectangle[];
+    plotOverlayRectangles?: OverlayRectangle[];
     svgHeight: number;
     svgWidth: number;
     generalPlotSettings: GeneralPlotSettings;
@@ -313,9 +313,10 @@ export class ViewModel {
     createPlotOverlayInformation(dataModel: DataModel): Result<void, OverlayDataError> {
         if (dataModel.overlayLength.length == dataModel.overlayWidth.length && dataModel.overlayWidth.length > 0) {
             const xValues = dataModel.xData.values;
-            let overlayRectangles: PlotOverlayRectangle[] = new Array<PlotOverlayRectangle>(dataModel.overlayLength.length);
+            let overlayRectangles: OverlayRectangle[] = new Array<OverlayRectangle>(dataModel.overlayLength.length);
             const xAxisSettings = this.generalPlotSettings.xAxisSettings;
             let endX = null;
+            let y = 0;
             for (let i = 0; i < dataModel.overlayLength.length; i++) {
                 if (dataModel.overlayLength[i]) {
                     if (this.generalPlotSettings.xAxisSettings.isDate) {
@@ -324,13 +325,14 @@ export class ViewModel {
                     } else {
                         endX = xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) + dataModel.overlayLength[i] : <number>xValues[i] + dataModel.overlayLength[i];
                     }
+                    y = dataModel.overlayY && dataModel.overlayY[i] ? dataModel.overlayY[i] : 0;
                 } else {
                     endX = null;
                 }
                 overlayRectangles[i] = {
                     width: dataModel.overlayWidth[i],
                     endX: endX,
-                    y: 0,
+                    y: y,
                     x: xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) : xValues[i],
                 };
             }
