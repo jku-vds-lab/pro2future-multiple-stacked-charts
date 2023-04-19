@@ -180,7 +180,7 @@ export class ViewModel {
         const plotTitlesCount = dataModel.plotSettingsArray.filter((x) => x.plotTitle.length > 0).length;
         const xLabelsCount = dataModel.plotSettingsArray.filter((x) => x.xAxis.labels && x.xAxis.ticks).length;
         const heatmapCount = dataModel.plotSettingsArray.filter((x) => x.showHeatmap).length;
-        const plotWeightSum = dataModel.plotSettingsArray.map((x) => x.plotWeight).reduce((a, b) => a + b);
+        const plotHeightFactorSum = dataModel.plotSettingsArray.map((x) => x.plotHeightFactor).reduce((a, b) => a + b);
         const plotCount = dataModel.plotSettingsArray.length;
         let plotHeightSpace: number =
             (this.svgHeight -
@@ -191,11 +191,11 @@ export class ViewModel {
                 MarginSettings.xLabelSpace * xLabelsCount -
                 Heatmapmargins.heatmapSpace * heatmapCount -
                 (MarginSettings.margins.top + MarginSettings.margins.bottom) * plotCount) /
-            plotWeightSum;
+            plotHeightFactorSum;
         if (plotHeightSpace < minPlotHeight) {
             const plotSpaceDif = minPlotHeight - plotHeightSpace;
             plotHeightSpace = minPlotHeight;
-            this.svgHeight = this.svgHeight + plotWeightSum * plotSpaceDif;
+            this.svgHeight = this.svgHeight + plotHeightFactorSum * plotSpaceDif;
         }
         let plotWidth: number = this.svgWidth - MarginSettings.margins.left - MarginSettings.margins.right;
         if (plotWidth < MarginSettings.miniumumPlotWidth) {
@@ -290,7 +290,7 @@ export class ViewModel {
                 dataPoints: dataPoints,
                 d3Plot: null,
                 metaDataColumn: metaDataColumn,
-                plotHeight: plotSettings.plotWeight * this.generalPlotSettings.plotHeight,
+                plotHeight: plotSettings.plotHeightFactor * this.generalPlotSettings.plotHeight,
             };
             plotModel.plotSettings.yRange.min = plotModel.plotSettings.yRange.minFixed ? plotModel.plotSettings.yRange.min : Math.min(...yDataPoints);
             plotModel.plotSettings.yRange.max = plotModel.plotSettings.yRange.maxFixed ? plotModel.plotSettings.yRange.max : Math.max(...yDataPoints);

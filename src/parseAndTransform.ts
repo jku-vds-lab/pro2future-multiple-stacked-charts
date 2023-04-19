@@ -364,7 +364,7 @@ export class DataModel {
                 showHeatmap: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.showHeatmap, false),
                 plotTitle: plotTitle,
                 overlayType: OverlayType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.overlayType, OverlayType.None)],
-                plotWeight: getValue<number>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotWeight, 1),
+                plotHeightFactor: getValue<number>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotHeightFactor, 1),
                 xAxis: xAxisInformation,
                 yAxis: yAxisInformation,
                 xLabel: getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.xLabel, this.xData.name),

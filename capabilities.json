@@ -508,7 +508,7 @@
                         ]
                     }
                 },
-                "plotWeight": {
+                "plotHeightFactor": {
                     "type": {
                         "numeric": true
                     }

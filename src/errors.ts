@@ -30,7 +30,7 @@ export class NoDataError extends ParseAndTransformError {
      */
     constructor() {
         const name = 'No Data error';
-        const message = 'Keine Daten vorhanden (Gießdatum < 100 Tage)';
+        const message = 'No data provided. Maybe the filters are too restrictive.';
         super(message, name);
     }
 }
