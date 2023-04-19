@@ -481,6 +481,11 @@
                         ]
                     }
                 },
+                "plotWeight": {
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "xAxisDisplay": {
                     "displayName": "X-Axis",
                     "type": {
@@ -608,11 +613,19 @@
                         "bool": true
                     }
                 },
+                "saveZoomState": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "maximum": {
                     "displayName": "Maximum Zoom Factor",
                     "type": {
                         "numeric": true
                     }
+                },
+                "zoomState": {
+                    "type": { "text": true }
                 }
             }
         },

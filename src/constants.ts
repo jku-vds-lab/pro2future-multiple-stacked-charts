@@ -32,6 +32,7 @@ export enum PlotSettingsNames {
     showHeatmap = 'showHeatmap',
     plotTitle = 'plotTitle',
     overlayType = 'overlayType',
+    plotWeight = 'plotWeight',
     xAxisDisplay = 'xAxisDisplay',
     yAxisDisplay = 'yAxisDisplay',
     xLabel = 'xLabel',
@@ -54,8 +55,10 @@ export enum ColorSettingsNames {
 }
 
 export enum ZoomingSettingsNames {
+    saveZoomState = 'saveZoomState',
     show = 'show',
     maximum = 'maximum',
+    zoomState = 'zoomState',
 }
 
 export enum ColorSelectorNames {

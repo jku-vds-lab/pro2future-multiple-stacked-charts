@@ -154,6 +154,7 @@ export class ViewModel {
         this.zoomingSettings = <ZoomingSettings>{
             enableZoom: <boolean>getValue(this.objects, Settings.zoomingSettings, ZoomingSettingsNames.show, true),
             maximumZoom: <number>getValue(this.objects, Settings.zoomingSettings, ZoomingSettingsNames.maximum, 30),
+            saveZoomState: <boolean>getValue(this.objects, Settings.zoomingSettings, ZoomingSettingsNames.saveZoomState, false),
         };
         this.colorSettings = {
             colorSettings: {
@@ -179,6 +180,8 @@ export class ViewModel {
         const plotTitlesCount = dataModel.plotSettingsArray.filter((x) => x.plotTitle.length > 0).length;
         const xLabelsCount = dataModel.plotSettingsArray.filter((x) => x.xAxis.labels && x.xAxis.ticks).length;
         const heatmapCount = dataModel.plotSettingsArray.filter((x) => x.showHeatmap).length;
+        const plotWeightSum = dataModel.plotSettingsArray.map((x) => x.plotWeight).reduce((a, b) => a + b);
+        const plotCount = dataModel.plotSettingsArray.length;
         let plotHeightSpace: number =
             (this.svgHeight -
                 MarginSettings.svgTopPadding -
@@ -186,12 +189,13 @@ export class ViewModel {
                 legendHeight -
                 MarginSettings.plotTitleHeight * plotTitlesCount -
                 MarginSettings.xLabelSpace * xLabelsCount -
-                Heatmapmargins.heatmapSpace * heatmapCount) /
-            dataModel.yData.length;
+                Heatmapmargins.heatmapSpace * heatmapCount -
+                (MarginSettings.margins.top + MarginSettings.margins.bottom) * plotCount) /
+            plotWeightSum;
         if (plotHeightSpace < minPlotHeight) {
             const plotSpaceDif = minPlotHeight - plotHeightSpace;
             plotHeightSpace = minPlotHeight;
-            this.svgHeight = this.svgHeight + dataModel.yData.length * plotSpaceDif;
+            this.svgHeight = this.svgHeight + plotWeightSum * plotSpaceDif;
         }
         let plotWidth: number = this.svgWidth - MarginSettings.margins.left - MarginSettings.margins.right;
         if (plotWidth < MarginSettings.miniumumPlotWidth) {
@@ -205,7 +209,7 @@ export class ViewModel {
         this.generalPlotSettings = {
             plotTitleHeight: MarginSettings.plotTitleHeight,
             dotMargin: MarginSettings.dotMargin,
-            plotHeight: plotHeightSpace - MarginSettings.margins.top - MarginSettings.margins.bottom,
+            plotHeight: plotHeightSpace,
             plotWidth: plotWidth,
             legendHeight: legendHeight,
             xScalePadding: 0.1,
@@ -242,7 +246,13 @@ export class ViewModel {
             const plotSettings = dataModel.plotSettingsArray[plotNr];
             //create datapoints
             for (let pointNr = 0; pointNr < maxLengthAttributes; pointNr++) {
-                const selectionId: ISelectionId = dataModel.host.createSelectionIdBuilder().withMeasure(xDataPoints[pointNr].toString()).createSelectionId();
+                const selectionId: ISelectionId =
+                    dataModel.categorical.categories && dataModel.categorical.categories.length > 0
+                        ? dataModel.host.createSelectionIdBuilder().withCategory(dataModel.categorical.categories[0], pointNr).createSelectionId()
+                        : dataModel.host
+                              .createSelectionIdBuilder()
+                              .withMeasure(dataModel.categorical.values.filter((x) => x.source.roles['x_axis'])[0].source.queryName)
+                              .createSelectionId();
                 if (!yDataPoints[pointNr]) continue;
                 let color = plotSettings.fill;
                 const xVal = xDataPoints[pointNr];
@@ -265,14 +275,13 @@ export class ViewModel {
                     selected: false,
                     color: color,
                     pointNr: pointNr,
-                    selectionId: dataModel.host.createSelectionIdBuilder().withCategory(dataModel.categorical.categories[0], pointNr).createSelectionId(),
+                    selectionId: selectionId,
                 };
 
                 dataPoints.push(dataPoint);
             }
 
             plotTop = plotSettings.plotTitle.length > 0 ? plotTop + MarginSettings.plotTitleHeight : plotTop;
-
             const plotModel: PlotModel = {
                 plotId: plotNr,
                 yName: yAxis.name,
@@ -281,13 +290,14 @@ export class ViewModel {
                 dataPoints: dataPoints,
                 d3Plot: null,
                 metaDataColumn: metaDataColumn,
+                plotHeight: plotSettings.plotWeight * this.generalPlotSettings.plotHeight,
             };
             plotModel.plotSettings.yRange.min = plotModel.plotSettings.yRange.minFixed ? plotModel.plotSettings.yRange.min : Math.min(...yDataPoints);
             plotModel.plotSettings.yRange.max = plotModel.plotSettings.yRange.maxFixed ? plotModel.plotSettings.yRange.max : Math.max(...yDataPoints);
             this.plotModels[plotNr] = plotModel;
             const formatXAxis = plotModel.plotSettings.xAxis;
             plotTop = formatXAxis.labels && formatXAxis.ticks ? plotTop + MarginSettings.xLabelSpace : plotTop;
-            plotTop += this.generalPlotSettings.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
+            plotTop += plotModel.plotHeight + MarginSettings.margins.top + MarginSettings.margins.bottom;
             plotTop += plotModel.plotSettings.showHeatmap ? Heatmapmargins.heatmapSpace : 0;
         }
 
