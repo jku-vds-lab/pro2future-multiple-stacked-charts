@@ -452,7 +452,6 @@
                 },
 
                 "useLegendColor": {
-                    "displayName": "Use Legend Color",
                     "type": {
                         "bool": true
                     }
