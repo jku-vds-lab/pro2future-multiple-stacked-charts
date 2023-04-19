@@ -123,7 +123,7 @@ function getCategoricalData(categorical: powerbi.DataViewCategorical, dataModel:
                 }
             }
             if (roles.legend) {
-                dataModel.defectLegendData = {
+                dataModel.categoricalLegendData = {
                     name: category.source.displayName,
                     values: category.values,
                     metaDataColumn: category.source,
@@ -200,7 +200,7 @@ function getMeasureData(categorical: powerbi.DataViewCategorical, dataModel: Dat
                 }
             }
             if (roles.legend) {
-                dataModel.defectLegendData = {
+                dataModel.categoricalLegendData = {
                     name: value.source.displayName,
                     values: <string[]>value.values,
                     metaDataColumn: value.source,
@@ -303,7 +303,7 @@ export class DataModel {
     xData: XAxisData;
     yData: YAxisData[];
     tooltipData: TooltipColumnData[];
-    defectLegendData: LegendData;
+    categoricalLegendData: LegendData;
     filterLegendData: LegendData[];
     overlayWidth: number[];
     overlayLength: number[];

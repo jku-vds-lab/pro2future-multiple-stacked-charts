@@ -72,7 +72,7 @@ export enum Constants {
     barClass = 'bar',
     dotClass = 'dot',
     visualOverlayClass = 'visualOverlay',
-    defectLegendClass = 'defectLegend',
+    categoricalLegendClass = 'categoricalLegend',
     zoomState = 'zoomState',
     axisBreakClass = 'axisBreakLines',
     legendTitleSelection = 'legendTitle',

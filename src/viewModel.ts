@@ -58,8 +58,8 @@ export class ViewModel {
     }
 
     createLegends(dataModel: DataModel) {
-        if (dataModel.defectLegendData != null) {
-            this.createDefectLegend(dataModel);
+        if (dataModel.categoricalLegendData != null) {
+            this.createCategoricalLegend(dataModel);
         }
         if (dataModel.filterLegendData.length > 0) {
             this.createFilterLegends(dataModel);
@@ -106,15 +106,15 @@ export class ViewModel {
         }
     }
 
-    createDefectLegend(dataModel: DataModel) {
-        const legendSet = new Set(dataModel.defectLegendData.values);
+    createCategoricalLegend(dataModel: DataModel) {
+        const legendSet = new Set(dataModel.categoricalLegendData.values.map((x) => x.toString()));
         legendSet.delete(null);
         legendSet.delete('');
         const legendColors = ArrayConstants.legendColors;
         const randomColors = ArrayConstants.colorArray;
         const legendValues = Array.from(legendSet).sort();
-        const defectLegend = <Legend>{
-            legendDataPoints: dataModel.defectLegendData.values
+        const categoricalLegend = <Legend>{
+            legendDataPoints: dataModel.categoricalLegendData.values
                 .map(
                     (val, i) =>
                         <LegendDataPoint>{
@@ -126,27 +126,27 @@ export class ViewModel {
             legendValues: [],
             legendTitle: <string>(
                 getValue(
-                    dataModel.defectLegendData.metaDataColumn.objects,
+                    dataModel.categoricalLegendData.metaDataColumn.objects,
                     Settings.legendSettings,
                     LegendSettingsNames.legendTitle,
-                    dataModel.defectLegendData.metaDataColumn.displayName
+                    dataModel.categoricalLegendData.metaDataColumn.displayName
                 )
             ),
             legendXEndPosition: 0,
             legendXPosition: MarginSettings.margins.left,
             type: FilterType.colorFilter,
             selectedValues: new Set(legendValues.concat(Object.keys(ArrayConstants.legendColors))),
-            metaDataColumn: dataModel.defectLegendData.metaDataColumn,
+            metaDataColumn: dataModel.categoricalLegendData.metaDataColumn,
         };
         for (let i = 0; i < legendValues.length; i++) {
             const val = legendValues[i] + '';
             const defaultColor = legendColors[val] ? legendColors[val] : randomColors[i];
-            defectLegend.legendValues.push({
+            categoricalLegend.legendValues.push({
                 color: defaultColor,
                 value: val,
             });
         }
-        this.legends.legends.push(defectLegend);
+        this.legends.legends.push(categoricalLegend);
     }
 
     setSettings(dataModel: DataModel, options: VisualUpdateOptions) {
@@ -259,9 +259,9 @@ export class ViewModel {
                 if (plotSettings.useLegendColor) {
                     const filtered = this.legends.legends.filter((x) => x.type === FilterType.colorFilter);
                     if (filtered.length === 1) {
-                        const defectLegend = filtered[0];
-                        const dataPointLegendValue = defectLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
-                        const legendValue = defectLegend.legendValues.find((x) => x.value === dataPointLegendValue);
+                        const categoricalLegend = filtered[0];
+                        const dataPointLegendValue = categoricalLegend.legendDataPoints.find((x) => x.i === pointNr)?.yValue;
+                        const legendValue = categoricalLegend.legendValues.find((x) => dataPointLegendValue && x.value === dataPointLegendValue.toString());
                         if (dataPointLegendValue && legendValue) color = legendValue.color;
                     } else {
                         this.errors.push(new PlotLegendError(yAxis.name));
@@ -344,7 +344,9 @@ export class ViewModel {
                     x: xAxisSettings.axisBreak ? xAxisSettings.indexMap.get(xValues[i]) : xValues[i],
                 };
             }
-            overlayRectangles = overlayRectangles.filter((x) => x.x != null && x.x >= 0 && x.width != null && x.width > 0);
+            overlayRectangles = overlayRectangles.filter((x) =>
+                x.x != null && dataModel.xData.isDate ? (<Date>x.x).getMilliseconds() >= 0 : <number>x.x >= 0 && x.width != null && x.width > 0
+            );
             if (overlayRectangles.length == 0) {
                 return err(new OverlayDataError());
             }
