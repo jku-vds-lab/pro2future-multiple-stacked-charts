@@ -31,7 +31,7 @@
         },
         {
             "displayName": "Plot Overlay: Length",
-            "name": "overlayX",
+            "name": "overlayLength",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
                 {
@@ -44,6 +44,19 @@
         },
         {
             "displayName": "Plot Overlay: Width",
+            "name": "overlayWidth",
+            "kind": "GroupingOrMeasure",
+            "preferredTypes": [
+                {
+                    "numeric": true
+                },
+                {
+                    "integer": true
+                }
+            ]
+        },
+        {
+            "displayName": "Plot Overlay: Y Position",
             "name": "overlayY",
             "kind": "GroupingOrMeasure",
             "preferredTypes": [
@@ -117,7 +130,10 @@
                     "y_axis": {
                         "max": 20
                     },
-                    "overlayX": {
+                    "overlayLength": {
+                        "max": 1
+                    },
+                    "overlayWidth": {
                         "max": 1
                     },
                     "overlayY": {
@@ -158,7 +174,12 @@
                         },
                         {
                             "for": {
-                                "in": "overlayX"
+                                "in": "overlayLength"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "overlayWidth"
                             }
                         },
                         {
@@ -166,6 +187,7 @@
                                 "in": "overlayY"
                             }
                         },
+
                         {
                             "for": {
                                 "in": "tooltip"
@@ -213,7 +235,12 @@
                         },
                         {
                             "for": {
-                                "in": "overlayX"
+                                "in": "overlayLength"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "overlayWidth"
                             }
                         },
                         {

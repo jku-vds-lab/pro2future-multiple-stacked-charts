@@ -103,11 +103,14 @@ function getCategoricalData(categorical: powerbi.DataViewCategorical, dataModel:
                 };
                 dataModel.yData[yId] = yAxis;
             }
-            if (roles.overlayX) {
+            if (roles.overlayLength) {
                 dataModel.overlayLength = <number[]>category.values;
             }
-            if (roles.overlayY) {
+            if (roles.overlayWidth) {
                 dataModel.overlayWidth = <number[]>category.values;
+            }
+            if (roles.overlayY) {
+                dataModel.overlayY = <number[]>category.values;
             }
             if (roles.tooltip) {
                 const columnId = category.source.index;
@@ -180,11 +183,14 @@ function getMeasureData(categorical: powerbi.DataViewCategorical, dataModel: Dat
                 };
                 dataModel.yData[yId] = yAxis;
             }
-            if (roles.overlayX) {
+            if (roles.overlayLength) {
                 dataModel.overlayLength = <number[]>(value.highlights ? value.highlights : value.values);
             }
-            if (roles.overlayY) {
+            if (roles.overlayWidth) {
                 dataModel.overlayWidth = <number[]>(value.highlights ? value.highlights : value.values);
+            }
+            if (roles.overlayY) {
+                dataModel.overlayY = <number[]>(value.highlights ? value.highlights : value.values);
             }
             if (roles.tooltip) {
                 const columnId = value.source.index;
@@ -307,6 +313,7 @@ export class DataModel {
     filterLegendData: LegendData[];
     overlayWidth: number[];
     overlayLength: number[];
+    overlayY: number[];
     visualOverlayRectangles: Primitive[];
     visualOverlayMetadataColumn: powerbi.DataViewMetadataColumn;
     categorical: powerbi.DataViewCategorical;
@@ -325,6 +332,7 @@ export class DataModel {
         this.filterLegendData = [];
         this.overlayLength = [];
         this.overlayWidth = [];
+        this.overlayY = [];
         this.visualOverlayRectangles = [];
         this.plotSettingsArray = [];
     }

@@ -681,13 +681,13 @@ export class Visual implements IVisual {
                             return xScale(d.x);
                         })
                         .attr('y', function (d) {
-                            return yScale(d.width - d.y);
+                            return yScale(d.y + d.width);
                         })
                         .attr('width', function (d) {
                             return xScale(d.endX) - xScale(d.x);
                         })
                         .attr('height', function (d) {
-                            return yScale(d.y) - yScale(d.width);
+                            return yScale(0) - yScale(d.width);
                         })
                         .attr('fill', 'transparent')
                         .attr('stroke', colorSettings.overlayColor);
