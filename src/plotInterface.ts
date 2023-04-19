@@ -228,7 +228,7 @@ export interface PlotSettings {
     plotType: PlotType;
     useLegendColor: boolean;
     showHeatmap: boolean;
-    plotWeight: number;
+    plotHeightFactor: number;
     plotTitle: string;
     overlayType: OverlayType;
     xAxis: AxisInformationInterface;

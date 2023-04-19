@@ -529,7 +529,7 @@ function createPlotSettingsCard() {
         },
         {
             objectName: Settings.plotSettings,
-            propertyName: PlotSettingsNames.plotWeight,
+            propertyName: PlotSettingsNames.plotHeightFactor,
         },
         {
             objectName: Settings.plotSettings,
@@ -679,17 +679,17 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                 },
             },
             {
-                displayName: 'Plot Weight',
-                uid: groupName + PlotSettingsNames.plotWeight + Constants.uid,
+                displayName: 'Plot Height Factor',
+                uid: groupName + PlotSettingsNames.plotHeightFactor + Constants.uid,
                 control: {
                     type: powerbi.visuals.FormattingComponent.NumUpDown,
                     properties: {
                         descriptor: {
                             objectName: Settings.plotSettings,
-                            propertyName: PlotSettingsNames.plotWeight,
+                            propertyName: PlotSettingsNames.plotHeightFactor,
                             selector: { metadata: plotModel.metaDataColumn.queryName },
                         },
-                        value: plotModel.plotSettings.plotWeight,
+                        value: plotModel.plotSettings.plotHeightFactor,
                     },
                 },
             },
