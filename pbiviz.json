@@ -6,8 +6,8 @@
         "visualClassName": "Visual",
         "version": "2.1.0.0",
         "description": "Custom Visual for displaying multiple stacked charts",
-        "supportUrl": "https://github.com/jku-vds-lab/pro2future-voest-multiple-stacked-charts",
-        "gitHubUrl": "https://github.com/jku-vds-lab/pro2future-voest-multiple-stacked-charts"
+        "supportUrl": "https://github.com/jku-vds-lab/pro2future-multiple-stacked-charts/wiki/Support",
+        "gitHubUrl": "https://github.com/jku-vds-lab/pro2future-multiple-stacked-charts"
     },
     "apiVersion": "5.1.0",
     "author": {
