@@ -107,7 +107,7 @@ export class ViewModel {
     }
 
     createCategoricalLegend(dataModel: DataModel) {
-        const legendSet = new Set(dataModel.categoricalLegendData.values.map((x) => x.toString()));
+        const legendSet = new Set(dataModel.categoricalLegendData.values.map((x) => (x ? x.toString() : null)));
         legendSet.delete(null);
         legendSet.delete('');
         const legendColors = ArrayConstants.legendColors;
