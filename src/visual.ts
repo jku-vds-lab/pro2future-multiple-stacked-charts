@@ -110,7 +110,7 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         this.dataview = options.dataViews[0];
         const zoomState = getValue<string>(this.dataview.metadata.objects, Settings.zoomingSettings, ZoomingSettingsNames.zoomState, '0;0;1');
-        if (options.type === 2 && zoomState !== this.storedZoomState) {
+        if (options.type === 2 && zoomState !== this.storedZoomState && this.svg.node().children.length > 2) {
             //don't do anything if formatting options have changed by storing zoom state
             this.storedZoomState = zoomState;
             return;
