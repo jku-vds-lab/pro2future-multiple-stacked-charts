@@ -259,11 +259,12 @@ export class Legends {
         }
         return draw;
     }
-    setDeselectedValues(deselected: Set<Primitive>) {
-        if (deselected.size === 0) return;
+    setDeselectedValues(deselected: Map<string, Set<Primitive>>) {
         for (const l of this.legends) {
-            for (const val of Array.from(l.selectedValues).filter((x) => deselected.has(x))) {
-                l.selectedValues.delete(val);
+            if (deselected.has(l.legendTitle)) {
+                Array.from(deselected.get(l.legendTitle)).map((x) => l.selectedValues.delete(x));
+            } else {
+                deselected.set(l.legendTitle, new Set<Primitive>());
             }
         }
     }

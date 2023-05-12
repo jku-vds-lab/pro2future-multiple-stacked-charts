@@ -90,7 +90,7 @@ export class Visual implements IVisual {
     private dataview: DataView;
     private viewModel: ViewModel;
     private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-    private legendDeselected = new Set<Primitive>();
+    private legendDeselected = new Map<string, Set<Primitive>>();
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
@@ -127,8 +127,8 @@ export class Visual implements IVisual {
                     return;
                 }
 
-                this.drawPlots();
                 this.drawLegends();
+                this.drawPlots();
                 this.drawAxisBreakLines();
                 this.addcontextMenu();
                 if (this.viewModel.zoomingSettings.saveZoomState) {
@@ -204,6 +204,7 @@ export class Visual implements IVisual {
         const legends = this.viewModel.legends;
         if (legends && legends.legends.length > 0) {
             legends.setDeselectedValues(this.legendDeselected);
+
             for (let i = 0; i < legends.legends.length; i++) {
                 const l = legends.legends[i];
                 this.drawLegend(l);
@@ -242,11 +243,12 @@ export class Visual implements IVisual {
             const selection = this.svg.selectAll('.' + className + '.val' + def.replace(' ', '_'));
             if (legend.selectedValues.has(def)) {
                 legend.selectedValues.delete(def);
-                this.legendDeselected.add(def);
+
+                this.legendDeselected.get(legend.legendTitle).add(def);
                 selection.style('opacity', NumberConstants.legendDeselectionOpacity);
             } else {
                 legend.selectedValues.add(def);
-                this.legendDeselected.delete(def);
+                this.legendDeselected.get(legend.legendTitle).delete(def);
                 selection.style('opacity', 1);
             }
             for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
@@ -317,11 +319,11 @@ export class Visual implements IVisual {
             if (legendSelection.has(def)) {
                 legendSelection.delete(def);
                 legendTitleSelection.style('opacity', NumberConstants.legendDeselectionOpacity);
-                this.legendDeselected.add(def);
+                this.legendDeselected.get(legend.legendTitle).add(def);
             } else {
                 legendSelection.add(def);
                 legendTitleSelection.style('opacity', 1);
-                this.legendDeselected.delete(def);
+                this.legendDeselected.get(legend.legendTitle).delete(def);
             }
             for (const plotModel of <PlotModel[]>this.viewModel.plotModels) {
                 if (plotModel.plotSettings.useLegendColor) {
