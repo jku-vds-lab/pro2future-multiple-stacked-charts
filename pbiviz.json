@@ -4,7 +4,7 @@
         "displayName": "Multiple Stacked Charts",
         "guid": "multistackedcharts3A8101158FC14988B45B304F265A2202",
         "visualClassName": "Visual",
-        "version": "2.1.0.2",
+        "version": "2.1.0.4",
         "description": "Custom Visual for displaying multiple stacked charts",
         "supportUrl": "https://github.com/jku-vds-lab/pro2future-multiple-stacked-charts/wiki/Support",
         "gitHubUrl": "https://github.com/jku-vds-lab/pro2future-multiple-stacked-charts"
