@@ -1,6 +1,7 @@
 # Multiple Stacked Charts
 Multiple stacked charts is a custom visual for Microsoft Power BI. 
 
+[![Demo Video](https://img.youtube.com/vi/aiKneeHipT0/default.jpg)](https://youtu.be/aiKneeHipT0)
 
 <iframe width="1268" height="713" src="https://www.youtube.com/embed/aiKneeHipT0" title="Multiple Stacked Charts Visualization / Power BI Visualization" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
