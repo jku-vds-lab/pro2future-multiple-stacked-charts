@@ -1,18 +1,14 @@
 # Multiple Stacked Charts
 Multiple stacked charts is a custom visual for Microsoft Power BI. 
 
-
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=aiKneeHipT0" target="_blank">
- <img src="http://img.youtube.com/vi/aiKneeHipT0/mqdefault.jpg" alt="Demo Video" width="768" height="432" border="10" />
-</a>
-
-
-
-
 [AppSource](https://appsource.microsoft.com/en-us/product/power-bi-visuals/pro2futuregmbh1670847158359.multiple_stacked_charts?exp=ubp8)
 
 ![Screenshot](publication/Screenshot1.png)
 
+Demo Video
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=aiKneeHipT0" target="_blank">
+ <img src="http://img.youtube.com/vi/aiKneeHipT0/mqdefault.jpg" alt="Demo Video" width="384" height="216" border="10" />
+</a>
 ## Key Features
  - Comparison of multiple measures in one visual
  - Vertical ruler to highlight current X-position in all plots
