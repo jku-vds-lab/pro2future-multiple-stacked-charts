@@ -676,7 +676,10 @@ export class Visual implements IVisual {
                 if (overlaytype == OverlayType.Rectangle) {
                     plot.select(`.${Constants.overlayClass}`)
                         .selectAll('rect')
-                        .data(overlayRectangles)
+                        .data(plotModel.plotSettings.centerOverlay? overlayRectangles.map((rect)=>{
+                            rect.y = -rect.width/2;
+                            return rect;
+                        }):overlayRectangles)
                         .enter()
                         .append('rect')
                         .attr('x', function (d) {

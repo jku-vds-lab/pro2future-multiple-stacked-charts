@@ -529,6 +529,10 @@ function createPlotSettingsCard() {
         },
         {
             objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.centerOverlay,
+        },
+        {
+            objectName: Settings.plotSettings,
             propertyName: PlotSettingsNames.plotHeightFactor,
         },
         {
@@ -675,6 +679,22 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                         },
 
                         value: plotModel.plotSettings.overlayType,
+                    },
+                },
+            },
+            {
+                displayName: 'Center Overlay',
+                uid: groupName + PlotSettingsNames.centerOverlay + Constants.uid,
+                description:'Centers overlay vertically if enabled.',
+                control: {
+                    type: powerbi.visuals.FormattingComponent.ToggleSwitch,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.centerOverlay,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.centerOverlay,
                     },
                 },
             },

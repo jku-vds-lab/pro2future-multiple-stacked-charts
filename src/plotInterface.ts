@@ -231,6 +231,7 @@ export interface PlotSettings {
     plotHeightFactor: number;
     plotTitle: string;
     overlayType: OverlayType;
+    centerOverlay:boolean;
     xAxis: AxisInformationInterface;
     yAxis: AxisInformationInterface;
     xLabel: string;
