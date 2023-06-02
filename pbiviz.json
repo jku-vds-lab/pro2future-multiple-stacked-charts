@@ -1,8 +1,8 @@
 {
     "visual": {
-        "name": "multistackedcharts",
-        "displayName": "Multiple Stacked Charts",
-        "guid": "multistackedcharts3A8101158FC14988B45B304F265A2202",
+        "name": "multistackedchartskurt",
+        "displayName": "Multiple Stacked Charts Kurt",
+        "guid": "multistackedchartskurt3A8101158FC14988B45B304F265A2203",
         "visualClassName": "Visual",
         "version": "2.1.0.4",
         "description": "Custom Visual for displaying multiple stacked charts",
