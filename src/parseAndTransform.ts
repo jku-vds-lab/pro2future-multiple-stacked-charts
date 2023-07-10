@@ -63,12 +63,15 @@ export function visualTransform(options: VisualUpdateOptions, host: IVisualHost)
 
     try {
         const viewModel = new ViewModel(objects);
+        viewModel.setSettings(dataModel);
         viewModel.createLegends(dataModel);
-        viewModel.setSettings(dataModel, options);
+        viewModel.setGeneralPlotSettings(dataModel, options);
         viewModel.createTooltipModels(dataModel);
         viewModel.createPlotModels(dataModel);
         viewModel.createPlotOverlayInformation(dataModel).mapErr((err) => (parseAndTransformError = err));
+        if (parseAndTransformError) viewModel.errors.push(parseAndTransformError);
         viewModel.createVisualOverlayRectangles(dataModel);
+        viewModel.errors;
         return ok(viewModel);
     } catch (e) {
         return err(new CreateViewModelError());

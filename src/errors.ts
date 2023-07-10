@@ -35,6 +35,17 @@ export class NoDataError extends ParseAndTransformError {
     }
 }
 
+export class JSONParsingError extends ParseAndTransformError {
+    /**
+     *
+     */
+    constructor(errorMessage: string) {
+        const name = 'Parsing JSON Error';
+        const message = 'Error in parsing JSON from colorsettings: ' + errorMessage + '. Please check the specifications.';
+        super(message, name);
+    }
+}
+
 export class NoDataColumnsError extends ParseAndTransformError {
     /**
      *

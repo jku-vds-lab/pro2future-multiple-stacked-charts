@@ -335,6 +335,20 @@
                         }
                     }
                 },
+                "categoricalLegendColors": {
+                    "displayName": "Categorical Legend Colors",
+                    "description": "The colors of the categorical legend in JSON format.",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "visualBackgroundColors": {
+                    "displayName": "Visual Background Colors",
+                    "description": "The colors of the visual background in JSON format.",
+                    "type": {
+                        "text": true
+                    }
+                },
                 "heatmapColorScheme": {
                     "displayName": "Heatmap Color Scheme",
                     "type": {
