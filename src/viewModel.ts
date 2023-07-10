@@ -315,6 +315,13 @@ export class ViewModel {
         if (dataModel.visualOverlayRectangles.length > 0) {
             const visualOverlayYPos = this.plotModels[0].plotTop;
             const visualOverlayHeight = this.plotModels[this.plotModels.length - 1].plotTop + this.generalPlotSettings.plotHeight - visualOverlayYPos;
+            let visualOverlayColorDict = [];
+            try {
+                visualOverlayColorDict = JSON.parse(this.colorSettings.colorSettings.visualBackgroundColors);
+            } catch (error) {
+                this.errors.push(new JSONParsingError(error.message));
+            }
+
             this.visualOverlayRectangles = new VisualOverlayRectangles(
                 this.generalPlotSettings.xAxisSettings.axisBreak
                     ? dataModel.xData.values.map((x) => this.generalPlotSettings.xAxisSettings.indexMap.get(x))
@@ -322,7 +329,8 @@ export class ViewModel {
                 dataModel.visualOverlayRectangles,
                 visualOverlayYPos,
                 visualOverlayHeight,
-                dataModel.visualOverlayMetadataColumn
+                dataModel.visualOverlayMetadataColumn,
+                visualOverlayColorDict
             );
         }
     }

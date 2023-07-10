@@ -103,15 +103,6 @@ export class ArrayConstants {
         RAS: '#4daf4a',
         EOZ: '#a42ee8',
     };
-    static readonly groupValues = {
-        Kontrolleur: 'Kontrolleur',
-        OIG: 'OIG',
-    };
-    static readonly visualOverlayColors = {
-        'nicht gewalzt': '#ffffff',
-        'gewalzt ohne Fehler': '#2ca25f',
-        'gewalzt mit Fehler': '#de2d26',
-    };
 
     static readonly colorArray = [
         '#e41a1c',

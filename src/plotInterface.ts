@@ -15,7 +15,15 @@ export class VisualOverlayRectangles {
     metadetaColumn: powerbi.DataViewMetadataColumn;
     legendValues: LegendValue[];
 
-    constructor(xValues: number[] | Date[], visualOverlay: Primitive[], yPos, width, visualOverlayMetadataColumn: powerbi.DataViewMetadataColumn, visualOverlayOpacity = 0.2) {
+    constructor(
+        xValues: number[] | Date[],
+        visualOverlay: Primitive[],
+        yPos,
+        width,
+        visualOverlayMetadataColumn: powerbi.DataViewMetadataColumn,
+        visualOverlayColorDict: string[],
+        visualOverlayOpacity = 0.2
+    ) {
         this.name = <string>getValue(visualOverlayMetadataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, visualOverlayMetadataColumn.displayName);
         this.metadetaColumn = visualOverlayMetadataColumn;
         this.visualOverlayRectangles = [];
@@ -24,7 +32,7 @@ export class VisualOverlayRectangles {
         const uniqueValues = Array.from(new Set(visualOverlay)).sort();
         for (let i = 0; i < uniqueValues.length; i++) {
             const val = uniqueValues[i];
-            const color = ArrayConstants.visualOverlayColors[<string>val] ? ArrayConstants.visualOverlayColors[<string>val] : ArrayConstants.colorArray[i];
+            const color = visualOverlayColorDict[<string>val] ? visualOverlayColorDict[<string>val] : ArrayConstants.colorArray[i];
             this.legendValues.push({ value: val, color: color });
         }
 
