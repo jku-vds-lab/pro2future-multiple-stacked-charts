@@ -52,6 +52,8 @@ export enum ColorSettingsNames {
     overlayColor = 'overlayColor',
     heatmapColorScheme = 'heatmapColorScheme',
     yZeroLineColor = 'yZeroLineColor',
+    categoricalLegendColors = 'categoricalLegendColors',
+    visualBackgroundColors = 'visualBackgroundColors',
 }
 
 export enum ZoomingSettingsNames {

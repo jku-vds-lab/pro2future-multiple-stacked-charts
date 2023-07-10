@@ -12,7 +12,7 @@ import {
     XAxisBreakSettingsNames,
     ZoomingSettingsNames,
 } from './constants';
-import { OverlayDataError, ParseAndTransformError, PlotLegendError, SVGSizeError } from './errors';
+import { JSONParsingError, OverlayDataError, ParseAndTransformError, PlotLegendError, SVGSizeError } from './errors';
 import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { getColorSettings, getValue } from './objectEnumerationUtility';
 import { DataModel, getMetadataColumn } from './parseAndTransform';
@@ -110,7 +110,13 @@ export class ViewModel {
         const legendSet = new Set(dataModel.categoricalLegendData.values.map((x) => (x ? x.toString() : null)));
         legendSet.delete(null);
         legendSet.delete('');
-        const legendColors = ArrayConstants.legendColors;
+        let legendColors = {};
+        try {
+            legendColors = JSON.parse(this.colorSettings.colorSettings.categoricalLegendColors);
+        } catch (error) {
+            this.errors.push(new JSONParsingError(error.message));
+        }
+        //ArrayConstants.legendColors;
         const randomColors = ArrayConstants.colorArray;
         const legendValues = Array.from(legendSet).sort();
         const categoricalLegend = <Legend>{
@@ -149,7 +155,7 @@ export class ViewModel {
         this.legends.legends.push(categoricalLegend);
     }
 
-    setSettings(dataModel: DataModel, options: VisualUpdateOptions) {
+    setSettings(dataModel: DataModel) {
         const colorPalette = dataModel.host.colorPalette;
         this.zoomingSettings = <ZoomingSettings>{
             enableZoom: <boolean>getValue(this.objects, Settings.zoomingSettings, ZoomingSettingsNames.show, true),
@@ -162,13 +168,14 @@ export class ViewModel {
                 verticalRulerColor: getColorSettings(this.objects, ColorSettingsNames.verticalRulerColor, colorPalette, '#000000'),
                 overlayColor: getColorSettings(this.objects, ColorSettingsNames.overlayColor, colorPalette, '#000000'),
                 yZeroLineColor: getColorSettings(this.objects, ColorSettingsNames.yZeroLineColor, colorPalette, '#CCCCCC'),
+                categoricalLegendColors: <string>getValue(this.objects, Settings.colorSettings, ColorSettingsNames.categoricalLegendColors, '{ "color": "#000000" }'),
+                visualBackgroundColors: <string>getValue(this.objects, Settings.colorSettings, ColorSettingsNames.visualBackgroundColors, '{ "color": "#000000" }'),
                 heatmapColorScheme: <string>getValue(this.objects, Settings.colorSettings, ColorSettingsNames.heatmapColorScheme, 'interpolateBuGn'),
             },
         };
-        this.setGeneralPlotSettings(dataModel, options);
     }
 
-    private setGeneralPlotSettings(dataModel: DataModel, options: VisualUpdateOptions) {
+    setGeneralPlotSettings(dataModel: DataModel, options: VisualUpdateOptions) {
         this.svgHeight = options.viewport.height - MarginSettings.scrollbarSpace;
         this.svgWidth = options.viewport.width - MarginSettings.scrollbarSpace;
         const legendHeight = this.legends.legends.length > 0 ? MarginSettings.legendHeight : 0;

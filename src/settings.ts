@@ -380,6 +380,7 @@ function addTooltipTitleGroup(tooltip: TooltipModel, tooltipTitleCard: powerbi.v
     });
 }
 
+// eslint-disable-next-line max-lines-per-function
 function createColorSettingsCard(viewModel: ViewModel) {
     const groupName = 'colorSettings';
     const colorCard: powerbi.visuals.FormattingCard = {
@@ -445,6 +446,38 @@ function createColorSettingsCard(viewModel: ViewModel) {
                                     propertyName: ColorSettingsNames.breakLineColor,
                                 },
                                 value: { value: viewModel.colorSettings.colorSettings.breakLineColor },
+                            },
+                        },
+                    },
+                    {
+                        displayName: 'Categorical Legend Colors',
+                        description: 'The colors of the categorical legend in JSON format.',
+                        uid: groupName + ColorSettingsNames.categoricalLegendColors + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.TextInput,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.colorSettings,
+                                    propertyName: ColorSettingsNames.categoricalLegendColors,
+                                },
+                                value: viewModel.colorSettings.colorSettings.categoricalLegendColors,
+                                placeholder: '{ "color": "#000000" }',
+                            },
+                        },
+                    },
+                    {
+                        displayName: 'Visual Background Colors',
+                        description: 'The colors of the visual background in JSON format.',
+                        uid: groupName + ColorSettingsNames.visualBackgroundColors + Constants.uid,
+                        control: {
+                            type: powerbi.visuals.FormattingComponent.TextInput,
+                            properties: {
+                                descriptor: {
+                                    objectName: Settings.colorSettings,
+                                    propertyName: ColorSettingsNames.visualBackgroundColors,
+                                },
+                                value: viewModel.colorSettings.colorSettings.visualBackgroundColors,
+                                placeholder: '{ "color": "#000000" }',
                             },
                         },
                     },

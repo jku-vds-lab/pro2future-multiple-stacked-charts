@@ -219,6 +219,8 @@ export interface ColorSettings {
         verticalRulerColor: string;
         overlayColor: string;
         heatmapColorScheme: string;
+        categoricalLegendColors: string;
+        visualBackgroundColors: string;
         yZeroLineColor: string;
     };
 }
