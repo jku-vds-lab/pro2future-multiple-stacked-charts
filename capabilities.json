@@ -279,7 +279,6 @@
             }
         }
     ],
-    "supportsHighlight": true,
     "objects": {
         "axisSettings": {
             "displayName": "Axis Settings",
