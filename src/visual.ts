@@ -94,7 +94,7 @@ export class Visual implements IVisual {
     private storage: ILocalVisualStorageService;
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
-    private storedZoomState = 'no state';
+    private storedZoomState = '0;0;1';
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
