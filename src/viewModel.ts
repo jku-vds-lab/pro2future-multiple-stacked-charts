@@ -98,7 +98,7 @@ export class ViewModel {
                 }),
                 legendTitle: <string>getValue(data.metaDataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, defaultLegendName),
                 legendXEndPosition: 0,
-                legendXPosition: MarginSettings.margins.left,
+                legendXPosition: 0,//set in setgeneralplotsettings()
                 type: data.type,
                 selectedValues: legendSet,
                 metaDataColumn: data.metaDataColumn,
@@ -139,7 +139,7 @@ export class ViewModel {
                 )
             ),
             legendXEndPosition: 0,
-            legendXPosition: MarginSettings.margins.left,
+            legendXPosition: 0,//set in setgeneralplotsettings()
             type: FilterType.colorFilter,
             selectedValues: new Set(legendValues.concat(Object.keys(ArrayConstants.legendColors))),
             metaDataColumn: dataModel.categoricalLegendData.metaDataColumn,
@@ -222,7 +222,7 @@ export class ViewModel {
             xScalePadding: 0.1,
             solidOpacity: 1,
             transparentOpacity: 1,
-            margins: MarginSettings.margins,
+            margins: Object.assign({}, MarginSettings.margins),
             legendYPostion: 0,
             fontSize: '10px',
             xAxisSettings: xAxisSettings,
@@ -231,6 +231,18 @@ export class ViewModel {
             minPlotHeight: minPlotHeight,
             showYZeroLine: getValue<boolean>(this.objects, Settings.generalSettings, GeneralSettingsNames.showYZeroLine, true),
         };
+
+
+        this.generalPlotSettings.margins.left = MarginSettings.margins.left + Math.max(...dataModel.plotSettingsArray.map(x => {
+            let digitCount = x.yScalePrecision;
+            if (x.yScaleSIPrefix) {
+                digitCount += (Math.log(Math.max(Math.abs(x.yRange.max), Math.abs(x.yRange.min))) / Math.log(10));
+            }
+            return digitCount;
+        })) * 5;
+        for (const legend of this.legends.legends) {
+            legend.legendXPosition = this.generalPlotSettings.margins.left;
+        }
     }
 
     private padTo2Digits(num) {
@@ -257,9 +269,9 @@ export class ViewModel {
                     dataModel.categorical.categories && dataModel.categorical.categories.length > 0
                         ? dataModel.host.createSelectionIdBuilder().withCategory(dataModel.categorical.categories[0], pointNr).createSelectionId()
                         : dataModel.host
-                              .createSelectionIdBuilder()
-                              .withMeasure(dataModel.categorical.values.filter((x) => x.source.roles['x_axis'])[0].source.queryName)
-                              .createSelectionId();
+                            .createSelectionIdBuilder()
+                            .withMeasure(dataModel.categorical.values.filter((x) => x.source.roles['x_axis'])[0].source.queryName)
+                            .createSelectionId();
                 if (!yDataPoints[pointNr]) continue;
                 let color = plotSettings.fill;
                 const xVal = xDataPoints[pointNr];
@@ -428,27 +440,27 @@ export class ViewModel {
         const indexMap = new Map(uniqueXValues.map((x, i) => [x, i]));
         const breakIndices = dataModel.xData.isDate
             ? uniqueXValues
-                  .map((x: Date, i, a: Date[]) => {
-                      return { i: i, gapSize: i < a.length - 1 ? a[i + 1].getTime() - x.getTime() : 0, x };
-                  })
-                  .filter((x) => x.gapSize > breakGapSize * 1000)
-                  .map((x) => (axisBreak ? x.i + 0.5 : new Date(x.x.getTime() + x.gapSize / 2)))
+                .map((x: Date, i, a: Date[]) => {
+                    return { i: i, gapSize: i < a.length - 1 ? a[i + 1].getTime() - x.getTime() : 0, x };
+                })
+                .filter((x) => x.gapSize > breakGapSize * 1000)
+                .map((x) => (axisBreak ? x.i + 0.5 : new Date(x.x.getTime() + x.gapSize / 2)))
             : uniqueXValues
-                  .map((x: number, i, a: number[]) => {
-                      return { i: i, gapSize: i < a.length - 1 ? a[i + 1] - x : 0, x };
-                  })
-                  .filter((x) => x.gapSize > breakGapSize)
-                  .map((x) => (axisBreak ? x.i + 0.5 : x.x + x.gapSize / 2));
+                .map((x: number, i, a: number[]) => {
+                    return { i: i, gapSize: i < a.length - 1 ? a[i + 1] - x : 0, x };
+                })
+                .filter((x) => x.gapSize > breakGapSize)
+                .map((x) => (axisBreak ? x.i + 0.5 : x.x + x.gapSize / 2));
 
         const xRange = dataModel.xData.isDate
             ? {
-                  min: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a < b ? a : b)),
-                  max: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a > b ? a : b)),
-              }
+                min: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a < b ? a : b)),
+                max: (<Date[]>dataModel.xData.values).reduce((a: Date, b: Date) => (a > b ? a : b)),
+            }
             : {
-                  min: Math.min(...(<number[]>dataModel.xData.values)),
-                  max: Math.max(...(<number[]>dataModel.xData.values)),
-              };
+                min: Math.min(...(<number[]>dataModel.xData.values)),
+                max: Math.max(...(<number[]>dataModel.xData.values)),
+            };
         if (axisBreak) {
             xRange.min = indexMap.get(xRange.min);
             xRange.max = indexMap.get(xRange.max);
