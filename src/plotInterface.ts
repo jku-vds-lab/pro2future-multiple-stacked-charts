@@ -251,6 +251,8 @@ export interface PlotSettings {
         maxFixed: boolean;
         minFixed: boolean;
     };
+    yScaleSIPrefix: boolean;
+    yScalePrecision: number;
 }
 
 export class Legends {
