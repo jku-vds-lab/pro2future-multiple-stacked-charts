@@ -359,7 +359,8 @@ export class DataModel {
             if (axisInformationError) {
                 return err(axisInformationError);
             }
-
+            let yScalePrecision = getValue<number>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yScalePrecision, 3)
+            yScalePrecision = Math.max(Math.floor(yScalePrecision), 0);
             this.plotSettingsArray.push({
                 fill: getPlotFillColor(yColumnObjects, colorPalette, '#4292c6'),
                 plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
@@ -379,7 +380,7 @@ export class DataModel {
                     maxFixed: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yMaxFixed, false),
                 },
                 yScaleSIPrefix: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yScaleSIPrefix, true),
-                yScalePrecision: getValue<number>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yScalePrecision, 3),
+                yScalePrecision: yScalePrecision,
             });
         }
     }

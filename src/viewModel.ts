@@ -204,15 +204,25 @@ export class ViewModel {
             plotHeightSpace = minPlotHeight;
             this.svgHeight = this.svgHeight + plotHeightFactorSum * plotSpaceDif;
         }
-        let plotWidth: number = this.svgWidth - MarginSettings.margins.left - MarginSettings.margins.right;
+
+        const margins = Object.assign({}, MarginSettings.margins);
+
+        margins.left = MarginSettings.margins.left + Math.max(...dataModel.plotSettingsArray.map(x => {
+            let digitCount = x.yScalePrecision;
+            if (!x.yScaleSIPrefix) {
+                digitCount += (Math.log(Math.max(Math.abs(x.yRange.max), Math.abs(x.yRange.min))) / Math.log(10)) + 1.5;
+            }
+            return digitCount;
+        })) * 5;
+
+
+        let plotWidth: number = this.svgWidth - margins.left - margins.right;
         if (plotWidth < MarginSettings.miniumumPlotWidth) {
             const widthDif = MarginSettings.miniumumPlotWidth - plotWidth;
             plotWidth = MarginSettings.miniumumPlotWidth;
             this.svgWidth = this.svgWidth + widthDif;
         }
-
         const xAxisSettings = this.getXAxisSettings(dataModel, plotWidth);
-
         this.generalPlotSettings = {
             plotTitleHeight: MarginSettings.plotTitleHeight,
             dotMargin: MarginSettings.dotMargin,
@@ -222,7 +232,7 @@ export class ViewModel {
             xScalePadding: 0.1,
             solidOpacity: 1,
             transparentOpacity: 1,
-            margins: Object.assign({}, MarginSettings.margins),
+            margins: margins,
             legendYPostion: 0,
             fontSize: '10px',
             xAxisSettings: xAxisSettings,
@@ -232,17 +242,10 @@ export class ViewModel {
             showYZeroLine: getValue<boolean>(this.objects, Settings.generalSettings, GeneralSettingsNames.showYZeroLine, true),
         };
 
-
-        this.generalPlotSettings.margins.left = MarginSettings.margins.left + Math.max(...dataModel.plotSettingsArray.map(x => {
-            let digitCount = x.yScalePrecision;
-            if (x.yScaleSIPrefix) {
-                digitCount += (Math.log(Math.max(Math.abs(x.yRange.max), Math.abs(x.yRange.min))) / Math.log(10));
-            }
-            return digitCount;
-        })) * 5;
         for (const legend of this.legends.legends) {
             legend.legendXPosition = this.generalPlotSettings.margins.left;
         }
+
     }
 
     private padTo2Digits(num) {
