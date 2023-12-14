@@ -625,7 +625,8 @@ export class Visual implements IVisual {
             const yScale = scaleLinear().domain([plotModel.plotSettings.yRange.min, plotModel.plotSettings.yRange.max]).range([plotModel.plotHeight, 0]);
             const yAxisValue = axisLeft(yScale)
                 .ticks(plotModel.plotHeight / 20)
-                .tickFormat(d3.format('~s'));
+                .tickFormat(d3.format(`.${plotModel.plotSettings.yScalePrecision}${plotModel.plotSettings.yScaleSIPrefix ? 's' : 'f'}`));
+
             let yLabel = null;
             if (plotModel.plotSettings.yAxis.labels) {
                 yLabel = plot
@@ -1100,16 +1101,16 @@ export class Visual implements IVisual {
                 tooltipElement.nodes().length > 0
                     ? <d3.Selection<HTMLDivElement, unknown, null, undefined>>tooltipElement
                     : d3
-                          .select(this.element)
-                          .append('div')
-                          .attr('class', Constants.tooltipClass)
-                          .style('position', 'absolute')
-                          .style('visibility', 'hidden')
-                          .style('background-color', '#484848')
-                          .style('border', 'solid')
-                          .style('border-width', '1px')
-                          .style('border-radius', '5px')
-                          .style('padding', '10px');
+                        .select(this.element)
+                        .append('div')
+                        .attr('class', Constants.tooltipClass)
+                        .style('position', 'absolute')
+                        .style('visibility', 'hidden')
+                        .style('background-color', '#484848')
+                        .style('border', 'solid')
+                        .style('border-width', '1px')
+                        .style('border-radius', '5px')
+                        .style('padding', '10px');
 
             const mouseover = (event) => {
                 try {

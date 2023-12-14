@@ -41,6 +41,8 @@ export enum PlotSettingsNames {
     yMin = 'yMin',
     yMaxFixed = 'yMaxFixed',
     yMax = 'yMax',
+    yScaleSIPrefix = 'yScaleSIPrefix',
+    yScalePrecision = 'yScalePrecision',
 }
 export enum TooltipTitleSettingsNames {
     title = 'title',

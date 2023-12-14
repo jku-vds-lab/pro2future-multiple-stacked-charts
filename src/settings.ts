@@ -596,6 +596,14 @@ function createPlotSettingsCard() {
             objectName: Settings.plotSettings,
             propertyName: PlotSettingsNames.yMax,
         },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.yScaleSIPrefix,
+        },
+        {
+            objectName: Settings.plotSettings,
+            propertyName: PlotSettingsNames.yScalePrecision,
+        },
     ];
     return plotCard;
 }
@@ -845,6 +853,36 @@ function addPlotSettingsGroup(plotModel: PlotModel, plotCard: powerbi.visuals.Fo
                             selector: { metadata: plotModel.metaDataColumn.queryName },
                         },
                         value: plotModel.plotSettings.yRange.max,
+                    },
+                },
+            },
+            {
+                displayName: 'Y-Scale SI Prefix',
+                uid: groupName + PlotSettingsNames.yScaleSIPrefix + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.ToggleSwitch,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.yScaleSIPrefix,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.yScaleSIPrefix,
+                    },
+                },
+            },
+            {
+                displayName: 'Y-Scale Precision',
+                uid: groupName + PlotSettingsNames.yScalePrecision + Constants.uid,
+                control: {
+                    type: powerbi.visuals.FormattingComponent.NumUpDown,
+                    properties: {
+                        descriptor: {
+                            objectName: Settings.plotSettings,
+                            propertyName: PlotSettingsNames.yScalePrecision,
+                            selector: { metadata: plotModel.metaDataColumn.queryName },
+                        },
+                        value: plotModel.plotSettings.yScalePrecision,
                     },
                 },
             },

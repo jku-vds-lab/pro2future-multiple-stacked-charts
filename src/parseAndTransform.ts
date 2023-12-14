@@ -241,20 +241,20 @@ function getTooltipCount(categorical: powerbi.DataViewCategorical) {
         categorical.categories === undefined
             ? 0
             : categorical.categories
-                  .filter((cat) => {
-                      return cat.source.roles.tooltip;
-                  })
-                  .map((x) => x.source['rolesIndex'].tooltip.length)
-                  .reduce((a, b) => a + b, 0);
+                .filter((cat) => {
+                    return cat.source.roles.tooltip;
+                })
+                .map((x) => x.source['rolesIndex'].tooltip.length)
+                .reduce((a, b) => a + b, 0);
     const tooltipValuesCount =
         categorical.values === undefined
             ? 0
             : categorical.values
-                  .filter((val) => {
-                      return val.source.roles.tooltip;
-                  })
-                  .map((x) => x.source['rolesIndex'].tooltip.length)
-                  .reduce((a, b) => a + b, 0);
+                .filter((val) => {
+                    return val.source.roles.tooltip;
+                })
+                .map((x) => x.source['rolesIndex'].tooltip.length)
+                .reduce((a, b) => a + b, 0);
     const tooltipCount = tooltipCategoriesCount + tooltipValuesCount;
     return tooltipCount;
 }
@@ -265,27 +265,27 @@ function checkPlotData(categorical: powerbi.DataViewCategorical): Result<number,
         categorical.categories === undefined
             ? 0
             : categorical.categories.filter((cat) => {
-                  return cat.source.roles.y_axis;
-              }).length;
+                return cat.source.roles.y_axis;
+            }).length;
     const yValuesCount =
         categorical.values === undefined
             ? 0
             : categorical.values.filter((val) => {
-                  return val.source.roles.y_axis;
-              }).length;
+                return val.source.roles.y_axis;
+            }).length;
     const yCount = yCategoriesCount + yValuesCount;
     const xCategoriesCount =
         categorical.categories === undefined
             ? 0
             : categorical.categories.filter((cat) => {
-                  return cat.source.roles.x_axis;
-              }).length;
+                return cat.source.roles.x_axis;
+            }).length;
     const xValuesCount =
         categorical.values === undefined
             ? 0
             : categorical.values.filter((val) => {
-                  return val.source.roles.x_axis;
-              }).length;
+                return val.source.roles.x_axis;
+            }).length;
     const xCount = xCategoriesCount + xValuesCount;
 
     //check if input data count is ok
@@ -359,7 +359,8 @@ export class DataModel {
             if (axisInformationError) {
                 return err(axisInformationError);
             }
-
+            let yScalePrecision = getValue<number>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yScalePrecision, 3)
+            yScalePrecision = Math.max(Math.floor(yScalePrecision), 0);
             this.plotSettingsArray.push({
                 fill: getPlotFillColor(yColumnObjects, colorPalette, '#4292c6'),
                 plotType: PlotType[getValue<string>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.plotType, PlotType.LinePlot)],
@@ -378,6 +379,8 @@ export class DataModel {
                     minFixed: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yMinFixed, true),
                     maxFixed: <boolean>getValue(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yMaxFixed, false),
                 },
+                yScaleSIPrefix: getValue<boolean>(yColumnObjects, Settings.plotSettings, PlotSettingsNames.yScaleSIPrefix, true),
+                yScalePrecision: yScalePrecision,
             });
         }
     }

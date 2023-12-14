@@ -608,6 +608,18 @@
                     "type": {
                         "numeric": true
                     }
+                },
+                "yScaleSIPrefix": {
+                    "displayName": "Y-Scale SI Prefix",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "yScalePrecision": {
+                    "displayName": "Y-Scale Precision",
+                    "type": {
+                        "numeric": true
+                    }
                 }
             }
         },
