@@ -698,8 +698,16 @@
             }
         }
     },
-    "supportsLandingPage": false,
+    "supportsLandingPage": true,
+    "supportsEmptyDataView": true,
     "drilldown": {
         "roles": ["category"]
+    },
+    "tooltips": {
+        "supportedTypes": {
+            "default": true,
+            "canvas": true
+        },
+        "roles": ["tooltips"]
     }
 }

@@ -168,11 +168,6 @@ export interface OverlayRectangle {
     y: number;
 }
 
-export interface TooltipData {
-    yValue: PrimitiveValue;
-    title: string;
-}
-
 export interface TooltipDataPoint {
     pointNr: PrimitiveValue;
     yValue: PrimitiveValue;
@@ -342,8 +337,8 @@ export interface D3PlotYAxis {
     yLabel: D3Selection;
 }
 
-export interface TooltipInterface {
+export interface IMouseListeners {
     mouseover: () => void;
-    mousemove: (event: PointerEvent, data: DataPoint) => void;
+    mousemove: (event: PointerEvent) => void;
     mouseout: () => void;
 }

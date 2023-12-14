@@ -1,42 +1,44 @@
 {
-  "name": "visual",
-  "description": "default_template_value",
-  "repository": {
-    "type": "default_template_value",
-    "url": "default_template_value"
-  },
-  "license": "MIT",
-  "scripts": {
-    "pbiviz": "pbiviz",
-    "start": "pbiviz start",
-    "package": "pbiviz package",
-    "lint": "npx eslint . --ext .js,.jsx,.ts,.tsx",
-    "lint-and-fix": "npx eslint . --ext .js,.jsx,.ts,.tsx --fix",
-    "pretest": "pbiviz package --resources --no-minify --no-pbiviz --no-plugin",
-    "prettier-format": "prettier --config .prettierrc src\\**.ts --write"
-  },
-  "dependencies": {
-    "@types/d3": "^7.4.0",
-    "@types/d3-array": "^3.0.3",
-    "@types/d3-selection": "^3.0.3",
-    "d3": "7.7.0",
-    "d3-array": "^3.2.1",
-    "eslint-plugin-powerbi-visuals": "^0.8.1",
-    "neverthrow": "^6.0.0",
-    "powerbi-visuals-api": "5.1.0",
-    "powerbi-visuals-utils-chartutils": "^6.0.0",
-    "powerbi-visuals-utils-dataviewutils": "^2.4.1",
-    "powerbi-visuals-utils-formattingmodel": "5.0.0",
-    "powerbi-visuals-utils-interactivityutils": "^5.7.1"
-  },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.46.1",
-    "@typescript-eslint/parser": "^5.46.1",
-    "eslint": "^8.29.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "prettier": "^2.8.1",
-    "ts-loader": "9.4.2",
-    "typescript": "4.9.4"
-  }
+    "name": "visual",
+    "description": "default_template_value",
+    "repository": {
+        "type": "default_template_value",
+        "url": "default_template_value"
+    },
+    "license": "MIT",
+    "scripts": {
+        "pbiviz": "pbiviz",
+        "start": "pbiviz start",
+        "package": "pbiviz package",
+        "lint": "npx eslint . --ext .js,.jsx,.ts,.tsx",
+        "eslint": "npx eslint . --ext .js,.jsx,.ts,.tsx",
+        "lint-and-fix": "npx eslint . --ext .js,.jsx,.ts,.tsx --fix",
+        "pretest": "pbiviz package --resources --no-minify --no-pbiviz --no-plugin",
+        "prettier-format": "prettier --config .prettierrc src\\**.ts --write"
+    },
+    "dependencies": {
+        "@types/d3": "^7.4.0",
+        "@types/d3-array": "^3.0.3",
+        "@types/d3-selection": "^3.0.3",
+        "d3": "7.7.0",
+        "d3-array": "^3.2.1",
+        "eslint-plugin-powerbi-visuals": "^0.8.1",
+        "neverthrow": "^6.0.0",
+        "powerbi-visuals-api": "~5.4.0",
+        "powerbi-visuals-utils-chartutils": "^6.0.0",
+        "powerbi-visuals-utils-dataviewutils": "^2.4.1",
+        "powerbi-visuals-utils-formattingmodel": "5.0.0",
+        "powerbi-visuals-utils-interactivityutils": "^6.0.2",
+        "powerbi-visuals-utils-tooltiputils": "^6.0.1"
+    },
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^5.46.1",
+        "@typescript-eslint/parser": "^5.46.1",
+        "eslint": "^8.29.0",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-prettier": "^4.2.1",
+        "prettier": "^2.8.1",
+        "ts-loader": "9.4.2",
+        "typescript": "4.9.4"
+    }
 }
