@@ -290,10 +290,10 @@ export class Visual implements IVisual {
             .enter()
             .append('text')
             .text(function (d) {
-                return String(d.value);
+                return d.value && d.value !== null ? String(d.value) : 'null';
             })
             .attr('text-anchor', 'left')
-            .attr('class', (d) => className + ' val' + d.value.toString().replace(' ', '_'))
+            .attr('class', (d) => (className + ' val' + d.value && d.value !== null ? d.value.toString().replace(' ', '_') : 'null'))
             .style('alignment-baseline', 'middle')
             .style('font-size', this.viewModel.generalPlotSettings.fontSize)
             .attr('x', function () {
@@ -303,7 +303,7 @@ export class Visual implements IVisual {
                 return 10 + x;
             })
             .attr('y', yPosition)
-            .style('opacity', (d) => (selection.has(d.value.toString()) ? 1 : NumberConstants.legendDeselectionOpacity));
+            .style('opacity', (d) => (selection.has(d.value ? d.value.toString() : null) ? 1 : NumberConstants.legendDeselectionOpacity));
         return xPos;
     }
 
@@ -1101,16 +1101,16 @@ export class Visual implements IVisual {
                 tooltipElement.nodes().length > 0
                     ? <d3.Selection<HTMLDivElement, unknown, null, undefined>>tooltipElement
                     : d3
-                        .select(this.element)
-                        .append('div')
-                        .attr('class', Constants.tooltipClass)
-                        .style('position', 'absolute')
-                        .style('visibility', 'hidden')
-                        .style('background-color', '#484848')
-                        .style('border', 'solid')
-                        .style('border-width', '1px')
-                        .style('border-radius', '5px')
-                        .style('padding', '10px');
+                          .select(this.element)
+                          .append('div')
+                          .attr('class', Constants.tooltipClass)
+                          .style('position', 'absolute')
+                          .style('visibility', 'hidden')
+                          .style('background-color', '#484848')
+                          .style('border', 'solid')
+                          .style('border-width', '1px')
+                          .style('border-radius', '5px')
+                          .style('padding', '10px');
 
             const mouseover = (event) => {
                 try {

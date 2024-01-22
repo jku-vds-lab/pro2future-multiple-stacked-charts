@@ -24,6 +24,7 @@ export class VisualOverlayRectangles {
         visualOverlayColorDict: string[],
         visualOverlayOpacity = 0.2
     ) {
+        visualOverlay = visualOverlay.map((x) => (x === null ? 'null' : x));
         this.name = <string>getValue(visualOverlayMetadataColumn.objects, Settings.legendSettings, LegendSettingsNames.legendTitle, visualOverlayMetadataColumn.displayName);
         this.metadetaColumn = visualOverlayMetadataColumn;
         this.visualOverlayRectangles = [];
