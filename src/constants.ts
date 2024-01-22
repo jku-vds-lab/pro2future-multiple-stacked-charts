@@ -82,7 +82,6 @@ export enum Constants {
     legendTitleSelection = 'legendTitle',
     VisualOverlayLegendTitleSelection = 'visualOverlayLegendTitle',
     uid = '_uid',
-    tooltipClass = 'tooltipDiv',
 }
 
 export enum FilterType {

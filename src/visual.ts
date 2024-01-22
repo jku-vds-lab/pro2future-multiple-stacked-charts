@@ -37,13 +37,14 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import DataView = powerbi.DataView;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { axis as axisHelper } from 'powerbi-visuals-utils-chartutils';
 import { createFormattingModel } from './settings';
 import { scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import * as d3 from 'd3';
 import {
-    TooltipInterface,
+    IMouseListeners,
     DataPoint,
     PlotModel,
     PlotType,
@@ -53,7 +54,6 @@ import {
     D3PlotYAxis,
     OverlayRectangle,
     TooltipModel,
-    TooltipData,
     ZoomingSettings,
     GeneralPlotSettings,
     D3Heatmap,
@@ -83,6 +83,7 @@ import { Heatmapmargins, MarginSettings } from './marginSettings';
 import { Primitive } from 'd3';
 import { ViewModel } from './viewModel';
 import { getValue } from './objectEnumerationUtility';
+import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 
 export class Visual implements IVisual {
     private host: IVisualHost;
@@ -95,6 +96,7 @@ export class Visual implements IVisual {
     private zoom: d3.ZoomBehavior<Element, unknown>;
     private selectionManager: ISelectionManager;
     private storedZoomState = '0;0;1';
+    private tooltipServiceWrapper: ITooltipServiceWrapper;
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -105,9 +107,15 @@ export class Visual implements IVisual {
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true).attr('width', this.element.clientWidth).attr('height', this.element.clientHeight);
         this.storage = this.host.storageService;
         window.d3 = d3;
+        this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, options.element, 0);
+        this.addLandingPage();
     }
 
     public update(options: VisualUpdateOptions) {
+        if (!options.dataViews || !options.dataViews[0]?.metadata?.columns?.length) {
+            this.addLandingPage();
+            return;
+        }
         this.dataview = options.dataViews[0];
         const zoomState = getValue<string>(this.dataview.metadata.objects, Settings.zoomingSettings, ZoomingSettingsNames.zoomState, '0;0;1');
         if (options.type === 2 && zoomState !== this.storedZoomState && this.svg.node().children.length > 2) {
@@ -117,6 +125,7 @@ export class Visual implements IVisual {
         }
 
         this.removeDuplicateColumns();
+
         visualTransform(options, this.host)
             .map((model) => {
                 this.viewModel = model;
@@ -138,6 +147,32 @@ export class Visual implements IVisual {
                 }
             })
             .mapErr((err) => this.displayError(err));
+    }
+
+    private addLandingPage() {
+        this.svg.selectAll('*').remove();
+        this.svg.append('text').attr('width', this.element.clientWidth).attr('x', 0).attr('y', 20).text('Multiple Stacked Charts Visual');
+        this.svg
+            .append('text')
+            .attr('width', this.element.clientWidth)
+            .attr('height', this.element.clientHeight - 40)
+            .attr('x', 0)
+            .attr('y', 40)
+            .text('Please add data columns to the visual.')
+            .style('font-size', '12px');
+        this.svg
+            .append('text')
+            .attr('width', this.element.clientWidth)
+            .attr('height', this.element.clientHeight - 40)
+            .attr('x', 0)
+            .attr('y', 80)
+            .text('A detailed visual documentation can be found at ')
+            .style('font-size', '12px')
+            .append('a')
+            .attr('href', 'https://github.com/jku-vds-lab/pro2future-multiple-stacked-charts/wiki')
+            .attr('target', '_blank')
+            .text('https://github.com/jku-vds-lab/pro2future-multiple-stacked-charts/wiki.')
+            .style('text-color', 'blue');
     }
 
     public getFormattingModel(): powerbi.visuals.FormattingModel {
@@ -799,11 +834,16 @@ export class Visual implements IVisual {
                     // });
                 });
 
-            let mouseEvents: TooltipInterface;
-            this.addTooltips()
+            let mouseEvents: IMouseListeners;
+            this.addMouseListeners()
                 .map((events) => (mouseEvents = events))
                 .mapErr((err) => (plotError = err));
             if (plotError) return err(plotError);
+            this.tooltipServiceWrapper.addTooltip(
+                d3Plot.points,
+                (dataPoint: DataPoint) => this.getTooltipData(dataPoint),
+                (datapoint: DataPoint) => datapoint.selectionId
+            );
             d3Plot.points.on('mouseover', mouseEvents.mouseover).on('mousemove', mouseEvents.mousemove).on('mouseout', mouseEvents.mouseout);
             if (plotModel.plotSettings.showHeatmap) {
                 this.drawHeatmap(dataPoints, plotModel)
@@ -811,11 +851,25 @@ export class Visual implements IVisual {
                     .mapErr((err) => (plotError = err));
                 if (plotError) return err(plotError);
             }
-
             return ok(null);
         } catch (error) {
             return err(new DrawPlotError(error.stack));
         }
+    }
+
+    private getTooltipData(dataPoint: DataPoint): VisualTooltipDataItem[] {
+        const tooltipItems: VisualTooltipDataItem[] = [];
+        this.viewModel.tooltipModels.map((model: TooltipModel) => {
+            model.tooltipData.map((modelData) => {
+                if (modelData.pointNr == dataPoint.pointNr) {
+                    tooltipItems.push({
+                        displayName: model.tooltipName,
+                        value: modelData.yValue === null ? '-' : modelData.yValue.toString(),
+                    });
+                }
+            });
+        });
+        return tooltipItems;
     }
 
     private drawHeatmap(dataPoints: DataPoint[], plotModel: PlotModel): Result<D3Heatmap, HeatmapError> {
@@ -1087,35 +1141,15 @@ export class Visual implements IVisual {
         }
     }
 
-    private addTooltips(): Result<TooltipInterface, PlotError> {
+    private addMouseListeners(): Result<IMouseListeners, PlotError> {
         try {
-            const tooltipOffset = 10;
-            const viewModel = this.viewModel;
-            const visualContainer = this.svg.node();
             const margins = this.viewModel.generalPlotSettings.margins;
-            const tooltipModels = this.viewModel.tooltipModels;
             const errorFunction = this.displayError;
             let lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
-            const tooltipElement = d3.select('.' + Constants.tooltipClass);
-            const tooltip =
-                tooltipElement.nodes().length > 0
-                    ? <d3.Selection<HTMLDivElement, unknown, null, undefined>>tooltipElement
-                    : d3
-                        .select(this.element)
-                        .append('div')
-                        .attr('class', Constants.tooltipClass)
-                        .style('position', 'absolute')
-                        .style('visibility', 'hidden')
-                        .style('background-color', '#484848')
-                        .style('border', 'solid')
-                        .style('border-width', '1px')
-                        .style('border-radius', '5px')
-                        .style('padding', '10px');
 
             const mouseover = (event) => {
                 try {
                     lines = d3.selectAll(`.${Constants.verticalRulerClass} line`);
-                    tooltip.style('visibility', 'visible');
                     const element = d3.select(event.target);
                     element.attr('r', Number(element.attr('r')) * 2).style('stroke', 'black');
                     lines.style('opacity', 1);
@@ -1125,42 +1159,9 @@ export class Visual implements IVisual {
                 }
             };
 
-            const mousemove = (event, dataPoint: DataPoint) => {
+            const mousemove = (event) => {
                 try {
-                    const height = visualContainer.clientHeight;
-                    const width = visualContainer.clientWidth;
                     const x = event.clientX - margins.left;
-                    const tooltipX = event.clientX > width / 2 ? event.clientX - tooltip.node().offsetWidth - tooltipOffset : event.clientX + tooltipOffset;
-                    let tooltipY = event.clientY > height / 2 ? event.clientY - tooltip.node().offsetHeight - tooltipOffset : event.clientY + tooltipOffset;
-                    const tooltipData: TooltipData[] = [];
-
-                    //add tooltips
-                    tooltipModels.filter((model: TooltipModel) => {
-                        model.tooltipData.filter((modelData) => {
-                            if (modelData.pointNr == dataPoint.pointNr) {
-                                tooltipData.push({
-                                    yValue: modelData.yValue === null ? '-' : modelData.yValue,
-                                    title: model.tooltipName,
-                                });
-                            }
-                        });
-                    });
-                    tooltip.selectChildren().remove();
-                    tooltipData.map((t) => {
-                        tooltip.append('text').text(t.title).style('font-weight', '500');
-                        tooltip
-                            .append('tspan')
-                            .text(':\t' + t.yValue)
-                            .append('br');
-                    });
-                    const tooltipHeight = tooltip.node().getBoundingClientRect().height;
-                    tooltipY = Math.max(tooltipY, 0);
-                    tooltipY = Math.min(tooltipY, viewModel.svgHeight - tooltipHeight);
-                    tooltip
-                        .style('left', tooltipX + 'px')
-                        .style('top', tooltipY + 'px')
-                        .style('color', '#F0F0F0');
-
                     lines.attr('x1', x).attr('x2', x);
                 } catch (error) {
                     error.message = 'error in tooltip mousemove: ' + error.message;
@@ -1170,7 +1171,6 @@ export class Visual implements IVisual {
 
             const mouseout = (e) => {
                 try {
-                    tooltip.style('visibility', 'hidden');
                     const element = d3.select(e.target);
                     element.attr('r', Number(element.attr('r')) / 2).style('stroke', 'none');
                     lines.style('opacity', 0);
@@ -1179,7 +1179,7 @@ export class Visual implements IVisual {
                     errorFunction(error);
                 }
             };
-            return ok(<TooltipInterface>{ mouseover, mousemove, mouseout });
+            return ok(<IMouseListeners>{ mouseover, mousemove, mouseout });
         } catch (error) {
             return err(new CustomTooltipError(error.stack));
         }
