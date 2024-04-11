@@ -35,8 +35,11 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
+import IVisualLocalStorageV2Service = powerbi.extensibility.IVisualLocalStorageV2Service;
 import DataView = powerbi.DataView;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import PrivilegeStatus = powerbi.PrivilegeStatus;
+import StorageV2ResultInfo = powerbi.extensibility.StorageV2ResultInfo;
 import { createTooltipServiceWrapper, ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 import { axis as axisHelper } from 'powerbi-visuals-utils-chartutils';
 import { createFormattingModel } from './settings';
@@ -63,7 +66,7 @@ import {
     D3Selection,
 } from './plotInterface';
 import { visualTransform } from './parseAndTransform';
-import { Constants, FilterType, NumberConstants, Settings, ZoomingSettingsNames } from './constants';
+import { Constants, FilterType, LocalStorageKeys, NumberConstants, Settings, ZoomingSettingsNames } from './constants';
 import { err, ok, Result } from 'neverthrow';
 import {
     AddClipPathError,
@@ -97,6 +100,9 @@ export class Visual implements IVisual {
     private selectionManager: ISelectionManager;
     private storedZoomState = '0;0;1';
     private tooltipServiceWrapper: ITooltipServiceWrapper;
+    private storageV2Service: IVisualLocalStorageV2Service;
+    private storageV2allowed = false;
+    private divOverlayCorner: d3.Selection<HTMLDivElement, unknown, null, undefined>;
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -105,10 +111,33 @@ export class Visual implements IVisual {
         this.element = options.element;
         this.selectionManager = this.host.createSelectionManager();
         this.svg = d3.select(this.element).append('svg').classed('visualContainer', true).attr('width', this.element.clientWidth).attr('height', this.element.clientHeight);
+        this.divOverlayCorner = d3.select(this.element).append('div').classed('overlayCorner', true).style('display', 'none');
         this.storage = this.host.storageService;
-        window.d3 = d3;
         this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, options.element, 0);
         this.addLandingPage();
+        this.storageV2Service = this.host.storageV2Service;
+        this.initLocalStorage();
+    }
+
+    private async initLocalStorage() {
+        try {
+            const status: powerbi.PrivilegeStatus = await this.storageV2Service.status();
+            const messageStart = 'Local storage API status: ';
+            if (status === PrivilegeStatus.DisabledByAdmin) {
+                //handle if the api blocked by admin
+                console.log(messageStart, 'blocked');
+            } else if (status === PrivilegeStatus.Allowed) {
+                this.storageV2allowed = true;
+            } else if (status === PrivilegeStatus.NotDeclared) {
+                //handle if the api is not allowed
+                console.log(messageStart, 'not declared');
+            } else if (status === PrivilegeStatus.NotSupported) {
+                //handle if the api is not allowed
+                console.log(messageStart, 'not supported');
+            }
+        } catch (error) {
+            console.error('error initializing local storage API', error);
+        }
     }
 
     public update(options: VisualUpdateOptions) {
@@ -396,28 +425,34 @@ export class Visual implements IVisual {
         }
     }
 
-    private restoreZoomState() {
-        //TODO: publish on AppSource to save zoom state https://learn.microsoft.com/en-us/power-bi/developer/visuals/local-storage
-        const svg = this.svg;
-        const zoom = this.zoom;
-        this.storage
-            .get(Constants.zoomState)
-            .then((state) => {
-                setZoomState(state);
-            })
-            .catch(() => {
-                console.log('restore error');
-                this.storage.set(Constants.zoomState, '0;0;1');
-                const state = getValue<string>(this.dataview.metadata.objects, Settings.zoomingSettings, ZoomingSettingsNames.zoomState, '0;0;1');
-                setZoomState(state);
-            });
-
-        function setZoomState(state: string) {
-            const zoomState = state.split(';');
-            if (zoomState.length === 3) {
-                const transform = d3.zoomIdentity.translate(Number(zoomState[0]), Number(zoomState[1])).scale(Number(zoomState[2]));
-                svg.call(zoom.transform, transform);
+    private async restoreZoomState() {
+        try {
+            const status: PrivilegeStatus = await this.storageV2Service.status();
+            if (status === PrivilegeStatus.Allowed) {
+                const state = await this.storageV2Service.get(LocalStorageKeys.zoomState);
+                this.setZoomState(state);
             }
+        } catch (error) {
+            const state = getValue<string>(this.dataview.metadata.objects, Settings.zoomingSettings, ZoomingSettingsNames.zoomState, '0;0;1');
+            this.setZoomState(state);
+        }
+    }
+
+    private setZoomState(state: string) {
+        const zoomState = state.split(';');
+        if (zoomState.length === 3) {
+            const transform = d3.zoomIdentity.translate(Number(zoomState[0]), Number(zoomState[1])).scale(Number(zoomState[2]));
+            this.svg.call(this.zoom.transform, transform);
+            this.setZoomText(transform);
+        }
+    }
+
+    private setZoomText(transfrom: d3.ZoomTransform) {
+        if (transfrom.k === 1) {
+            this.divOverlayCorner.style('display', 'none');
+        } else {
+            this.divOverlayCorner.style('display', 'block');
+            this.divOverlayCorner.text((transfrom.k * 100).toFixed(0) + ' %');
         }
     }
 
@@ -1035,21 +1070,8 @@ export class Visual implements IVisual {
                         this.svg.call(this.zoom.transform, d3.zoomIdentity);
                         return;
                     }
-                    const zoomState = transform.x + ';' + transform.y + ';' + transform.k;
-                    if (this.viewModel.zoomingSettings.saveZoomState) {
-                        this.storage.set(Constants.zoomState, zoomState).catch(() => console.log('store zoom state error'));
-                        this.host.persistProperties({
-                            merge: [
-                                {
-                                    objectName: Settings.zoomingSettings,
-                                    properties: {
-                                        zoomState: zoomState,
-                                    },
-                                    selector: null,
-                                },
-                            ],
-                        });
-                    }
+                    this.setZoomText(transform);
+                    this.saveZoomState(transform);
                     const xScaleZoomed = transform.rescaleX(generalPlotSettings.xAxisSettings.xScale);
                     this.viewModel.generalPlotSettings.xAxisSettings.xScaleZoomed = xScaleZoomed;
                     this.zoomVisualOverlay();
@@ -1068,6 +1090,30 @@ export class Visual implements IVisual {
             return ok(null);
         } catch (error) {
             return err(new AddZoomError(error.stack));
+        }
+    }
+
+    private async saveZoomState(transform: d3.ZoomTransform) {
+        if (this.viewModel.zoomingSettings.saveZoomState) {
+            const zoomState = transform.x + ';' + transform.y + ';' + transform.k;
+            if (this.storageV2allowed) {
+                const resultInfo: StorageV2ResultInfo = await this.storageV2Service.set(LocalStorageKeys.zoomState, zoomState);
+                if (!resultInfo.success) {
+                    console.log('error saving zoom state local storage', resultInfo);
+                }
+            } else {
+                await this.host.persistProperties({
+                    merge: [
+                        {
+                            objectName: Settings.zoomingSettings,
+                            properties: {
+                                zoomState: zoomState,
+                            },
+                            selector: null,
+                        },
+                    ],
+                });
+            }
         }
     }
 

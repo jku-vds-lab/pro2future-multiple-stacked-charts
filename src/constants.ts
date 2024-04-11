@@ -129,3 +129,7 @@ export class ArrayConstants {
 export class NumberConstants {
     static readonly legendDeselectionOpacity = 0.3;
 }
+
+export enum LocalStorageKeys {
+    zoomState = 'zoomState',
+}
